@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add ``mimo()`` function for generating a multi-input 
+    multiple-output (MIMO) channel-decoding problem. 
+  - |  
+    Add ``coordinated_multipoint()`` function for generating a coordinated multi-point 
+    (CoMP) decoding problem.

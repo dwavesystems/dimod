@@ -13,15 +13,16 @@
 #    limitations under the License.
 
 from dimod.generators.anti_crossing import *
+from dimod.generators.binpacking import *
 from dimod.generators.chimera import *
 from dimod.generators.constraints import *
 from dimod.generators.fcl import *
 from dimod.generators.gates import *
 from dimod.generators.graph import *
 from dimod.generators.integer import *
-from dimod.generators.random import *
 from dimod.generators.knapsack import *
-from dimod.generators.binpacking import *
-from dimod.generators.multi_knapsack import *
-from dimod.generators.satisfiability import *
 from dimod.generators.magic_square import *
+from dimod.generators.multi_knapsack import *
+from dimod.generators.random import *
+from dimod.generators.satisfiability import *
+from dimod.generators.wireless import *

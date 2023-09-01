@@ -27,7 +27,6 @@ except ImportError:
 else:
     _networkx = True
 
-
 class TestRandomGNMRandomBQM(unittest.TestCase):
     def test_bias_generator(self):
         def gen(n):
@@ -1003,7 +1002,6 @@ class TestSatisfiability(unittest.TestCase):
         for trial in range(10):
             with self.subTest(trial=trial):
                 bqm = dimod.generators.random_2in4sat(4, 1, seed=seed)
-
                 # in the ground state they should not be all equal
                 ss = dimod.ExactSolver().sample(bqm)
                 self.assertEqual(sum(ss.first.sample.values()), 0)
@@ -1129,3 +1127,566 @@ class TestMagicSquares(unittest.TestCase):
                         self.assertEqual(term, -2)
                     else:
                         self.assertEqual(term, 24)
+
+@unittest.skipUnless(_networkx, "no networkx installed")
+class TestMIMO(unittest.TestCase):
+
+    def setUp(self):
+        self.rng = np.random.default_rng(1)
+        self.symbols_bpsk = np.asarray([[-1, 1]])
+        self.symbols_qam = lambda a: np.array([[complex(i, j)] \
+            for i in range(-a, a + 1, 2) for j in range(-a, a + 1, 2)])
+        
+        def _make_honeycomb(L: int):    
+            """Generate 2L by 2L triangular lattice. 
+            
+            The generated lattice has open boundaries and cut corners to make a hexagon. 
+
+            Args:
+                L: Length of lattice.
+
+            Returns:
+                :class:`networkx.Graph`.
+            """
+            G = nx.Graph()
+
+            G.add_edges_from([((x, y), (x, y + 1)) for x in range(2*L + 1) for y in range(2*L)])
+            G.add_edges_from([((x, y), (x + 1, y)) for x in range(2*L) for y in range(2*L + 1)])
+            G.add_edges_from([((x, y), (x + 1, y +1 )) for x in range(2*L) for y in range(2*L)])
+            G.remove_nodes_from([(i, j) for j in range(L) for i in range(L + 1 + j, 2*L + 1) ])
+            G.remove_nodes_from([(i, j) for i in range(L) for j in range(L + 1 + i, 2*L + 1)])
+
+            return G
+        
+        self._make_honeycomb = lambda L: _make_honeycomb(L)
+            
+    def _effective_fields(self, bqm):
+        num_var = bqm.num_variables
+        effFields = np.zeros(num_var)
+        for key in bqm.quadratic:
+            effFields[key[0]] += bqm.adj[key[0]][key[1]]
+            effFields[key[1]] += bqm.adj[key[0]][key[1]]
+        for key in bqm.linear:
+            effFields[key] += bqm.linear[key]
+        return effFields
+        
+    def test_filter_marginal_estimators(self):
+        # Tested but so far this function is unused
+        fme = dimod.generators.wireless.filter_marginal_estimator
+        
+        filtered_signal = self.rng.random(20) + np.arange(-20, 20, 2)
+        estimated_source = fme(filtered_signal, 'BPSK')
+        self.assertTrue(0 == len(set(estimated_source).difference(np.arange(-1, 3, 2))))
+        self.assertTrue(np.all(estimated_source[:-1] <= estimated_source[1:]))
+        
+        filtered_signal = filtered_signal + 1j*(-self.rng.random(20) + np.arange(20, -20, -2))
+        
+        for modulation in ['QPSK','16QAM','64QAM']:
+            estimated_source = fme(filtered_signal, modulation=modulation)
+            self.assertTrue(np.all(np.flip(estimated_source.real) == estimated_source.imag))
+    
+    def test_linear_filter(self):
+
+        Nt = 5
+        Nr = 7
+        # linear_filter(F, method='zero_forcing', PoverNt=1, SNRoverNt = 1)
+        F = self.rng.normal(size=(Nr,Nt)) + 1j*self.rng.normal(size=(Nr,Nt))
+        Fsimple = np.identity(Nt) # Nt=Nr
+
+        #BPSK, real channel:
+        transmitted_symbolsQAM = dimod.generators.wireless._create_transmitted_symbols(Nt, 
+            amps=[-3, -1, 1, 3], quadrature=True)
+
+        y = np.matmul(F, transmitted_symbolsQAM)
+
+        # Defaults
+        W = dimod.generators.wireless.linear_filter(F=F)
+        self.assertEqual(W.shape,(Nt,Nr))
+
+        # Check arguments:
+        W = dimod.generators.wireless.linear_filter(F=F, 
+            method='matched_filter', PoverNt=0.5, SNRoverNt=1.2)
+        self.assertEqual(W.shape,(Nt,Nr))
+
+        # Over-constrained noiseless channel by default, zero_forcing and MMSE are perfect:
+        for method in ['zero_forcing', 'MMSE']:
+            W = dimod.generators.wireless.linear_filter(F=F, method=method)
+            reconstructed_symbols = np.matmul(W,y)
+            self.assertTrue(np.all(np.abs(reconstructed_symbols - transmitted_symbolsQAM) < 1e-8))
+
+        # matched_filter and MMSE (non-zero noise) are erroneous given interfered signal:
+        W = dimod.generators.wireless.linear_filter(F=F, method='MMSE', PoverNt=0.5, SNRoverNt=1)
+        reconstructed_symbols = np.matmul(W, y)
+        self.assertTrue(np.all(np.abs(reconstructed_symbols - transmitted_symbolsQAM) > 1e-8))
+            
+    def test_quadratic_forms(self):
+        # Quadratic form must evaluate to match original objective:
+        num_var = 3
+        num_receivers = 5
+        F = self.rng.normal(0, 1, size=(num_receivers, num_var)) + \
+            1j*self.rng.normal(0, 1, size=(num_receivers, num_var))
+        y = self.rng.normal(0, 1, size=(num_receivers, 1)) + \
+            1j*self.rng.normal(0, 1, size=(num_receivers, 1))
+
+        # Random test case:
+        vUnwrap = self.rng.normal(0, 1, size=(2*num_var, 1))
+        v = vUnwrap[:num_var, :] + 1j*vUnwrap[num_var:, :]
+        vec = y - np.matmul(F, v)
+        val1 = np.matmul(vec.T.conj(), vec)
+
+        # Check complex quadratic form
+        k, h, J = dimod.generators.wireless._quadratic_form(y, F)
+        val2 = np.matmul(v.T.conj(), np.matmul(J, v)) + (np.matmul(h.T.conj(), v)).real + k
+        self.assertLess(abs(val1 - val2), 1e-8)
+
+        # Check unwrapped complex quadratic form:
+        h, J = dimod.generators.wireless._real_quadratic_form(h, J)
+        val3 = np.matmul(vUnwrap.T, np.matmul(J, vUnwrap)) + np.matmul(h.T, vUnwrap) + k
+        self.assertLess(abs(val1 - val3), 1e-8)
+
+        # Check zero energy for y generated from F:
+        y = np.matmul(F, v)
+        k, h, J = dimod.generators.wireless._quadratic_form(y, F)
+        val2 = np.matmul(v.T.conj(), np.matmul(J, v)) + (np.matmul(h.T.conj(), v)).real + k
+        self.assertLess(abs(val2), 1e-8)
+        h, J = dimod.generators.wireless._real_quadratic_form(h, J)
+        val3 = np.matmul(vUnwrap.T, np.matmul(J, vUnwrap)) + np.matmul(h.T, vUnwrap) + k
+        self.assertLess(abs(val3), 1e-8)
+
+    def test_real_quadratic_form(self):
+        h_in, J_in = np.array([1, 1]), np.array([2])
+        h, J = dimod.generators.wireless._real_quadratic_form(h_in, J_in)
+        self.assertTrue(np.array_equal(h_in, h))
+        self.assertTrue(np.array_equal(J_in, J))
+
+        h_in, J_in = np.array([1+1j, 1-1j]), np.array([[0, 2], [0, 0]])
+        h, J = dimod.generators.wireless._real_quadratic_form(h_in, J_in)
+        self.assertTrue(len(h) == 2*len(h_in))
+        self.assertTrue(J.shape == (4, 4))
+
+        h, J = dimod.generators.wireless._real_quadratic_form(h_in, J_in, 'BPSK')
+        self.assertTrue(np.array_equal(np.real(h_in), h))
+        self.assertTrue(np.array_equal(J_in, J))
+
+    def test_amplitude_modulated_quadratic_form(self):
+        num_var = 3
+        h = self.rng.random(size=(num_var, 1))
+        J = self.rng.random(size=(num_var, num_var))
+        mods = ['BPSK', 'QPSK', '16QAM', '64QAM']
+        mod_pref = [1, 1, 2, 3]
+        for offset in [0]:
+            for modI, modulation in enumerate(mods):
+                hO, JO = dimod.generators.wireless._amplitude_modulated_quadratic_form(h, 
+                    J, modulation=modulation)
+                self.assertEqual(hO.shape[0], num_var*mod_pref[modI])
+                self.assertEqual(JO.shape[0], hO.shape[0])
+                self.assertEqual(JO.shape[0], JO.shape[1])
+
+                max_val = 2**mod_pref[modI]-1
+                self.assertLess(abs(max_val*np.sum(h)-np.sum(hO)), 1e-8)
+                self.assertLess(abs(max_val*max_val*np.sum(J)-np.sum(JO)), 1e-8)
+                #self.assertEqual(h.shape[0], num_var*mod_pref[modI])
+                #self.assertLess(abs(bqm.offset-np.sum(np.diag(J))), 1e-8)
+
+    def test_yF_to_hJ(self):
+        F = np.array([[0, 1], [1, 1]])
+
+        y = np.ones(2)
+        h_bpsk, J_bpsk, o_bpsk = dimod.generators.wireless._yF_to_hJ(y, F, 'BPSK')
+        h_qpsk, J_qpsk, o_qpsk = dimod.generators.wireless._yF_to_hJ(y, F, 'QPSK')
+        self.assertTrue(np.array_equal(h_bpsk, h_qpsk))
+        self.assertTrue(np.array_equal(J_bpsk, J_qpsk))
+        self.assertTrue(np.array_equal(o_bpsk, o_qpsk))
+
+        y = np.array([1, -1+1j])
+        h_bpsk, J_bpsk, o_bpsk = dimod.generators.wireless._yF_to_hJ(y, F, 'BPSK')
+        h_qpsk, J_qpsk, o_qpsk = dimod.generators.wireless._yF_to_hJ(y, F, 'QPSK')
+        h_16, J_16, o_16 = dimod.generators.wireless._yF_to_hJ(y, F, '16QAM')
+        self.assertFalse(np.array_equal(h_bpsk, h_qpsk))
+        self.assertFalse(np.array_equal(J_bpsk, J_qpsk))
+        self.assertFalse(np.array_equal(h_qpsk, h_16))
+        self.assertFalse(np.array_equal(J_qpsk, J_16))
+        self.assertTrue(np.array_equal(h_bpsk, h_qpsk[:, :2]))
+        self.assertTrue(np.array_equal(J_bpsk, J_qpsk[:2, :2]))
+        self.assertTrue(np.array_equal(o_bpsk, o_qpsk))
+        self.assertTrue(np.array_equal(h_qpsk, h_16[:1, :]))
+        self.assertTrue(np.array_equal(J_qpsk, J_16[:4, :4]))
+        self.assertTrue(np.array_equal(o_qpsk, o_16))
+
+    def test_bits_to_symbols(self):
+        symbols = dimod.generators.wireless._bits_to_symbols(self.symbols_bpsk, 
+            modulation='BPSK')
+        self.assertTrue(np.array_equal(self.symbols_bpsk, symbols))
+        
+        symbols = dimod.generators.wireless._bits_to_symbols(self.symbols_bpsk, 
+            modulation='BPSK', num_transmitters=1)
+        self.assertTrue(np.array_equal(self.symbols_bpsk, symbols))
+
+        symbols = dimod.generators.wireless._bits_to_symbols(self.symbols_qam(1), 
+            modulation='QPSK')
+        self.assertEqual(len(symbols), 2)
+
+        symbols = dimod.generators.wireless._bits_to_symbols(self.symbols_qam(1), 
+            modulation='16QAM')
+        self.assertEqual(len(symbols), 1)
+        
+        with self.assertRaises(ValueError):
+            bits = dimod.generators.wireless._bits_to_symbols(self.symbols_qam(1), 
+            modulation='QPSK', num_transmitters=3)
+
+
+    def test_symbols_to_bits(self):
+        # Standard symbol cases (2D input):
+        bits = dimod.generators.wireless._symbols_to_bits(self.symbols_bpsk, 
+            modulation='BPSK')
+        self.assertEqual(bits.sum(), 0)
+        self.assertTrue(bits.ndim, 2)
+
+        bits = dimod.generators.wireless._symbols_to_bits(self.symbols_qam(1), 
+            modulation='QPSK')
+        self.assertEqual(bits[:len(bits//2)].sum(), 0)
+        self.assertEqual(bits[len(bits//2):].sum(), 0)
+        self.assertTrue(bits.ndim, 2)
+
+        bits = dimod.generators.wireless._symbols_to_bits(self.symbols_qam(3), 
+            modulation='16QAM')
+        self.assertEqual(bits[:len(bits//2)].sum(), 0)
+        self.assertEqual(bits[len(bits//2):].sum(), 0)
+
+        bits = dimod.generators.wireless._symbols_to_bits(self.symbols_qam(5), 
+            modulation='64QAM')
+        self.assertEqual(bits[:len(bits//2)].sum(), 0)
+        self.assertEqual(bits[len(bits//2):].sum(), 0)
+
+        # Standard symbol cases (1D input):
+        bits = dimod.generators.wireless._symbols_to_bits(
+            self.symbols_qam(1).reshape(4,), 
+            modulation='QPSK')
+        self.assertTrue(bits.ndim, 1)
+        self.assertEqual(bits[:len(bits//2)].sum(), 0)
+        self.assertEqual(bits[len(bits//2):].sum(), 0)
+
+        # Unsupported input
+        with self.assertRaises(ValueError):
+            bits = dimod.generators.wireless._symbols_to_bits(self.symbols_bpsk, 
+            modulation='unsupported')
+                   
+    def test_BPSK_symbol_coding(self):
+        #This is simply read in read out.
+        num_bits = 5
+        bits = self.rng.choice([-1, 1], size=num_bits)
+        symbols = dimod.generators.wireless._bits_to_symbols(bits=bits, modulation='BPSK')
+        self.assertTrue(np.all(bits == symbols))
+        bits = dimod.generators.wireless._symbols_to_bits(symbols=bits, modulation='BPSK')
+        self.assertTrue(np.all(bits == symbols))
+            
+    def test_constellation_properties(self):
+        _cp = dimod.generators.wireless._constellation_properties
+        self.assertEqual(_cp("QPSK")[0], 2)
+        self.assertEqual(sum(_cp("16QAM")[1]), 4)
+        self.assertEqual(_cp("64QAM")[2], 42.0) 
+        with self.assertRaises(ValueError):
+            bits_per_transmitter, amps, constellation_mean_power = _cp("dummy")
+
+    def test_create_transmitted_symbols(self):
+        _cts = dimod.generators.wireless._create_transmitted_symbols
+        self.assertTrue(_cts(1, amps=[-1, 1], quadrature=False)[0][0] in [-1, 1])
+        self.assertTrue(_cts(1, amps=[-1, 1])[0][0].real in [-1, 1])
+        self.assertTrue(_cts(1, amps=[-1, 1])[0][0].imag in [-1, 1])
+        self.assertEqual(len(_cts(5, amps=[-1, 1])), 5)
+        self.assertTrue(np.isin(_cts(20, amps=[-1, -3, 1, 3]).real, [-1, -3, 1, 3]).all())
+        self.assertTrue(np.isin(_cts(20, amps=[-1, -3, 1, 3]).imag, [-1, -3, 1, 3]).all())
+        with self.assertRaises(ValueError):
+            transmitted_symbols = _cts(1, amps=[-1.1, 1], quadrature=False)
+        with self.assertRaises(ValueError):
+            transmitted_symbols = _cts(1, amps=np.array([-1, 1.1]), quadrature=False)
+        with self.assertRaises(ValueError):
+            transmitted_symbols = _cts(1, amps=np.array([-1, 1+1j]))
+
+    def test_complex_symbol_coding(self):
+        num_symbols = 5
+        mod_pref = [1, 2, 3]
+        mods = ['QPSK', '16QAM', '64QAM']
+
+        for modI, mod in enumerate(mods):
+            num_bits = 2*num_symbols*mod_pref[modI]
+            max_symb = 2**mod_pref[modI]-1
+
+            #uniform encoding (max bits = max amplitude symbols):
+            bits = np.ones(num_bits)
+            symbols = max_symb*np.ones(num_symbols) + 1j*max_symb*np.ones(num_symbols)
+            symbols_enc = dimod.generators.wireless._bits_to_symbols(bits=bits, modulation=mod)
+            self.assertTrue(np.all(symbols_enc == symbols ))
+            bits_enc = dimod.generators.wireless._symbols_to_bits(symbols=symbols, modulation=mod)
+            self.assertTrue(np.all(bits_enc == bits))
+
+            #random encoding:
+            bits = self.rng.choice([-1, 1], size=num_bits)
+            symbols_enc = dimod.generators.wireless._bits_to_symbols(bits=bits, modulation=mod)
+            bits_enc = dimod.generators.wireless._symbols_to_bits(symbols=symbols_enc, modulation=mod)
+            self.assertTrue(np.all(bits_enc == bits))
+
+    def test_mimo(self):
+        for num_transmitters, num_receivers in [(1, 1), (5, 1), (1, 3), (11, 7)]:
+            F = self.rng.normal(0, 1, size=(num_receivers, num_transmitters)) + \
+                    1j*self.rng.normal(0, 1, size=(num_receivers, num_transmitters))
+            y = self.rng.normal(0, 1, size=(num_receivers, 1)) + \
+                    1j*self.rng.normal(0, 1, size=(num_receivers, 1))
+            bqm = dimod.generators.wireless.mimo(modulation='QPSK', y=y, F=F)
+
+            mod_pref = [1, 1, 2, 3]
+            mods = ['BPSK', 'QPSK', '16QAM', '64QAM']
+            for modI, modulation in enumerate(mods):
+                bqm = dimod.generators.wireless.mimo(modulation=modulation, 
+                    num_transmitters=num_transmitters, num_receivers=num_receivers)
+                if modulation == 'BPSK':
+                    constellation = [-1, 1]
+                    dtype = np.float64
+                else:
+                    max_val = 2**mod_pref[modI] - 1
+                    dtype = np.complex128
+                    # All 1 bit encoding (max symbol in constellation)
+                    constellation = [real_part + 1j*imag_part
+                                     for real_part in range(-max_val, max_val+1, 2)
+                                     for imag_part in range(-max_val, max_val+1, 2)]
+                    
+                F_simple = np.ones(shape=(num_receivers, num_transmitters), dtype=dtype)
+                transmitted_symbols_max = np.ones(shape=(num_transmitters, 1), 
+                    dtype=dtype)*constellation[-1]
+                transmitted_symbols_random = self.rng.choice(constellation, 
+                    size=(num_transmitters, 1))
+                transmitted_bits_random = dimod.generators.wireless._symbols_to_bits(
+                    symbols=transmitted_symbols_random.flatten(), modulation=modulation)
+
+                #Trivial channel (F_simple), machine numbers
+                bqm = dimod.generators.wireless.mimo(modulation=modulation, 
+                    F=F_simple, transmitted_symbols=transmitted_symbols_max, 
+                    SNRb=float('Inf'))
+                
+                ef = self._effective_fields(bqm)
+                self.assertLessEqual(np.max(ef), 0)
+                self.assertLessEqual(abs(bqm.energy((np.ones(bqm.num_variables), 
+                    np.arange(bqm.num_variables)))), 1e-10)
+                
+                #Random channel, potential precision
+                bqm = dimod.generators.wireless.mimo(modulation=modulation, 
+                    num_transmitters=num_transmitters, num_receivers=num_receivers, 
+                    transmitted_symbols=transmitted_symbols_max, 
+                    SNRb=float('Inf'))
+                ef=self._effective_fields(bqm)
+                self.assertLessEqual(np.max(ef), 0)
+                self.assertLess(abs(bqm.energy((np.ones(bqm.num_variables), 
+                    np.arange(bqm.num_variables)))), 1e-8)
+                
+                # Add noise, check that offset is positive (random, scales as num_var/SNRb)
+                bqm = dimod.generators.wireless.mimo(modulation=modulation, 
+                    num_transmitters=num_transmitters, num_receivers=num_receivers, 
+                    transmitted_symbols=transmitted_symbols_max, SNRb=1)
+                self.assertLess(0, abs(bqm.energy((np.ones(bqm.num_variables), 
+                    np.arange(bqm.num_variables)))))
+                
+                # Random transmission, should match bit encoding. Bit-encoded energy should be minimal
+                bqm = dimod.generators.wireless.mimo(modulation=modulation, 
+                    num_transmitters=num_transmitters, num_receivers=num_receivers, 
+                    transmitted_symbols=transmitted_symbols_random, SNRb=float('Inf'))
+                self.assertLess(abs(bqm.energy((transmitted_bits_random, 
+                    np.arange(bqm.num_variables)))), 1e-8)
+
+    def create_channel(self):
+        # Test some defaults
+        c, cp = dimod.generators.wireless.create_channel()[0]
+        self.assertEqual(cp, 2)
+        self.assertEqual(c.shape, (1, 1))
+
+        c, cp = dimod.generators.wireless.create_channel(5, 5, 
+            F_distribution=("normal", "real"))
+        self.assertTrue(np.isin(c, [-1, 1]).all())
+        self.assertEqual(cp, 5)
+
+        c, cp = dimod.generators.wireless.create_channel(5, 5, 
+            F_distribution=("binary", "complex"))
+        self.assertTrue(np.isin(c, [-1-1j, -1+1j, 1-1j, 1+1j]).all())
+        self.assertEqual(cp, 10)
+
+        n_trans = 40
+        c, cp = dimod.generators.wireless.create_channel(30, n_trans, 
+            F_distribution=("normal", "real"))
+        self.assertLess(c.mean(), 0.2)  
+        self.assertLess(c.std(), 1.3)    
+        self.assertGreater(c.std(), 0.7)
+        self.assertEqual(cp, n_trans)
+
+        c, cp = dimod.generators.wireless.create_channel(30, n_trans, 
+            F_distribution=("normal", "complex"))
+        self.assertLess(c.mean().complex, 0.2)  
+        self.assertLess(c.real.std(), 1.3)    
+        self.assertGreater(c.real.std(), 0.7)
+        self.assertEqual(cp, 2*n_trans)
+
+        c, cp = dimod.generators.wireless.create_channel(5, 5, 
+            F_distribution=("binary", "real"), 
+            attenuation_matrix=np.array([[1, 2], [3, 4]]))
+        self.assertLess(c.ptp(), 8)
+        self.assertEqual(cp, 30)
+        
+    def test_create_signal(self):
+        # Only required parameters
+        got, sent, noise, _ = dimod.generators.wireless._create_signal(F=np.array([[1]]))
+        self.assertEqual(got, sent)
+        self.assertTrue(all(np.isreal(got)))
+        self.assertIsNone(noise)
+
+        got, sent, _, __ = dimod.generators.wireless._create_signal(F=np.array([[-1]]))
+        self.assertEqual(got, -sent)
+
+        got, sent, noise, _ = dimod.generators.wireless._create_signal(F=np.array([[1], [1]]))
+        self.assertEqual(got.shape, (2, 1))
+        self.assertEqual(sent.shape, (1, 1))
+        self.assertIsNone(noise)
+
+        got, sent, _, __ = dimod.generators.wireless._create_signal(F=np.array([[1, 1]]))
+        self.assertEqual(got.shape, (1, 1))
+        self.assertEqual(sent.shape, (2, 1))
+
+        # Optional parameters
+        got, sent, _, __ = dimod.generators.wireless._create_signal(F=np.array([[1]]), modulation="QPSK")
+        self.assertTrue(all(np.iscomplex(got)))
+        self.assertTrue(all(np.iscomplex(sent)))
+        self.assertEqual(got.shape, (1, 1))
+        self.assertEqual(got, sent)
+
+        got, sent, _, __ = dimod.generators.wireless._create_signal(F=np.array([[1]]), 
+            transmitted_symbols=np.array([[1]]))
+        self.assertEqual(got, sent)
+        self.assertEqual(got[0][0], 1)
+
+        with self.assertRaises(ValueError): # Complex symbols for BPSK
+            a, b, c, d = dimod.generators.wireless._create_signal(F=np.array([[1]]), 
+            transmitted_symbols=np.array([[1+1j]]))
+
+        with self.assertRaises(ValueError): # Non-complex symbols for non-BPSK
+            a, b, c, d = dimod.generators.wireless._create_signal(F=np.array([[1]]), 
+            transmitted_symbols=np.array([[1]]), modulation="QPSK")
+
+        noise = 0.2+0.3j
+        got, sent, _, __ = dimod.generators.wireless._create_signal(F=np.array([[1]]), 
+            transmitted_symbols=np.array([[1]]), channel_noise=noise)
+        self.assertEqual(got, sent)
+        got, sent, _, __ = dimod.generators.wireless._create_signal(F=np.array([[1]]), 
+            transmitted_symbols=np.array([[1]]), channel_noise=noise, SNRb=10 )
+        self.assertEqual(got, sent + noise)
+        got, sent, _, __ = dimod.generators.wireless._create_signal(F=np.array([[1]]), 
+            transmitted_symbols=np.array([[1]]), SNRb=10 )
+        self.assertNotEqual(got, sent)
+   
+    def test_coordinated_multipoint(self):
+        bqm = dimod.generators.wireless.coordinated_multipoint(lattice=nx.complete_graph(1), 
+            modulation='BPSK')
+        lattice = self._make_honeycomb(1)
+        bqm = dimod.generators.wireless.coordinated_multipoint(lattice=lattice)
+        num_var = lattice.number_of_nodes()
+        self.assertEqual(num_var,bqm.num_variables)
+        self.assertEqual(21,bqm.num_interactions)
+        # Transmitted symbols are 1 by default
+        lattice = self._make_honeycomb(2)
+        bqm = dimod.generators.wireless.coordinated_multipoint(lattice=lattice,
+            modulation='BPSK', SNRb=float('Inf'))
+        self.assertLess(abs(bqm.energy((np.ones(bqm.num_variables), bqm.variables))), 1e-10)
+
+    def test_attenuation_matrix(self):
+        #Check that attenuation matches the matrix
+        lattice=nx.Graph()
+        num_var = 10
+        lattice.add_nodes_from(n for n in range(num_var))
+
+        A,_,_ = dimod.generators.wireless._lattice_to_attenuation_matrix(lattice)
+        self.assertFalse(np.any(A-np.identity(num_var)))
+
+        for t_per_node in range(1,3):
+            for r_per_node in range(1,3):
+                A,_,_ = dimod.generators.wireless._lattice_to_attenuation_matrix(
+                    lattice,
+                    transmitters_per_node=t_per_node,
+                    receivers_per_node=r_per_node,
+                    neighbor_root_attenuation=self.rng.random())
+                self.assertFalse(np.any(A - np.tile(np.identity(num_var), (r_per_node, t_per_node))))
+
+        for ea in range(2):
+            lattice.add_edge(ea, ea+1)
+            neighbor_root_attenuation = self.rng.random()
+            A,_,_ = dimod.generators.wireless._lattice_to_attenuation_matrix(
+                lattice, neighbor_root_attenuation=2)
+            self.assertFalse(np.any(A - A.transpose()))
+            self.assertTrue(all(A[eap, eap + 1]==2 for eap in range(ea + 1)))
+
+        ## Check num_transmitters and num_receivers override:
+        nx.set_node_attributes(lattice, values=3, name="num_transmitters")
+        nx.set_node_attributes(lattice, values=1, name="num_receivers")
+        A,_,_ = dimod.generators.wireless._lattice_to_attenuation_matrix(
+            lattice,
+            transmitters_per_node=2,
+            receivers_per_node=2)
+        self.assertEqual(A.shape, (num_var, 3*num_var))
+        nx.set_node_attributes(lattice, values=0, name="num_receivers")
+        nx.set_node_attributes(lattice, values={0:2, 3:1}, name="num_receivers")
+        nx.set_node_attributes(lattice, values=0, name="num_transmitters")
+        nx.set_node_attributes(lattice, values={i:1 for i in [0,1,2,4]}, name="num_transmitters")
+
+        # t/r2 -- t -- t   r  t #We can assume the ntr and ntt arguments.
+        Acorrect = np.array([[1, 2, 0, 0], [1, 2, 0, 0], [0, 0, 0, 0]])
+        A,_,_ = dimod.generators.wireless._lattice_to_attenuation_matrix(
+            lattice, neighbor_root_attenuation=2)
+        self.assertFalse(np.any(A - Acorrect))
+
+    def test_noise_scale(self):
+        # After applying use_offset, the expected energy is the sum of noise terms.
+        # (num_transmitters/SNRb)*sum_{mu=1}^{num_receivers} nu_mu^2 , where <nu_mu^2>=1 under default channels
+        # We can do a randomized test (for practicl purpose, I fix the seed to avoid rare outliers):
+        for num_transmitters in [256]:
+            for SNRb in [0.1]:  #[0.1,10]
+                for mods in [('BPSK', 1, 1, 1),('64QAM', 2, 42, 6)]:    #,('QPSK',2,2,2),('16QAM',2,10,4)]:
+                    mod, channel_power_per_transmitter, constellation_mean_power, bits_per_transmitter = mods
+                    for num_receivers in [num_transmitters*4]: #[num_transmitters//4,num_transmitters]:
+                        EoverN = (channel_power_per_transmitter * \
+                            constellation_mean_power/bits_per_transmitter/SNRb) * \
+                            num_transmitters * num_receivers
+                        if mod=='BPSK':
+                            EoverN *= 2 #Real part only
+                        for seed in range(1):
+                            bqm0 = dimod.generators.wireless.mimo(modulation=mod,
+                                num_transmitters=num_transmitters, num_receivers=num_receivers,
+                                seed=seed)                     
+                            bqm = dimod.generators.wireless.mimo(modulation=mod,
+                                num_transmitters=num_transmitters, num_receivers=num_receivers, 
+                                SNRb=SNRb, seed=seed)
+
+                            #E[n^2] constructed from offsets correctly:
+                            scale_n = (bqm.offset - bqm0.offset)/EoverN
+                            self.assertGreater(1.5, scale_n)
+                            self.assertLess(0.5, scale_n)
+                            #scale_n_alt = np.sum(abs(n)**2,axis=0)/EoverN)
+
+                    for num_transmitter_block in [2]: #[1,2]:
+                        lattice_size = num_transmitters//num_transmitter_block
+                        for num_receiver_block in [1]:  #[1,2]:
+                            # Similar applies for COMP, up to boundary conditions. Choose a symmetric lattice:
+                            num_receiversT = lattice_size * num_receiver_block
+                            num_transmittersT = lattice_size * num_transmitter_block
+                            EoverN = (channel_power_per_transmitter * \
+                                constellation_mean_power/bits_per_transmitter/SNRb) * \
+                                num_transmittersT * num_receiversT
+                        
+                            if mod=='BPSK':
+                                EoverN *= 2 #Real part only
+                            lattice = nx.Graph()
+                            lattice.add_edges_from((i, (i + 1)%lattice_size) for i in 
+                                range(num_transmitters//num_transmitter_block))
+                            for seed in range(1):
+                                bqm = dimod.generators.wireless.coordinated_multipoint(lattice=lattice,
+                                    modulation=mod, SNRb=SNRb)
+                                bqm0 = dimod.generators.wireless.coordinated_multipoint(lattice=lattice,
+                                    modulation=mod)
+                                scale_n = (bqm.offset - bqm0.offset)/EoverN
+                                self.assertGreater(1.5, scale_n)
+                                #self.assertLess(0.5, scale_n)
+                            
