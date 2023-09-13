@@ -1340,8 +1340,10 @@ class TestSerialization(unittest.TestCase):
         with self.subTest("/"):
             cqm = dimod.CQM()
             cqm.add_constraint(x + y <= 5, label="hello/world")
-            with self.assertRaises(ValueError):
-                cqm.to_file()
+            with cqm.to_file() as f:
+                new = dimod.CQM.from_file(f)
+
+            self.assertEqual(list(new.constraints), ["hello/world"])
 
         # NULL actually works because it's passed through JSON
         with self.subTest("NULL"):

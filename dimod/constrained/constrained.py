@@ -961,7 +961,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             constraint_labels = set()
             for arch in zf.namelist():
                 # even on windows zip uses /
-                match = re.match("constraints/([^/]+)/", arch)
+                # rely on the fact that we have at least an lhs file
+                match = re.match("^constraints/(.+)/lhs$", arch)
                 if match is not None:
                     constraint_labels.add(match.group(1))
 
@@ -1070,7 +1071,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             constraint_labels = set()
             for arch in zf.namelist():
                 # even on windows zip uses /
-                match = re.match("constraints/([^/]+)/", arch)
+                match = re.match("^constraints/(.+)/lhs$", arch)
                 if match is not None:
                     constraint_labels.add(match.group(1))
 
@@ -1787,16 +1788,6 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             for label, constraint in self.constraints.items():
                 # put everything in a constraints/label/ directory
                 lstr = json.dumps(serialize_variable(label))
-
-                # We want to disallow invalid filenames. We do this via a blacklist
-                # rather than a whitelist to be as permissive as possible. If we find enough
-                # other edge cases, we can switch in the future.
-                # Also, if we find that raising an error places an undue burden on users, we can
-                # switch to a scheme where invalid names are saved as files with generic directory
-                # labels.
-                if "/" in lstr:
-                    # NULL actually passes fine because of the JSON dumps
-                    raise ValueError("Cannot serialize constraint labels containing '/'")
 
                 with zf.open(f'constraints/{lstr}/lhs', "w", force_zip64=True) as fdst:
                     constraint.lhs._into_file(fdst)
