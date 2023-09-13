@@ -1339,7 +1339,7 @@ class TestSerialization(unittest.TestCase):
 
         x, y = dimod.Binaries("xy")
 
-        unusual_characters = "\0 .~;,>|😜+-&"  # not exhaustive
+        unusual_characters = " .~;,>|😜+-&"  # not exhaustive
 
         if os.sep == "\\":
             with self.subTest("\\"):
@@ -1348,8 +1348,17 @@ class TestSerialization(unittest.TestCase):
                 cqm.add_constraint(x + y <= 5, label=label)
                 with self.assertRaises(ValueError):
                     cqm.to_file()
+
+            # ensure_ascii=False still casts NULL to unicode
+            # thereby causing it to fail on windows
+            with self.subTest("\0"):
+                label = "test\0test"
+                cqm = dimod.CQM()
+                cqm.add_constraint(x + y <= 5, label=label)
+                with self.assertRaises(ValueError):
+                    cqm.to_file()
         else:
-            unusual_characters += "\\"
+            unusual_characters += "\0\\"
 
         for char in unusual_characters:
             with self.subTest(f"leading {char}"):
