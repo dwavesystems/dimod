@@ -1785,6 +1785,16 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 # put everything in a constraints/label/ directory
                 lstr = json.dumps(serialize_variable(label))
 
+                # We want to disallow invalid filenames. We do this via a blacklist
+                # rather than a whitelist to be as permissive as possible. If we find enough
+                # other edge cases, we can switch in the future.
+                # Also, if we find that raising an error places an undue burden on users, we can
+                # switch to a scheme where invalid names are saved as files with generic directory
+                # labels.
+                if "/" in lstr:
+                    # NULL actually passes fine because of the JSON dumps
+                    raise ValueError("Cannot serialize constraint labels containing '/'")
+
                 with zf.open(f'constraints/{lstr}/lhs', "w", force_zip64=True) as fdst:
                     constraint.lhs._into_file(fdst)
 

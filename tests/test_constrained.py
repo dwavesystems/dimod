@@ -1334,6 +1334,34 @@ class TestSerialization(unittest.TestCase):
             self.assertEqual(new.lower_bound(v), cqm.lower_bound(v))
             self.assertEqual(new.upper_bound(v), cqm.upper_bound(v))
 
+    def test_unusual_constraint_labels(self):
+        x, y = dimod.Binaries("xy")
+
+        with self.subTest("/"):
+            cqm = dimod.CQM()
+            cqm.add_constraint(x + y <= 5, label="hello/world")
+            with self.assertRaises(ValueError):
+                cqm.to_file()
+
+        # NULL actually works because it's passed through JSON
+        with self.subTest("NULL"):
+            cqm = dimod.CQM()
+            cqm.add_constraint(x + y <= 5, label="hello\0world")
+            with cqm.to_file() as f:
+                new = dimod.CQM.from_file(f)
+
+            self.assertEqual(list(new.constraints), ["hello\0world"])
+
+        # a few other potentially tricky characters, not exhaustive
+        for c in ";,\\>|😜+-&":
+            with self.subTest(c):
+                cqm = dimod.CQM()
+                cqm.add_constraint(x + y <= 5, label=f"hello{c}world")
+                with cqm.to_file() as f:
+                    new = dimod.CQM.from_file(f)
+
+                self.assertEqual(list(new.constraints), [f"hello{c}world"])
+
 
 class TestSetObjective(unittest.TestCase):
     def test_bqm(self):
