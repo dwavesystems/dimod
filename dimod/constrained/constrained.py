@@ -1787,13 +1787,13 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
             for label, constraint in self.constraints.items():
                 # put everything in a constraints/label/ directory
-                lstr = json.dumps(serialize_variable(label))
+                lstr = json.dumps(serialize_variable(label), ensure_ascii=False)
 
-                if os.sep != "/" and os.sep in lstr:
-                    # Irritatingly, zipfile will automatically swap \ to / in windows
-                    # with no way to prevent it. So we need to disallow them otherwise we don't get
-                    # symmetric deserialization.
-                    raise ValueError("cannot serialize constraint labels with '\\' on windows")
+                if "/" in lstr:
+                    # Because of the way we do the regex in .from_file(), we actually do
+                    # support these. But it is inconsistent with the description of the file
+                    # format so we do the simpler thing and just disallow it
+                    raise ValueError("cannot serialize constraint labels containing '/'")
 
                 with zf.open(f'constraints/{lstr}/lhs', "w", force_zip64=True) as fdst:
                     constraint.lhs._into_file(fdst)

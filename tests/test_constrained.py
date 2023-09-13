@@ -1339,18 +1339,7 @@ class TestSerialization(unittest.TestCase):
 
         x, y = dimod.Binaries("xy")
 
-        unusual_characters = "/\0"  # typically disallowed in filenames
-        unusual_characters += " .~;,>|😜+-&"  # other tricky ones, no exhaustive
-
-        if os.sep == "/":
-            unusual_characters += "/"
-        else:
-            # in windows we disallow serializing with "/"
-            with self.subTest("windows /"):
-                cqm = dimod.CQM()
-                cqm.add_constraint(x + y <= 5, label="test/")
-                with self.assertRaises(ValueError):
-                    cqm.to_file()
+        unusual_characters = "\0 .~;,>|😜+-&"  # not exhaustive
 
         for char in unusual_characters:
             with self.subTest(f"leading {char}"):
@@ -1397,6 +1386,13 @@ class TestSerialization(unittest.TestCase):
                 new = dimod.CQM.from_file(f)
 
             self.assertEqual(list(new.constraints), [label])
+
+        with self.subTest("/"):
+            label = "test/test"
+            cqm = dimod.CQM()
+            cqm.add_constraint(x + y <= 5, label=label)
+            with self.assertRaises(ValueError):
+                cqm.to_file()
 
 
 class TestSetObjective(unittest.TestCase):
