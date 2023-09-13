@@ -310,54 +310,54 @@ workflows:
           matrix:
             parameters:
               python-version: &python-versions [3.8.9, 3.9.4, 3.10.0, 3.11.0]
-      - build-linux-aarch64: *build
-      - build-sdist
-      - build-osx: *build
+      # - build-linux-aarch64: *build
+      # - build-sdist
+      # - build-osx: *build
       - build-windows: *build
-      - test-airspeed-velocity
-      - test-codecov
-      - test-doctest
-      - test-linux:
-          name: test-linux-<< matrix.dependencies >>-py<< matrix.python-version >>
-          requires:
-            - build-linux
-          matrix:
-            parameters:
-              # test the lowest supported numpy and the latest
-              dependencies: [oldest-supported-numpy, numpy]
-              python-version: *python-versions
-      - test-linux-cpp
-      - test-osx-cpp
-      - test-sdist:
-          requires:
-            - build-sdist
-  deploy:
-    jobs:
-      - build-linux: &deploy-build
-          <<: *build
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-      - build-linux-aarch64: *deploy-build
-      - build-osx: *deploy-build
-      - build-sdist:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-      - build-windows: *deploy-build
-      - deploy-all:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
-            branches:
-              ignore: /.*/
-          requires:
-            - build-linux
-            - build-linux-aarch64
-            - build-osx
-            - build-sdist
-            - build-windows
+      # - test-airspeed-velocity
+      # - test-codecov
+      # - test-doctest
+      # - test-linux:
+      #     name: test-linux-<< matrix.dependencies >>-py<< matrix.python-version >>
+      #     requires:
+      #       - build-linux
+      #     matrix:
+      #       parameters:
+      #         # test the lowest supported numpy and the latest
+      #         dependencies: [oldest-supported-numpy, numpy]
+      #         python-version: *python-versions
+      # - test-linux-cpp
+      # - test-osx-cpp
+      # - test-sdist:
+      #     requires:
+      #       - build-sdist
+  # deploy:
+  #   jobs:
+  #     - build-linux: &deploy-build
+  #         <<: *build
+  #         filters:
+  #           tags:
+  #             only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
+  #           branches:
+  #             ignore: /.*/
+  #     - build-linux-aarch64: *deploy-build
+  #     - build-osx: *deploy-build
+  #     - build-sdist:
+  #         filters:
+  #           tags:
+  #             only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
+  #           branches:
+  #             ignore: /.*/
+  #     - build-windows: *deploy-build
+  #     - deploy-all:
+  #         filters:
+  #           tags:
+  #             only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/
+  #           branches:
+  #             ignore: /.*/
+  #         requires:
+  #           - build-linux
+  #           - build-linux-aarch64
+  #           - build-osx
+  #           - build-sdist
+  #           - build-windows

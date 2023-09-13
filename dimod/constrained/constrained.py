@@ -1074,8 +1074,11 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 if match is not None:
                     constraint_labels.add(match.group(1))
 
-            for constraint in constraint_labels:                
-                label = deserialize_variable(json.loads(constraint))
+            for constraint in constraint_labels:
+                try:
+                    label = deserialize_variable(json.loads(constraint))
+                except json.decoder.JSONDecodeError:
+                    raise RuntimeError(f"Cannot load {constraint!r}, namelist={zf.namelist()}")
 
                 rhs = np.frombuffer(zf.read(f"constraints/{constraint}/rhs"), np.float64)[0]
                 sense = zf.read(f"constraints/{constraint}/sense").decode('ascii')
