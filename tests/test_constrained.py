@@ -1348,17 +1348,8 @@ class TestSerialization(unittest.TestCase):
                 cqm.add_constraint(x + y <= 5, label=label)
                 with self.assertRaises(ValueError):
                     cqm.to_file()
-
-            # ensure_ascii=False still casts NULL to unicode
-            # thereby causing it to fail on windows
-            with self.subTest("\0"):
-                label = "test\0test"
-                cqm = dimod.CQM()
-                cqm.add_constraint(x + y <= 5, label=label)
-                with self.assertRaises(ValueError):
-                    cqm.to_file()
         else:
-            unusual_characters += "\0\\"
+            unusual_characters += "\\"
 
         for char in unusual_characters:
             with self.subTest(f"leading {char}"):
@@ -1406,6 +1397,13 @@ class TestSerialization(unittest.TestCase):
 
         with self.subTest("/"):
             label = "test/test"
+            cqm = dimod.CQM()
+            cqm.add_constraint(x + y <= 5, label=label)
+            with self.assertRaises(ValueError):
+                cqm.to_file()
+
+        with self.subTest("NULL"):
+            label = "test\0test"
             cqm = dimod.CQM()
             cqm.add_constraint(x + y <= 5, label=label)
             with self.assertRaises(ValueError):

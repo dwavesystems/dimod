@@ -1792,6 +1792,11 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                     # format so we do the simpler thing and just disallow it
                     raise ValueError("cannot serialize constraint labels containing '/'")
 
+                if "\0" in lstr:
+                    # Similarily, this actually works, but it's weird and confusing to support it
+                    # so we disallow
+                    raise ValueError("cannot serialize constraint labels containing the NULL character")
+
                 if os.sep == '\\' and os.sep in lstr:
                     # Irritatingly, zipfile will automatically convert \ to / on windows, so we
                     # also don't allow that
