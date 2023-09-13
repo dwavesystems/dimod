@@ -1789,6 +1789,12 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 # put everything in a constraints/label/ directory
                 lstr = json.dumps(serialize_variable(label))
 
+                if os.sep != "/" and os.sep in lstr:
+                    # Irritatingly, zipfile will automatically swap \ to / in windows
+                    # with no way to prevent it. So we need to disallow them otherwise we don't get
+                    # symmetric deserialization.
+                    raise ValueError("cannot serialize constraint labels with '\\' on windows")
+
                 with zf.open(f'constraints/{lstr}/lhs', "w", force_zip64=True) as fdst:
                     constraint.lhs._into_file(fdst)
 

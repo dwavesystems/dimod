@@ -1335,34 +1335,68 @@ class TestSerialization(unittest.TestCase):
             self.assertEqual(new.upper_bound(v), cqm.upper_bound(v))
 
     def test_unusual_constraint_labels(self):
+        import os
+
         x, y = dimod.Binaries("xy")
 
-        with self.subTest("/"):
-            cqm = dimod.CQM()
-            cqm.add_constraint(x + y <= 5, label="hello/world")
-            with cqm.to_file() as f:
-                new = dimod.CQM.from_file(f)
+        unusual_characters = "/\0"  # typically disallowed in filenames
+        unusual_characters += " .~;,>|😜+-&"  # other tricky ones, no exhaustive
 
-            self.assertEqual(list(new.constraints), ["hello/world"])
-
-        # NULL actually works because it's passed through JSON
-        with self.subTest("NULL"):
-            cqm = dimod.CQM()
-            cqm.add_constraint(x + y <= 5, label="hello\0world")
-            with cqm.to_file() as f:
-                new = dimod.CQM.from_file(f)
-
-            self.assertEqual(list(new.constraints), ["hello\0world"])
-
-        # a few other potentially tricky characters, not exhaustive
-        for c in ";,\\>|😜+-&":
-            with self.subTest(c):
+        if os.sep == "/":
+            unusual_characters += "/"
+        else:
+            # in windows we disallow serializing with "/"
+            with self.subTest("windows /"):
                 cqm = dimod.CQM()
-                cqm.add_constraint(x + y <= 5, label=f"hello{c}world")
+                cqm.add_constraint(x + y <= 5, label="test/")
+                with self.assertRaises(ValueError):
+                    cqm.to_file()
+
+        for char in unusual_characters:
+            with self.subTest(f"leading {char}"):
+                label = f"{char}test"
+
+                cqm = dimod.CQM()
+                cqm.add_constraint(x + y <= 5, label=label)
                 with cqm.to_file() as f:
                     new = dimod.CQM.from_file(f)
 
-                self.assertEqual(list(new.constraints), [f"hello{c}world"])
+                # best we can hope for is an equivalent after a json round trip
+                self.assertEqual(list(new.constraints), [json.loads(json.dumps(label))])
+
+        for char in unusual_characters:
+            with self.subTest(f"trailing {char}"):
+                label = f"test{char}"
+
+                cqm = dimod.CQM()
+                cqm.add_constraint(x + y <= 5, label=label)
+                with cqm.to_file() as f:
+                    new = dimod.CQM.from_file(f)
+
+                # best we can hope for is an equivalent after a json round trip
+                self.assertEqual(list(new.constraints), [json.loads(json.dumps(label))])
+
+        for char in unusual_characters:
+            with self.subTest(f"embedded {char}"):
+                label = f"te{char}st"
+
+                cqm = dimod.CQM()
+                cqm.add_constraint(x + y <= 5, label=label)
+                with cqm.to_file() as f:
+                    new = dimod.CQM.from_file(f)
+
+                # best we can hope for is an equivalent after a json round trip
+                self.assertEqual(list(new.constraints), [json.loads(json.dumps(label))])
+
+        with self.subTest("empty label"):
+            label = f""
+
+            cqm = dimod.CQM()
+            cqm.add_constraint(x + y <= 5, label=label)
+            with cqm.to_file() as f:
+                new = dimod.CQM.from_file(f)
+
+            self.assertEqual(list(new.constraints), [label])
 
 
 class TestSetObjective(unittest.TestCase):
