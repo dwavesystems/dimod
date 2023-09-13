@@ -1341,6 +1341,16 @@ class TestSerialization(unittest.TestCase):
 
         unusual_characters = "\0 .~;,>|😜+-&"  # not exhaustive
 
+        if os.sep == "\\":
+            with self.subTest("\\"):
+                label = "test\\test"
+                cqm = dimod.CQM()
+                cqm.add_constraint(x + y <= 5, label=label)
+                with self.assertRaises(ValueError):
+                    cqm.to_file()
+        else:
+            unusual_characters += "\\"
+
         for char in unusual_characters:
             with self.subTest(f"leading {char}"):
                 label = f"{char}test"
@@ -1351,9 +1361,8 @@ class TestSerialization(unittest.TestCase):
                     new = dimod.CQM.from_file(f)
 
                 # best we can hope for is an equivalent after a json round trip
-                self.assertEqual(list(new.constraints), [json.loads(json.dumps(label))])
+                self.assertEqual(list(new.constraints), [label])
 
-        for char in unusual_characters:
             with self.subTest(f"trailing {char}"):
                 label = f"test{char}"
 
@@ -1363,9 +1372,8 @@ class TestSerialization(unittest.TestCase):
                     new = dimod.CQM.from_file(f)
 
                 # best we can hope for is an equivalent after a json round trip
-                self.assertEqual(list(new.constraints), [json.loads(json.dumps(label))])
+                self.assertEqual(list(new.constraints), [label])
 
-        for char in unusual_characters:
             with self.subTest(f"embedded {char}"):
                 label = f"te{char}st"
 
@@ -1375,7 +1383,7 @@ class TestSerialization(unittest.TestCase):
                     new = dimod.CQM.from_file(f)
 
                 # best we can hope for is an equivalent after a json round trip
-                self.assertEqual(list(new.constraints), [json.loads(json.dumps(label))])
+                self.assertEqual(list(new.constraints), [label])
 
         with self.subTest("empty label"):
             label = f""

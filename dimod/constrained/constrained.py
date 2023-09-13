@@ -1076,10 +1076,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                     constraint_labels.add(match.group(1))
 
             for constraint in constraint_labels:
-                try:
-                    label = deserialize_variable(json.loads(constraint))
-                except json.decoder.JSONDecodeError:
-                    raise RuntimeError(f"Cannot load {constraint!r}, namelist={zf.namelist()}")
+                label = deserialize_variable(json.loads(constraint))
 
                 rhs = np.frombuffer(zf.read(f"constraints/{constraint}/rhs"), np.float64)[0]
                 sense = zf.read(f"constraints/{constraint}/sense").decode('ascii')
@@ -1794,6 +1791,11 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                     # support these. But it is inconsistent with the description of the file
                     # format so we do the simpler thing and just disallow it
                     raise ValueError("cannot serialize constraint labels containing '/'")
+
+                if os.sep == '\\' and os.sep in lstr:
+                    # Irritatingly, zipfile will automatically convert \ to / on windows, so we
+                    # also don't allow that
+                    raise ValueError("cannot serialize constraint labels containing '\\' on windows")
 
                 with zf.open(f'constraints/{lstr}/lhs', "w", force_zip64=True) as fdst:
                     constraint.lhs._into_file(fdst)
