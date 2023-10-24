@@ -1,5 +1,5 @@
 oldest-supported-numpy
-cython==0.29.33
+cython==3.0.4
 
 reno==3.3.0  # for changelog
 
