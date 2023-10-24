@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   codecov: codecov/codecov@3
-  win: circleci/windows@2.2.0
+  win: circleci/windows@5.0.0
 
 environment: &global-environment
   PIP_PROGRESS_BAR: 'off'
@@ -33,7 +33,7 @@ jobs:
             python3 -m venv env
             . env/bin/activate
             pip install pip --upgrade
-            pip install cibuildwheel==2.13.1
+            pip install cibuildwheel==2.16.2
             cibuildwheel --output-dir dist
       - save_cache: &build-linux-save-cache
           paths:
@@ -120,7 +120,7 @@ jobs:
           name: build wheels
           command: |
             python -m pip install pip --upgrade
-            python -m pip install cibuildwheel==2.13.1
+            python -m pip install cibuildwheel==2.16.2
             python -m cibuildwheel --output-dir dist
       - store_artifacts: *store-artifacts
       - persist_to_workspace: *persist-to-workspace
@@ -309,7 +309,7 @@ workflows:
       - build-linux: &build
           matrix:
             parameters:
-              python-version: &python-versions [3.8.9, 3.9.4, 3.10.0, 3.11.0]
+              python-version: &python-versions [3.8.9, 3.9.4, 3.10.0, 3.11.0, 3.12.0]
       - build-linux-aarch64: *build
       - build-sdist
       - build-osx: *build
