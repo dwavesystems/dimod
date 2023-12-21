@@ -940,32 +940,35 @@ void QuadraticModelBase<bias_type, index_type>::remove_variables(
                          linear_biases_.end());
 
     if (has_adj()) {
+        // clean up the remaining neighborhoods
+        // in this case we need a reindexing scheme, so we do the expensive O(num_variables)
+        // thing once to save time later on
+        std::vector<int> reindex(adj_ptr_->size());
+        for (const auto& v : variables) {
+            if (v > static_cast<int>(reindex.size())) break;  // we can break because it's sorted
+            reindex[v] = -1;
+        }
+        int label = 0;
+        for (auto& v : reindex) {
+            if (v == -1) continue;  // the removed variables
+            v = label;
+            ++label;
+        }
+
         // remove the relevant neighborhoods
         adj_ptr_->erase(utils::remove_by_index(adj_ptr_->begin(), adj_ptr_->end(), variables.begin(),
                                                variables.end()),
                         adj_ptr_->end());
 
-        // clean up the remaining neighborhoods
+        // now go through and adjust the remaining neighborhoods
+        auto pred = [&reindex](OneVarTerm<bias_type, index_type>& term) {
+            if (reindex[term.v] == -1) return true;  // remove
+            // otherwise apply the new label
+            term.v = reindex[term.v];
+            return false;
+        };
         for (auto& n : *adj_ptr_) {
-            auto it = variables.begin();
-            const auto begin = variables.begin();
-            const auto end = variables.end();
-
             // we modify the indices and remove the variables we need to remove
-            auto pred = [&it, &begin, &end](OneVarTerm<bias_type, index_type>& term) {
-                // advance it until we match or exceed the term variable
-                while (it != end && *it < term.v) {
-                    ++it;
-                }
-
-                if (it != end && *it == term.v) return true;  // remove matches
-
-                // otherwise decrement v by the number of indices that have
-                // been removed but don't remove the term itself
-                term.v -= std::distance(begin, it);
-                return false;
-            };
-
             n.erase(std::remove_if(n.begin(), n.end(), pred), n.end());
         }
     }
