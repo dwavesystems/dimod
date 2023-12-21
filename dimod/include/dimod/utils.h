@@ -33,7 +33,7 @@ ValueIter remove_by_index(ValueIter vfirst, ValueIter vlast, IndexIter ifirst, I
 
     using value_type = typename std::iterator_traits<ValueIter>::value_type;
 
-    ssize_t loc = 0;  // location in the values
+    typename std::iterator_traits<IndexIter>::value_type loc = 0;  // location in the values
     IndexIter it = ifirst;
     auto pred = [&](const value_type&) {
         if (it != ilast && *it == loc) {

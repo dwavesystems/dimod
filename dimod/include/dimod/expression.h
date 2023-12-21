@@ -273,7 +273,7 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
     template<class Iter>
     void remove_variables(Iter first, Iter last);
 
-    void remove_variables(const std::vector<index_type>& variables) override {
+    void remove_variables(const std::vector<index_type>& variables) {
         return remove_variables(variables.begin(), variables.end());
     }
 

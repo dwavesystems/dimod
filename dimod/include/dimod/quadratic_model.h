@@ -89,7 +89,7 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
     void remove_variable(index_type v);
 
     /// Remove variables.
-    void remove_variables(const std::vector<index_type>& variables) override;
+    void remove_variables(const std::vector<index_type>& variables);
 
     // Resize the model to contain `n` variables.
     void resize(index_type n);
