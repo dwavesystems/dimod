@@ -14,12 +14,55 @@
 
 #include <iostream>
 #include <random>
+#include <vector>
 
 #include "catch2/catch.hpp"
 #include "dimod/utils.h"
 
 namespace dimod {
 namespace utils {
+
+TEST_CASE("remove_by_index()") {
+    GIVEN("A vector") {
+        auto v = std::vector<int>{0, 1, 2, 3, 4, 5, 6};
+
+        AND_GIVEN("some indices") {
+            auto i = std::vector<int>{1, 3, 4};
+
+            WHEN("We use remove_by_index() to shrink the vector") {
+                v.erase(remove_by_index(v.begin(), v.end(), i.begin(), i.end()), v.end());
+
+                THEN("The vector has the values we expect") {
+                    REQUIRE_THAT(v, Catch::Approx(std::vector<int>{0, 2, 5, 6}));
+                }
+            }
+        }
+
+        AND_GIVEN("Some indices that are out-of-range") {
+            auto i = std::vector<int>{5, 105};
+
+            WHEN("We use remove_by_index() to shrink the vector") {
+                v.erase(remove_by_index(v.begin(), v.end(), i.begin(), i.end()), v.end());
+
+                THEN("The vector has the values we expect") {
+                    REQUIRE_THAT(v, Catch::Approx(std::vector<int>{0, 1, 2, 3, 4, 6}));
+                }
+            }
+        }
+
+        AND_GIVEN("An empty indices vector") {
+            auto i = std::vector<int>{};
+
+            WHEN("We use remove_by_index() to shrink the vector") {
+                v.erase(remove_by_index(v.begin(), v.end(), i.begin(), i.end()), v.end());
+
+                THEN("The vector has the values we expect") {
+                    REQUIRE_THAT(v, Catch::Approx(std::vector<int>{0, 1, 2, 3, 4, 5, 6}));
+                }
+            }
+        }
+    }
+}
 
     TEST_CASE("Two vectors are zip-sorted", "[utils]") {
         std::default_random_engine generator;

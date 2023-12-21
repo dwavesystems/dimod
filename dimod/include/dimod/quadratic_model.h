@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -86,6 +87,9 @@ class QuadraticModel : public abc::QuadraticModelBase<Bias, Index> {
 
     /// Remove variable `v`.
     void remove_variable(index_type v);
+
+    /// Remove variables.
+    void remove_variables(const std::vector<index_type>& variables) override;
 
     // Resize the model to contain `n` variables.
     void resize(index_type n);
@@ -267,6 +271,19 @@ template <class bias_type, class index_type>
 void QuadraticModel<bias_type, index_type>::remove_variable(index_type v) {
     base_type::remove_variable(v);
     varinfo_.erase(varinfo_.begin() + v);
+}
+
+template <class bias_type, class index_type>
+void QuadraticModel<bias_type, index_type>::remove_variables(const std::vector<index_type>& variables) {
+    if (!std::is_sorted(variables.begin(), variables.end())) {
+        // create a copy and sort it
+        std::vector<index_type> sorted_indices = variables;
+        std::sort(sorted_indices.begin(), sorted_indices.end());
+        QuadraticModel<bias_type, index_type>::remove_variables(sorted_indices);
+        return;
+    }
+    base_type::remove_variables(variables);
+    varinfo_.erase(utils::remove_by_index(varinfo_.begin(), varinfo_.end(), variables.begin(), variables.end()), varinfo_.end());
 }
 
 template <class bias_type, class index_type>

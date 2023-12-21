@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "dimod/utils.h"
 #include "dimod/vartypes.h"
 
 namespace dimod {
@@ -337,6 +338,9 @@ class QuadraticModelBase {
      * their index reduced by one.
      */
     virtual void remove_variable(index_type v);
+
+    /// Remove multiple variables from the model and reindex accordingly.
+    virtual void remove_variables(const std::vector<index_type>& variables);
 
     /// Multiply all biases by the value of `scalar`.
     void scale(bias_type scalar);
@@ -914,6 +918,53 @@ void QuadraticModelBase<bias_type, index_type>::remove_variable(index_type v) {
                     break;
                 }
             }
+        }
+    }
+}
+
+template <class bias_type, class index_type>
+void QuadraticModelBase<bias_type, index_type>::remove_variables(
+        const std::vector<index_type>& variables) {
+    if (!std::is_sorted(variables.begin(), variables.end())) {
+        // create a copy and sort it
+        std::vector<index_type> sorted_indices = variables;
+        std::sort(sorted_indices.begin(), sorted_indices.end());
+        QuadraticModelBase<bias_type, index_type>::remove_variables(sorted_indices);
+        return;
+    }
+
+    linear_biases_.erase(utils::remove_by_index(linear_biases_.begin(), linear_biases_.end(),
+                                                variables.begin(), variables.end()),
+                         linear_biases_.end());
+
+    if (has_adj()) {
+        // remove the relevant neighborhoods
+        adj_ptr_->erase(utils::remove_by_index(adj_ptr_->begin(), adj_ptr_->end(), variables.begin(),
+                                               variables.end()),
+                        adj_ptr_->end());
+
+        // clean up the remaining neighborhoods
+        for (auto& n : *adj_ptr_) {
+            auto it = variables.begin();
+            const auto begin = variables.begin();
+            const auto end = variables.end();
+
+            // we modify the indices and remove the variables we need to remove
+            auto pred = [&it, &begin, &end](OneVarTerm<bias_type, index_type>& term) {
+                // advance it until we match or exceed the term variable
+                while (it != end && *it < term.v) {
+                    ++it;
+                }
+
+                if (*it == term.v) return true;  // remove matches
+
+                // otherwise decrement v by the number of indices that have
+                // been removed but don't remove the term itself
+                term.v -= std::distance(begin, it);
+                return false;
+            };
+
+            n.erase(std::remove_if(n.begin(), n.end(), pred), n.end());
         }
     }
 }

@@ -53,6 +53,28 @@ TEST_CASE("QuadraticModel tests") {
             }
         }
 
+        WHEN("we use remove_variables()") {
+            qm.remove_variables({2});
+
+            THEN("the variable is removed and the model is reindexed") {
+                REQUIRE(qm.num_variables() == 4);
+                REQUIRE(qm.num_interactions() == 0);
+                CHECK(qm.offset() == 5);
+                CHECK(qm.linear(0) == 0);
+                CHECK(qm.linear(1) == -1);
+                CHECK(qm.linear(2) == -3);  // this was reindexed
+                CHECK(qm.linear(3) == 4);   // this was reindexed
+                CHECK(qm.vartype(0) == Vartype::BINARY);
+                CHECK(qm.vartype(1) == Vartype::INTEGER);
+                CHECK(qm.vartype(2) == Vartype::REAL);  // this was reindexed
+                CHECK(qm.vartype(3) == Vartype::SPIN);  // this was reindexed
+                CHECK(qm.lower_bound(1) == -1);
+                CHECK(qm.lower_bound(2) == -3);  // this was reindexed
+                CHECK(qm.upper_bound(1) == 1);
+                CHECK(qm.upper_bound(2) == 3);  // this was reindexed
+            }
+        }
+
         WHEN("we use fix_variable()") {
             qm.fix_variable(2, -1);
             THEN("the variable is removed, its biases distributed and the model is reindexed") {
