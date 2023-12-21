@@ -136,6 +136,23 @@ TEST_CASE("BinaryQuadraticModel tests") {
             }
         }
 
+        WHEN("we use remove_variables() to remove no variables") {
+            bqm.remove_variables({});
+
+            THEN("nothing has changed") {
+                REQUIRE(bqm.num_variables() == 5);
+                REQUIRE(bqm.num_interactions() == 4);
+                CHECK(bqm.linear(0) == 0);
+                CHECK(bqm.linear(1) == -1);
+                CHECK(bqm.linear(2) == 2);
+                CHECK(bqm.linear(3) == -3);
+                CHECK(bqm.linear(4) == 4);
+                CHECK(bqm.quadratic(0, 1) == 1);
+                CHECK(bqm.quadratic(3, 4) == 34);
+                CHECK(bqm.offset() == 5);
+            }
+        }
+
         AND_GIVEN("another identical BQM") {
             auto bqm2 = BinaryQuadraticModel<double>(5, Vartype::SPIN);
             bqm2.set_offset(5);

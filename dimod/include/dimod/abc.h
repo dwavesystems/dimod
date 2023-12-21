@@ -925,6 +925,8 @@ void QuadraticModelBase<bias_type, index_type>::remove_variable(index_type v) {
 template <class bias_type, class index_type>
 void QuadraticModelBase<bias_type, index_type>::remove_variables(
         const std::vector<index_type>& variables) {
+    if (!variables.size()) return;  // shortcut
+
     if (!std::is_sorted(variables.begin(), variables.end())) {
         // create a copy and sort it
         std::vector<index_type> sorted_indices = variables;
@@ -956,7 +958,7 @@ void QuadraticModelBase<bias_type, index_type>::remove_variables(
                     ++it;
                 }
 
-                if (*it == term.v) return true;  // remove matches
+                if (it != end && *it == term.v) return true;  // remove matches
 
                 // otherwise decrement v by the number of indices that have
                 // been removed but don't remove the term itself
