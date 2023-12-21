@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
@@ -648,16 +649,18 @@ void Expression<bias_type, index_type>::remove_variables(Iter first, Iter last) 
     std::sort(to_remove.begin(), to_remove.end());
 
     // remove the indices from variables_ and the underlying
-    variables_.erase(utils::remove_by_index(variables_.begin(), variables_.end(), to_remove.begin(), to_remove.end()), variables_.end());
+    variables_.erase(utils::remove_by_index(variables_.begin(), variables_.end(), to_remove.begin(),
+                                            to_remove.end()),
+                     variables_.end());
 
     // remove the indices from the underlying quadratic model
     base_type::remove_variables(to_remove);
 
-     // finally fix the indices by rebuilding from scratch
+    // finally fix the indices by rebuilding from scratch
     indices_.clear();
     for (size_type i = 0, end = variables_.size(); i < end; ++i) {
         indices_[variables_[i]] = i;
-    }   
+    }
 }
 
 template <class bias_type, class index_type>
