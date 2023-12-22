@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
@@ -21,6 +22,7 @@
 #include <vector>
 
 #include "dimod/abc.h"
+#include "dimod/utils.h"
 #include "dimod/vartypes.h"
 
 namespace dimod {
@@ -271,6 +273,10 @@ class Expression : public abc::QuadraticModelBase<Bias, Index> {
     /// Remove several variables from the expression.
     template<class Iter>
     void remove_variables(Iter first, Iter last);
+
+    void remove_variables(const std::vector<index_type>& variables) {
+        return remove_variables(variables.begin(), variables.end());
+    }
 
     /// Set the linear bias of variable `v`.
     void set_linear(index_type v, bias_type bias);
@@ -632,27 +638,23 @@ void Expression<bias_type, index_type>::remove_variable(index_type v) {
 template <class bias_type, class index_type>
 template <class Iter>
 void Expression<bias_type, index_type>::remove_variables(Iter first, Iter last) {
-    std::unordered_set<index_type> to_remove;
+    // get the indices of any variables that need to be removed
+    std::vector<index_type> to_remove;
     for (auto it = first; it != last; ++it) {
-        if (indices_.find(*it) != indices_.end()) {
-            to_remove.emplace(*it);
+        auto search = indices_.find(*it);
+        if (search != indices_.end()) {
+            to_remove.emplace_back(search->second);
         }
     }
+    std::sort(to_remove.begin(), to_remove.end());
 
-    if (!to_remove.size()) {
-        return;  // nothing to remove
-    }
+    // remove the indices from variables_ and the underlying
+    variables_.erase(utils::remove_by_index(variables_.begin(), variables_.end(), to_remove.begin(),
+                                            to_remove.end()),
+                     variables_.end());
 
-    // now remove any variables found in to_remove
-    size_type i = 0;
-    while (i < this->num_variables()) {
-        if (to_remove.count(variables_[i])) {
-            base_type::remove_variable(i);
-            variables_.erase(variables_.begin() + i);
-        } else {
-            ++i;
-        }
-    }
+    // remove the indices from the underlying quadratic model
+    base_type::remove_variables(to_remove);
 
     // finally fix the indices by rebuilding from scratch
     indices_.clear();

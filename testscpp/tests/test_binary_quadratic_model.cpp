@@ -38,6 +38,19 @@ TEST_CASE("BinaryQuadraticModel tests") {
             }
         }
 
+        WHEN("we use remove_variables()") {
+            bqm.remove_variables(std::vector<int>{3, 1});
+
+            THEN("The variables are removed and the model is reindexed") {
+                REQUIRE(bqm.num_variables() == 3);
+                REQUIRE(bqm.num_interactions() == 0);
+                CHECK(bqm.linear(0) == 0);
+                CHECK(bqm.linear(1) == 2);  // this was reindexed
+                CHECK(bqm.linear(2) == 4);  // this was reindexed twice
+                CHECK(bqm.offset() == 5);
+            }
+        }
+
         WHEN("we use fix_variable()") {
             bqm.fix_variable(2, -1);
             THEN("the variable is removed, its biases distributed and the model is reindexed") {
@@ -90,6 +103,52 @@ TEST_CASE("BinaryQuadraticModel tests") {
                 CHECK(bqm.linear(3) == 4);   // this was reindexed
                 CHECK(bqm.quadratic(0, 1) == 1);
                 CHECK(bqm.quadratic(2, 3) == 34);  // this was reindexed
+                CHECK(bqm.offset() == 5);
+            }
+        }
+
+        WHEN("we use remove_variables()") {
+            bqm.remove_variables(std::vector<int>{3, 1});
+
+            THEN("The variables are removed and the model is reindexed") {
+                REQUIRE(bqm.num_variables() == 3);
+                CHECK(bqm.linear(0) == 0);
+                CHECK(bqm.linear(1) == 2);  // this was reindexed
+                CHECK(bqm.linear(2) == 4);  // this was reindexed twice
+                CHECK(bqm.offset() == 5);
+                CHECK(bqm.num_interactions() == 0);  // no remaining quadratic
+            }
+        }
+
+        WHEN("we use remove_variables() to remove one variable") {
+            bqm.remove_variables({2});
+
+            THEN("everything is reindexed") {
+                REQUIRE(bqm.num_variables() == 4);
+                REQUIRE(bqm.num_interactions() == 2);
+                CHECK(bqm.linear(0) == 0);
+                CHECK(bqm.linear(1) == -1);
+                CHECK(bqm.linear(2) == -3);  // this was reindexed
+                CHECK(bqm.linear(3) == 4);   // this was reindexed
+                CHECK(bqm.quadratic(0, 1) == 1);
+                CHECK(bqm.quadratic(2, 3) == 34);  // this was reindexed
+                CHECK(bqm.offset() == 5);
+            }
+        }
+
+        WHEN("we use remove_variables() to remove no variables") {
+            bqm.remove_variables({});
+
+            THEN("nothing has changed") {
+                REQUIRE(bqm.num_variables() == 5);
+                REQUIRE(bqm.num_interactions() == 4);
+                CHECK(bqm.linear(0) == 0);
+                CHECK(bqm.linear(1) == -1);
+                CHECK(bqm.linear(2) == 2);
+                CHECK(bqm.linear(3) == -3);
+                CHECK(bqm.linear(4) == 4);
+                CHECK(bqm.quadratic(0, 1) == 1);
+                CHECK(bqm.quadratic(3, 4) == 34);
                 CHECK(bqm.offset() == 5);
             }
         }

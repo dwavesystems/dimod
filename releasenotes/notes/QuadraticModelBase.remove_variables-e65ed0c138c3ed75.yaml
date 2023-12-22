@@ -1,0 +1,4 @@
+---
+features:
+  - Add C++ ``dimod::abc::QuadraticModelBase::remove_variables()`` method and accompanying overloads.
+  - Speed up C++ ``dimod::Expression::remove_variables()`` method.

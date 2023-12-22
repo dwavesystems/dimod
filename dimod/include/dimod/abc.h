@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "dimod/utils.h"
 #include "dimod/vartypes.h"
 
 namespace dimod {
@@ -337,6 +338,9 @@ class QuadraticModelBase {
      * their index reduced by one.
      */
     virtual void remove_variable(index_type v);
+
+    /// Remove multiple variables from the model and reindex accordingly.
+    virtual void remove_variables(const std::vector<index_type>& variables);
 
     /// Multiply all biases by the value of `scalar`.
     void scale(bias_type scalar);
@@ -914,6 +918,58 @@ void QuadraticModelBase<bias_type, index_type>::remove_variable(index_type v) {
                     break;
                 }
             }
+        }
+    }
+}
+
+template <class bias_type, class index_type>
+void QuadraticModelBase<bias_type, index_type>::remove_variables(
+        const std::vector<index_type>& variables) {
+    if (!variables.size()) return;  // shortcut
+
+    if (!std::is_sorted(variables.begin(), variables.end())) {
+        // create a copy and sort it
+        std::vector<index_type> sorted_indices = variables;
+        std::sort(sorted_indices.begin(), sorted_indices.end());
+        QuadraticModelBase<bias_type, index_type>::remove_variables(sorted_indices);
+        return;
+    }
+
+    linear_biases_.erase(utils::remove_by_index(linear_biases_.begin(), linear_biases_.end(),
+                                                variables.begin(), variables.end()),
+                         linear_biases_.end());
+
+    if (has_adj()) {
+        // clean up the remaining neighborhoods
+        // in this case we need a reindexing scheme, so we do the expensive O(num_variables)
+        // thing once to save time later on
+        std::vector<int> reindex(adj_ptr_->size());
+        for (const auto& v : variables) {
+            if (v > static_cast<int>(reindex.size())) break;  // we can break because it's sorted
+            reindex[v] = -1;
+        }
+        int label = 0;
+        for (auto& v : reindex) {
+            if (v == -1) continue;  // the removed variables
+            v = label;
+            ++label;
+        }
+
+        // remove the relevant neighborhoods
+        adj_ptr_->erase(utils::remove_by_index(adj_ptr_->begin(), adj_ptr_->end(), variables.begin(),
+                                               variables.end()),
+                        adj_ptr_->end());
+
+        // now go through and adjust the remaining neighborhoods
+        auto pred = [&reindex](OneVarTerm<bias_type, index_type>& term) {
+            if (reindex[term.v] == -1) return true;  // remove
+            // otherwise apply the new label
+            term.v = reindex[term.v];
+            return false;
+        };
+        for (auto& n : *adj_ptr_) {
+            // we modify the indices and remove the variables we need to remove
+            n.erase(std::remove_if(n.begin(), n.end(), pred), n.end());
         }
     }
 }
