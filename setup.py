@@ -26,7 +26,7 @@ extra_compile_args = {
 
 extra_link_args = {
     'msvc': [],
-    'unix': ['-std=c++11', '-g0'],
+    'unix': ['-std=c++11', '-g1'],
 }
 
 
