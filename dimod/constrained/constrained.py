@@ -510,7 +510,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     def add_discrete_from_comparison(self,
                                      comp: Comparison,
                                      label: Optional[Hashable] = None,
-                                     copy: bool = True) -> Hashable:
+                                     copy: bool = True,
+                                     do_var_check: bool = True) -> Hashable:
         """Add a one-hot constraint from a comparison.
 
         One-hot constraints can represent discrete variables (for example a
@@ -539,6 +540,9 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 set to `False` to improve performance, but subsequently mutating
                 the model can cause issues.
 
+            do_var_check: If `True` we perform a variable check. In particular, if 
+                the variables already exist, we make sure they're not used.
+
         Returns:
             Label of the added constraint.
 
@@ -555,11 +559,13 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         if comp.rhs != 1:
             # could scale, but let's keep it simple for now
             raise ValueError("the right-hand side of a discrete constraint must be 1")
-        return self.add_discrete_from_model(comp.lhs, label=label, copy=copy)
+        return self.add_discrete_from_model(comp.lhs, label=label,
+                                            copy=copy, do_var_check=do_var_check)
 
     def add_discrete_from_iterable(self,
                                    variables: Iterable[Variable],
-                                   label: Optional[Hashable] = None) -> Hashable:
+                                   label: Optional[Hashable] = None,
+                                   do_var_check: bool = True) -> Hashable:
         """Add a one-hot constraint from an iterable.
 
         One-hot constraints can represent discrete variables (for example a
@@ -580,6 +586,9 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
             label: Label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
+
+            do_var_check: If `True` we perform a variable check. In particular, if 
+                the variables already exist, we make sure they're not used.
 
         Returns:
             Label of the added constraint.
@@ -605,7 +614,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         bqm = BinaryQuadraticModel(Vartype.BINARY, dtype=np.float32)
 
         for v in variables:
-            if v in self.variables:
+            if do_var_check and v in self.variables:
                 # it already exists, let's make sure it's not already used
                 if any(v in self.constraints[label].lhs.variables for label in self.discrete):
                     raise ValueError(f"variable {v!r} is already used in a discrete variable")
@@ -621,7 +630,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     def add_discrete_from_model(self,
                                 qm: Union[BinaryQuadraticModel, QuadraticModel],
                                 label: Optional[Hashable] = None,
-                                copy: bool = True) -> Hashable:
+                                copy: bool = True,
+                                do_var_check: bool = True) -> Hashable:
         """Add a one-hot constraint from a model.
 
         One-hot constraints can represent discrete variables (for example a
@@ -650,6 +660,9 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 improve performance, but subsequently mutating the model can
                 cause issues.
 
+            do_var_check: If `True` we perform a variable check. In particular, if 
+                the variables already exist, we make sure they're not used.
+
         Returns:
             Label of the added constraint.
 
@@ -669,7 +682,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             raise ValueError("discrete constraints must be linear")
 
         for v, bias in qm.iter_linear():
-            if v in self.variables:
+            if do_var_check and v in self.variables:
                 # it already exists, let's make sure it's not already used
                 if any(v in self.constraints[label].lhs.variables for label in self.discrete):
                     raise ValueError(f"variable {v!r} is already used in a discrete variable")
