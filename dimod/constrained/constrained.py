@@ -500,7 +500,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             check.
             
             >>> cqm.add_discrete(d + e + f == 1, label='discrete-def',
-                                 check_overlaps=False)
+            ...                  check_overlaps=False)
 
         """
         # in python 3.8+ we can use singledispatchmethod
