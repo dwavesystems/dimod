@@ -494,7 +494,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
             >>> d, e, f = dimod.Binaries(['d', 'e', 'f'])
             >>> cqm.add_discrete(d + e + f == 1, label='discrete-def')
-            'discrete-def'
+            'discrete-def'            
 
         """
         # in python 3.8+ we can use singledispatchmethod
@@ -510,7 +510,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     def add_discrete_from_comparison(self,
                                      comp: Comparison,
                                      label: Optional[Hashable] = None,
-                                     copy: bool = True) -> Hashable:
+                                     copy: bool = True,
+                                     check_overlaps: bool = True) -> Hashable:
         """Add a one-hot constraint from a comparison.
 
         One-hot constraints can represent discrete variables (for example a
@@ -539,6 +540,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 set to `False` to improve performance, but subsequently mutating
                 the model can cause issues.
 
+            check_overlaps: If `True` we perform a variable overlap check.
+                In particular, if the variables already exist, we make sure
+                they're not used in another discrete constraint.
+
         Returns:
             Label of the added constraint.
 
@@ -555,11 +560,13 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         if comp.rhs != 1:
             # could scale, but let's keep it simple for now
             raise ValueError("the right-hand side of a discrete constraint must be 1")
-        return self.add_discrete_from_model(comp.lhs, label=label, copy=copy)
+        return self.add_discrete_from_model(comp.lhs, label=label,
+                                            copy=copy, check_overlaps=check_overlaps)
 
     def add_discrete_from_iterable(self,
                                    variables: Iterable[Variable],
-                                   label: Optional[Hashable] = None) -> Hashable:
+                                   label: Optional[Hashable] = None,
+                                   check_overlaps: bool = True) -> Hashable:
         """Add a one-hot constraint from an iterable.
 
         One-hot constraints can represent discrete variables (for example a
@@ -580,6 +587,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
             label: Label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
+
+            check_overlaps: If `True` we perform a variable overlap check.
+                In particular, if the variables already exist, we make sure
+                they're not used in another discrete constraint.
 
         Returns:
             Label of the added constraint.
@@ -607,7 +618,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         for v in variables:
             if v in self.variables:
                 # it already exists, let's make sure it's not already used
-                if any(v in self.constraints[label].lhs.variables for label in self.discrete):
+                if check_overlaps and any(v in self.constraints[label].lhs.variables for label in self.discrete):
                     raise ValueError(f"variable {v!r} is already used in a discrete variable")
                 if self.vartype(v) is not Vartype.BINARY:
                     raise ValueError(f"variable {v!r} has already been added but is not BINARY")
@@ -621,7 +632,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     def add_discrete_from_model(self,
                                 qm: Union[BinaryQuadraticModel, QuadraticModel],
                                 label: Optional[Hashable] = None,
-                                copy: bool = True) -> Hashable:
+                                copy: bool = True,
+                                check_overlaps: bool = True) -> Hashable:
         """Add a one-hot constraint from a model.
 
         One-hot constraints can represent discrete variables (for example a
@@ -650,6 +662,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 improve performance, but subsequently mutating the model can
                 cause issues.
 
+            check_overlaps: If `True` we perform a variable overlap check.
+                In particular, if the variables already exist, we make sure
+                they're not used in another discrete constraint.
+
         Returns:
             Label of the added constraint.
 
@@ -671,7 +687,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         for v, bias in qm.iter_linear():
             if v in self.variables:
                 # it already exists, let's make sure it's not already used
-                if any(v in self.constraints[label].lhs.variables for label in self.discrete):
+                if check_overlaps and any(v in self.constraints[label].lhs.variables for label in self.discrete):
                     raise ValueError(f"variable {v!r} is already used in a discrete variable")
                 if self.vartype(v) is not Vartype.BINARY:
                     raise ValueError(f"variable {v!r} has already been added but is not BINARY")
