@@ -494,13 +494,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
             >>> d, e, f = dimod.Binaries(['d', 'e', 'f'])
             >>> cqm.add_discrete(d + e + f == 1, label='discrete-def')
-            'discrete-def'
-            
-            Add a discrete constraint, while skipping the variable overlap
-            check.
-            
-            >>> cqm.add_discrete(d + e + f == 1, label='discrete-def',
-            ...                  check_overlaps=False)
+            'discrete-def'            
 
         """
         # in python 3.8+ we can use singledispatchmethod
