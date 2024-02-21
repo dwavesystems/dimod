@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add ``check_overlaps`` keyword argument to ``ConstrainedQuadraticModel.add_discrete()``,
+    see `#1364 <https://github.com/dwavesystems/dimod/issues/1364>`_.

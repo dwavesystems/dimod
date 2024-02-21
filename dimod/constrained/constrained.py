@@ -495,6 +495,12 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             >>> d, e, f = dimod.Binaries(['d', 'e', 'f'])
             >>> cqm.add_discrete(d + e + f == 1, label='discrete-def')
             'discrete-def'
+            
+            Add a discrete constraint, while skipping the variable overlap
+            check.
+            
+            >>> cqm.add_discrete(d + e + f == 1, label='discrete-def',
+                                 check_overlaps=False)
 
         """
         # in python 3.8+ we can use singledispatchmethod
@@ -511,7 +517,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                                      comp: Comparison,
                                      label: Optional[Hashable] = None,
                                      copy: bool = True,
-                                     do_var_check: bool = True) -> Hashable:
+                                     check_overlaps: bool = True) -> Hashable:
         """Add a one-hot constraint from a comparison.
 
         One-hot constraints can represent discrete variables (for example a
@@ -540,8 +546,9 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 set to `False` to improve performance, but subsequently mutating
                 the model can cause issues.
 
-            do_var_check: If `True` we perform a variable check. In particular, if 
-                the variables already exist, we make sure they're not used.
+            check_overlaps: If `True` we perform a variable overlap check.
+                In particular, if the variables already exist, we make sure
+                they're not used in another discrete constraint.
 
         Returns:
             Label of the added constraint.
@@ -560,12 +567,12 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             # could scale, but let's keep it simple for now
             raise ValueError("the right-hand side of a discrete constraint must be 1")
         return self.add_discrete_from_model(comp.lhs, label=label,
-                                            copy=copy, do_var_check=do_var_check)
+                                            copy=copy, check_overlaps=check_overlaps)
 
     def add_discrete_from_iterable(self,
                                    variables: Iterable[Variable],
                                    label: Optional[Hashable] = None,
-                                   do_var_check: bool = True) -> Hashable:
+                                   check_overlaps: bool = True) -> Hashable:
         """Add a one-hot constraint from an iterable.
 
         One-hot constraints can represent discrete variables (for example a
@@ -587,8 +594,9 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             label: Label for the constraint. Must be unique. If no label
                 is provided, then one is generated using :mod:`uuid`.
 
-            do_var_check: If `True` we perform a variable check. In particular, if 
-                the variables already exist, we make sure they're not used.
+            check_overlaps: If `True` we perform a variable overlap check.
+                In particular, if the variables already exist, we make sure
+                they're not used in another discrete constraint.
 
         Returns:
             Label of the added constraint.
@@ -614,9 +622,9 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         bqm = BinaryQuadraticModel(Vartype.BINARY, dtype=np.float32)
 
         for v in variables:
-            if do_var_check and v in self.variables:
+            if v in self.variables:
                 # it already exists, let's make sure it's not already used
-                if any(v in self.constraints[label].lhs.variables for label in self.discrete):
+                if check_overlaps and any(v in self.constraints[label].lhs.variables for label in self.discrete):
                     raise ValueError(f"variable {v!r} is already used in a discrete variable")
                 if self.vartype(v) is not Vartype.BINARY:
                     raise ValueError(f"variable {v!r} has already been added but is not BINARY")
@@ -631,7 +639,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                                 qm: Union[BinaryQuadraticModel, QuadraticModel],
                                 label: Optional[Hashable] = None,
                                 copy: bool = True,
-                                do_var_check: bool = True) -> Hashable:
+                                check_overlaps: bool = True) -> Hashable:
         """Add a one-hot constraint from a model.
 
         One-hot constraints can represent discrete variables (for example a
@@ -660,8 +668,9 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 improve performance, but subsequently mutating the model can
                 cause issues.
 
-            do_var_check: If `True` we perform a variable check. In particular, if 
-                the variables already exist, we make sure they're not used.
+            check_overlaps: If `True` we perform a variable overlap check.
+                In particular, if the variables already exist, we make sure
+                they're not used in another discrete constraint.
 
         Returns:
             Label of the added constraint.
@@ -682,9 +691,9 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             raise ValueError("discrete constraints must be linear")
 
         for v, bias in qm.iter_linear():
-            if do_var_check and v in self.variables:
+            if v in self.variables:
                 # it already exists, let's make sure it's not already used
-                if any(v in self.constraints[label].lhs.variables for label in self.discrete):
+                if check_overlaps and any(v in self.constraints[label].lhs.variables for label in self.discrete):
                     raise ValueError(f"variable {v!r} is already used in a discrete variable")
                 if self.vartype(v) is not Vartype.BINARY:
                     raise ValueError(f"variable {v!r} has already been added but is not BINARY")

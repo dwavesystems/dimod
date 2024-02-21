@@ -172,6 +172,31 @@ class TestAddDiscrete(unittest.TestCase):
         c = cqm.add_discrete(qm, label='hello')
         self.assertIn(c, cqm.discrete)
         self.assertTrue(cqm.constraints[c].lhs.is_equal(qm))
+        
+    def test_check_overlaps_keyword(self):
+        # If check_overlaps=False, we do not check for overlaps
+        # and there is no ValueError.
+        # This is expected behavior.
+        cqm = CQM()
+        cqm.add_discrete("xyz")
+        cqm.add_discrete("yzw", check_overlaps=False)
+
+        # Other exceptions should not be affected
+        cqm = CQM()
+        x,y = dimod.Binaries('xy')
+        with self.subTest("wrong sense"):
+            with self.assertRaises(ValueError):
+                cqm.add_discrete(x + y <= 1, check_overlaps=False)
+        with self.subTest("wrong rhs"):
+            with self.assertRaises(ValueError):
+                cqm.add_discrete(x + y == 2, check_overlaps=False)
+        with self.subTest("wrong vartype"):
+            s = dimod.Spin('s')
+            with self.assertRaises(ValueError):
+                cqm.add_discrete(x + s == 1, check_overlaps=False)
+        with self.subTest("quadratic"):
+            with self.assertRaises(ValueError):
+                cqm.add_discrete(x + y + x*y== 1, check_overlaps=False)
 
     def test_comparison(self):
         cqm = CQM()
