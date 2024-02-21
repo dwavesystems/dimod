@@ -1,0 +1,5 @@
+---
+
+features:
+  - |
+    Add `dimod.genrators.random_binary_paint_shop_problem` binary paint shop problem generator
