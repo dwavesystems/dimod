@@ -14,6 +14,7 @@
 
 from dimod.generators.anti_crossing import *
 from dimod.generators.binpacking import *
+from dimod.generators.bpsp import *
 from dimod.generators.chimera import *
 from dimod.generators.constraints import *
 from dimod.generators.fcl import *

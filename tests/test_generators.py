@@ -1690,3 +1690,14 @@ class TestMIMO(unittest.TestCase):
                                 self.assertGreater(1.5, scale_n)
                                 #self.assertLess(0.5, scale_n)
                             
+
+
+class TestBPSP(unittest.TestCase):
+    def test_small_problem(self):
+        # Problem from Fig.1 in Streif, Michael, et al. (2021)
+        car_sequence = [1, 2, 1, 3, 3, 2]
+        
+        bqm = dimod.generators.bpsp.binary_paint_shop_problem(car_sequence)
+        ss = dimod.ExactSolver().sample(bqm)
+        car_colors, color_changes = dimod.generators.bpsp.sample_to_coloring(ss.first.sample, car_sequence)
+        self.assertEqual(color_changes, 2)
