@@ -15,6 +15,7 @@
 __all__ = ["random_binary_paint_shop_problem"]
 
 import typing
+
 import numpy.random
 
 import dimod
@@ -64,14 +65,14 @@ def random_binary_paint_shop_problem(n_cars: int, seed: int = None) -> dimod.Bin
         Ising model for the random binary paint shop problem.
     """
 
-    rng = numpy.random.RandomState(seed)
+    rng = numpy.random.default_rng(seed)
     car_sequence = list(range(n_cars)) * 2
     rng.shuffle(car_sequence)
 
     return binary_paint_shop_problem(car_sequence)
 
 
-def sample_to_coloring(sample: typing.Dict, car_sequence: typing.Sequence[typing.Hashable]) -> typing.Tuple[typing.List, int]:
+def sample_to_coloring(sample: typing.Mapping, car_sequence: typing.Sequence[typing.Hashable]) -> typing.Tuple[typing.List, int]:
     """Colors the car sequence based on a bqm sample and returns BPSP objective.
     
     Args:
