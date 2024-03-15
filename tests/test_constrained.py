@@ -1896,6 +1896,15 @@ class TestViews(unittest.TestCase):
 
         self.assertEqual(cqm.objective.linear, {'x': 3})
 
+    def test_add_quadratic_from(self):
+        x, y = dimod.Binaries('xy')
+        cqm = dimod.CQM()
+        lbl = cqm.add_constraint(x + y <= 1)
+
+        cqm.objective.add_quadratic_from([('x', 'y', 3)])
+
+        self.assertEqual(cqm.objective.quadratic, {('x', 'y'): 3})
+
     def test_add_variable(self):
         x, y = dimod.Binaries('xy')
         cqm = dimod.CQM()

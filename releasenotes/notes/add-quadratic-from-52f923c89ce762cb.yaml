@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Add method ``QuadraticViewsMixin.add_quadratic_from()`` to add quadratic
+    interactions. This method is intended to be used as follows:
+    ``ConstrainedQuadraticModel.objective.add_quadratic_from()``, similarly to
+    ``ConstrainedQuadraticModel.objective.add_linear_from()``.

@@ -353,6 +353,10 @@ class QuadraticViewsMixin(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def add_quadratic(self, u: Variable, v: Variable, bias: Bias):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def degree(self, v: Variable) -> int:
         raise NotImplementedError
 
@@ -425,6 +429,28 @@ class QuadraticViewsMixin(abc.ABC):
 
     add_variables_from = add_linear_from
     """Alias for :meth:`add_linear_from`."""
+
+    def add_quadratic_from(self, quadratic: Union[Iterable, Mapping]):
+        """Add variables and quadratic biases to a binary quadratic model.
+
+        Args:
+            quadratic:
+                Variables and their associated quadratic biases, as either a dict of
+                form ``{u, v: bias, ...}`` or an iterable of ``(u, v, bias)`` triple,
+                where ``u``, ``v`` are variables and ``bias`` is its associated
+                quadratic bias.
+
+        """
+        if isinstance(quadratic, collections.abc.Mapping):
+            iterator = quadratic.items()
+        elif isinstance(quadratic, collections.abc.Iterable):
+            iterator = quadratic
+        else:
+            raise TypeError(
+                "expected 'quadratic' to be a dict or an iterable of 3-tuples.")
+
+        for u, v, bias in iterator:
+            self.add_quadratic(u, v, bias)
 
     def fix_variable(self, v: Variable, value: float):
         """Remove a variable by fixing its value.
