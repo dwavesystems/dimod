@@ -405,7 +405,8 @@ class QuadraticViewsMixin(abc.ABC):
     def set_quadratic(self, u: Variable, v: Variable, bias: Bias):
         raise NotImplementedError
 
-    def add_linear_from(self, linear: Union[Iterable, Mapping]):
+    def add_linear_from(self, linear: Union[Mapping[Variable, Bias],
+                                            Iterable[Tuple[Variable, Bias]]]):
         """Add variables and linear biases to a binary quadratic model.
 
         Args:
@@ -430,7 +431,8 @@ class QuadraticViewsMixin(abc.ABC):
     add_variables_from = add_linear_from
     """Alias for :meth:`add_linear_from`."""
 
-    def add_quadratic_from(self, quadratic: Union[Iterable, Mapping]):
+    def add_quadratic_from(self, quadratic: Union[Mapping[Tuple[Variable, Variable], Bias],
+                                                  Iterable[Tuple[Variable, Variable, Bias]]]):
         """Add variables and quadratic biases to a binary quadratic model.
 
         Args:
@@ -441,16 +443,16 @@ class QuadraticViewsMixin(abc.ABC):
                 quadratic bias.
 
         """
-        if isinstance(quadratic, collections.abc.Mapping):
-            iterator = quadratic.items()
+        if isinstance(quadratic, collections.abc.Mapping):            
+            for (u, v), bias in quadratic.items():
+                self.add_quadratic(u, v, bias)
         elif isinstance(quadratic, collections.abc.Iterable):
-            iterator = quadratic
+            for u, v, bias in quadratic:
+                self.add_quadratic(u, v, bias)
         else:
             raise TypeError(
                 "expected 'quadratic' to be a dict or an iterable of 3-tuples.")
 
-        for u, v, bias in iterator:
-            self.add_quadratic(u, v, bias)
 
     def fix_variable(self, v: Variable, value: float):
         """Remove a variable by fixing its value.
