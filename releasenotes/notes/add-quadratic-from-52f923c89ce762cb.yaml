@@ -1,0 +1,14 @@
+---
+features:
+  - |
+    Add an abstract method ``QuadraticViewsMixin.add_quadratic()``.
+  - |
+    Add a method ``QuadraticViewsMixin.add_quadratic_from()`` to add quadratic
+    interactions. This method is intended to be used as follows:
+    ``ConstrainedQuadraticModel.objective.add_quadratic_from()``, similarly to
+    ``ConstrainedQuadraticModel.objective.add_linear_from()``.
+upgrade:
+  - |
+    All sublcasses of ``QuadraticViewsMixin``, including ``ObjectiveView``, 
+    ``QuadraticModel`` and ``BinaryQuadraticModel``, now require to have 
+    the method ``add_quadratic()``.

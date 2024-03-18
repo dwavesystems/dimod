@@ -1889,12 +1889,43 @@ class TestViews(unittest.TestCase):
 
     def test_add_linear_from(self):
         x, y = dimod.Binaries('xy')
+        # test iterable
         cqm = dimod.CQM()
         lbl = cqm.add_constraint(x + y <= 1)
 
         cqm.objective.add_linear_from([('x', 3)])
 
         self.assertEqual(cqm.objective.linear, {'x': 3})
+        # test mapping     
+        cqm = dimod.CQM()
+        lbl = cqm.add_constraint(x + y <= 1)
+        cqm.objective.add_linear_from({'x': 3})
+        self.assertEqual(cqm.objective.linear, {'x': 3})
+
+        # test missing variable
+        cqm = dimod.CQM()
+        with self.assertRaises(ValueError):
+            cqm.objective.add_linear_from([('x', 3)])
+
+    def test_add_quadratic_from(self):
+        x, y = dimod.Binaries('xy')
+        # test iterable
+        cqm = dimod.CQM()
+        lbl = cqm.add_constraint(x + y <= 1)
+
+        cqm.objective.add_quadratic_from([('x', 'y', 3)])
+
+        self.assertEqual(cqm.objective.quadratic, {('x', 'y'): 3})
+        # test mapping        
+        cqm = dimod.CQM()
+        lbl = cqm.add_constraint(x + y <= 1)
+        cqm.objective.add_quadratic_from({('x', 'y'): 3})
+        self.assertEqual(cqm.objective.quadratic, {('x', 'y'): 3})
+        
+        # test missing variable
+        cqm = dimod.CQM()        
+        with self.assertRaises(ValueError):
+            cqm.objective.add_quadratic_from([('x', 'y', 3)])        
 
     def test_add_variable(self):
         x, y = dimod.Binaries('xy')
