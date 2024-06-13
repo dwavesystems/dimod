@@ -546,4 +546,26 @@ SCENARIO("quadratic models can be swapped", "[qm]") {
         }
     }
 }
+
+SCENARIO("quadratic models can have their interactions filtered") {
+    GIVEN("a binary quadratic model") {
+        auto bqm = dimod::BinaryQuadraticModel<double>(5, dimod::Vartype::BINARY);
+        bqm.add_quadratic(0, 1, 1.5);
+        bqm.add_quadratic(1, 2, 2.5);
+        bqm.add_quadratic(2, 3, 3.5);
+
+        WHEN("We filter all interactions with variable 1") {
+            CHECK(bqm.remove_interactions([](int u, int v, double) { return u == 1 || v == 1; }) ==
+                  2);
+
+            CHECK(bqm.quadratic(0, 1) == 0);
+            CHECK(bqm.quadratic(1, 2) == 0);
+            CHECK(bqm.quadratic(2, 3) == 3.5);
+
+            CHECK(bqm.quadratic(1, 0) == 0);
+            CHECK(bqm.quadratic(2, 1) == 0);
+            CHECK(bqm.quadratic(3, 2) == 3.5);
+        }
+    }
+}
 }  // namespace dimod

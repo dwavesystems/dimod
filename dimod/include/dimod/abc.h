@@ -331,6 +331,12 @@ class QuadraticModelBase {
     /// Remove the interaction between variables `u` and `v`.
     bool remove_interaction(index_type u, index_type v);
 
+    /// Remove all interactions for which `filter` returns `true`.
+    /// Returns the number of interactions removed.
+    /// `filter` must be symmetric. That is `filter(u, v, bias)` must equal `filter(v, u, bias)`.
+    template<class Filter>
+    size_type remove_interactions(Filter filter);
+
     /**
      * Remove variable `v` from the model.
      *
@@ -887,6 +893,35 @@ bool QuadraticModelBase<bias_type, index_type>::remove_interaction(index_type u,
         return true;
     }
     return false;
+}
+
+template <class bias_type, class index_type>
+template <class Filter>
+std::size_t QuadraticModelBase<bias_type, index_type>::remove_interactions(Filter filter) {
+    if (!has_adj()) return 0;  // nothing to filter
+
+    std::size_t num_removed = 0;
+
+    index_type u = 0;
+    for (auto& n : *adj_ptr_) {
+        auto it = std::remove_if(n.begin(), n.end(),
+                                 [&u, &filter](const OneVarTerm<bias_type, index_type>& term) {
+                                     const index_type& v = term.v;
+                                     const bias_type& bias = term.bias;
+                                     assert(filter(u, v, bias) == filter(v, u, bias));
+                                     return filter(u, v, bias);
+                                 });
+
+        num_removed += n.end() - it;
+
+        n.erase(it, n.end());
+
+        u += 1;
+    }
+
+    assert(num_removed % 2 == 0);
+
+    return num_removed / 2;
 }
 
 template <class bias_type, class index_type>
