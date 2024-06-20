@@ -362,3 +362,7 @@ class TestSamplerClass(unittest.TestCase):
 
         # Check that known kwargs are kept and unknown kwargs are removed
         self.assertDictEqual(kwargs, {'a': 1})
+
+    def test_innermost_child(self):
+        sampler = dimod.ExactSolver()
+        self.assertTrue(sampler.innermost_child() is sampler)
