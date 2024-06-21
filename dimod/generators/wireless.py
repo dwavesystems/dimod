@@ -562,7 +562,7 @@ def mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK
     a linear sum of bits, the optimization problem is a binary quadratic model.
     
     Depending on its parameters, this function can model code division multiple
-    access\  [#]_\ [#]_, 5G communication networks\ [#]_, or 
+    access (CDMA)\  [#]_\ [#]_, 5G communication networks\ [#]_, or 
     other problems.
 
     Args:
