@@ -48,7 +48,7 @@ def nonblocking_sample_method(f):
     The first value can be any object, but if the object has a `done()`
     method, that method will determine the value of :meth:`.SampleSet.done()`.
 
-    The second value must be a :class:`.SampleSet`, which will provide the
+    The second value must be a :class:`~dimod.SampleSet`, which will provide the
     samples to the user.
 
     The generator is executed until the first yield. The generator is then
@@ -93,7 +93,7 @@ def bqm_index_labels(f):
 
     Designed to be applied to :meth:`.Sampler.sample`. Expects the wrapped
     function or method to accept a :obj:`.BinaryQuadraticModel` as the second
-    input and to return a :obj:`.SampleSet`.
+    input and to return a :obj:`~dimod.SampleSet`.
 
     """
     @wraps(f)

@@ -146,7 +146,7 @@ def assert_response_energies(response, bqm, precision=7):
     """Assert that each sample in the given response has the correct energy.
 
     Args:
-        response (:obj:`.SampleSet`):
+        response (:obj:`~dimod.SampleSet`):
             Response as returned by a dimod sampler.
 
         bqm (:obj:`.BinaryQuadraticModel`):

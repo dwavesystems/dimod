@@ -1450,7 +1450,7 @@ def Integer(label: Optional[Variable] = None, bias: Bias = 1,
         upper_bound: Keyword-only argument to specify integer upper bound.
 
     Returns:
-        Instance of :class:`.QuadraticModel`.
+        Instance of :class:`~dimod.QuadraticModel`.
 
     Examples:
         This example generates a quadratic model to represent the polynomial,
@@ -1476,7 +1476,7 @@ def Integers(labels: Union[int, Iterable[Variable]],
         dtype: Data type for the returned quadratic models.
 
     Yields:
-        A :class:`.QuadraticModel` for each integer variable.
+        A :class:`~dimod.QuadraticModel` for each integer variable.
 
     Examples:
         >>> i, j = dimod.Integers(['i', 'j'])
