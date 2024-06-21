@@ -173,7 +173,7 @@ def assert_sampleset_energies(sampleset, bqm, precision=7):
     """Assert that each sample in the given sample set has the correct energy.
 
     Args:
-        sampleset (:obj:`.SampleSet`):
+        sampleset (:obj:`~dimod.SampleSet`):
             Sample set as returned by a dimod sampler.
 
         bqm (:obj:`.BinaryQuadraticModel`/:obj:`.BinaryPolynomial`):
@@ -219,7 +219,7 @@ def assert_sampleset_energies_dqm(sampleset, dqm, precision=7):
     """Assert that each sample in the given sample set has the correct energy.
 
     Args:
-        sampleset (:obj:`.SampleSet`):
+        sampleset (:obj:`~dimod.SampleSet`):
             Sample set as returned by a dimod sampler.
 
         dqm (:obj:`.DiscreteQuadraticModel`):
@@ -255,7 +255,7 @@ def assert_sampleset_energies_cqm(sampleset, cqm, precision=7):
     """Assert that each sample in the given sample set has the correct energy.
 
     Args:
-        sampleset (:obj:`.SampleSet`):
+        sampleset (:obj:`~dimod.SampleSet`):
             Sample set as returned by a dimod sampler.
 
         cqm (:obj:`.ConstrainedQuadraticModel`):

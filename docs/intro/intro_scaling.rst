@@ -99,7 +99,7 @@ Time the construction:
 
 .. code-block:: python
 
-    In [1]: %timeit bin_packing(weights)
+    >>> %timeit bin_packing(weights)
     385 ms ± 9.8 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
 
 .. note::
@@ -157,7 +157,7 @@ This simple change already reduces the runtime.
 
 .. code-block:: python
 
-    In [1]: %timeit bin_packing(weights)
+    >>> %timeit bin_packing(weights)
     294 ms ± 9.39 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
 
 Construct Models Directly
@@ -190,7 +190,7 @@ between variables and labels.
 
 .. code-block:: python
 
-    In [1]: %timeit make_bqm_symbolic(1000)
+    >>> %timeit make_bqm_symbolic(1000)
     12.7 ms ± 213 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
     In [2]: %timeit make_bqm_labels(1000)
     194 µs ± 2.32 µs per loop (mean ± std. dev. of 7 runs, 10000 loops each)
@@ -246,7 +246,7 @@ This change significantly reduces runtime.
 
 .. code-block:: python
 
-    In [1]: %timeit bin_packing(weights)
+    >>> %timeit bin_packing(weights)
     95.5 ms ± 2.87 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
 
 Add Constraints Without Copying
@@ -306,5 +306,5 @@ This results in another performance improvement.
 
 .. code-block:: python
 
-    In [1]: %timeit bin_packing(weights)
+    >>> %timeit bin_packing(weights)
     68.1 ms ± 299 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
