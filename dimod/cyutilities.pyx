@@ -26,24 +26,13 @@ from dimod.vartypes import as_vartype, Vartype
 __all__ = ['vartype_info']
 
 
-cdef extern from "numpy/arrayobject.h":
-    ctypedef struct PyArray_Descr:
-        pass
-
-    object PyArray_Scalar(void*, PyArray_Descr*, object)
-
-np.import_array()  # needed for PyArray_Scalar
-
-# preconstruct these dtypes for speed, we could possibly improve it more
-# by casting to PyArray_Descr but I had trouble getting that to work
-cdef object _float32_dtype = np.dtype(np.float32)
-cdef object _float64_dtype = np.dtype(np.float64)
-
 cdef object as_numpy_float(cython.floating a):
-    if cython.floating == double:
-        return PyArray_Scalar(&a, <PyArray_Descr*>_float64_dtype, None)
-    elif cython.floating == float:
-        return PyArray_Scalar(&a, <PyArray_Descr*>_float32_dtype, None)
+    if cython.floating is double:
+        return np.float64(a)
+    elif cython.floating is float:
+        # this will promote to float64, then demote again. Annoying, but the
+        # alternative is to use NumPy C-API methods.
+        return np.float32(a)
     else:
         raise NotImplementedError
 
