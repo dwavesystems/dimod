@@ -16,8 +16,6 @@ import os
 
 from setuptools import setup
 
-import numpy
-
 from Cython.Build import cythonize
 from setuptools.command.build_ext import build_ext as _build_ext
 
@@ -75,9 +73,6 @@ setup(
         annotate=True,
         nthreads=int(os.getenv('CYTHON_NTHREADS', 0)),
         ),
-    include_dirs=[
-        numpy.get_include(),
-        ],
     install_requires=[
         # this is the oldest supported NumPy on Python 3.8
         'numpy>=1.17.3,<2.0.0',

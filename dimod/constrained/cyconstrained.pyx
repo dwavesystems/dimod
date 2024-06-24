@@ -22,7 +22,6 @@ from copy import deepcopy
 
 cimport cython
 import numpy as np
-cimport numpy as np
 
 from cython.operator cimport preincrement as inc, dereference as deref
 from libc.math cimport ceil, floor
@@ -43,8 +42,8 @@ from dimod.discrete.cydiscrete_quadratic_model cimport cyDiscreteQuadraticModel
 from dimod.libcpp.abc cimport QuadraticModelBase as cppQuadraticModelBase
 from dimod.libcpp.constrained_quadratic_model cimport Sense as cppSense, Penalty as cppPenalty, Constraint as cppConstraint
 from dimod.libcpp.vartypes cimport Vartype as cppVartype, vartype_info as cppvartype_info
-
 from dimod.sym import Sense, Eq, Ge, Le
+from dimod.typing cimport int8_t
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
 from dimod.views.quadratic import QuadraticViewsMixin
@@ -443,7 +442,7 @@ cdef class cyConstrainedQuadraticModel:
                          align=False)
         varinfo = np.empty(num_variables, dtype)
 
-        cdef np.int8_t[:] vartype_view = varinfo['vartype']
+        cdef int8_t[:] vartype_view = varinfo['vartype']
         cdef bias_type[:] lb_view = varinfo['lb']
         cdef bias_type[:] ub_view = varinfo['ub']
 
@@ -466,7 +465,7 @@ cdef class cyConstrainedQuadraticModel:
                          align=False)
 
         arr = np.frombuffer(buff[:dtype.itemsize*num_variables], dtype=dtype)
-        cdef const np.int8_t[:] vartype_view = arr['vartype']
+        cdef const int8_t[:] vartype_view = arr['vartype']
         cdef const bias_type[:] lb_view = arr['lb']
         cdef const bias_type[:] ub_view = arr['ub']
 

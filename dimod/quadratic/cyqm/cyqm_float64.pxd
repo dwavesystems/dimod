@@ -15,8 +15,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-cimport numpy as np
-
 from dimod.cyqmbase.cyqmbase_float64 cimport cyQMBase_float64 as cyQMBase, bias_type, index_type
 
 include "cyqm_template.pxd.pxi"

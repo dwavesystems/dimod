@@ -16,7 +16,6 @@ import numbers
 import typing
 
 cimport cython
-cimport numpy as np
 import numpy as np
 
 from cython.operator cimport preincrement as inc, dereference as deref
@@ -37,7 +36,7 @@ from dimod.serialization.fileview import (
     read_header, write_header,
     IndicesSection, LinearSection, OffsetSection, NeighborhoodSection, QuadraticSection,
     )
-from dimod.typing cimport Numeric
+from dimod.typing cimport Numeric, float64_t
 from dimod.variables import Variables
 
 
@@ -142,7 +141,7 @@ cdef class _cyExpression:
         # we could do this manually, but way better to let NumPy handle it
         cdef const Numeric[:, ::1] subsamples = np.ascontiguousarray(np.asarray(samples)[:, reindex])
 
-        cdef np.float64_t[::1] energies = np.empty(num_samples, dtype=np.float64)
+        cdef float64_t[::1] energies = np.empty(num_samples, dtype=np.float64)
         cdef Py_ssize_t si
         if subsamples.shape[1]:
             for si in range(num_samples):

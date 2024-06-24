@@ -15,8 +15,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-# cimport numpy as np
-
 from dimod.libcpp.constrained_quadratic_model cimport ConstrainedQuadraticModel as cppConstrainedQuadraticModel
 from dimod.constrained.cyexpression cimport cyObjectiveView, cyConstraintView
 from dimod.cyqmbase.cyqmbase_float64 cimport cyQMBase_float64, bias_type, index_type

@@ -31,7 +31,7 @@ from dimod.cyutilities cimport as_numpy_float, cppvartype
 from dimod.libcpp.vartypes cimport vartype_info as cppvartype_info
 from dimod.quadratic cimport cyQM
 from dimod.sampleset import as_samples
-from dimod.typing cimport Integer, Numeric
+from dimod.typing cimport Integer, Numeric, int8_t
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
 
@@ -95,7 +95,7 @@ cdef class cyQM_template(cyQMBase):
                          align=False)
 
         arr = np.frombuffer(buff[:dtype.itemsize*num_variables], dtype=dtype)
-        cdef const np.int8_t[:] vartype_view = arr['vartype']
+        cdef const int8_t[:] vartype_view = arr['vartype']
         cdef const bias_type[:] lb_view = arr['lb']
         cdef const bias_type[:] ub_view = arr['ub']
 

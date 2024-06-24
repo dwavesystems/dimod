@@ -44,7 +44,6 @@ cdef fused Integer:
     SignedInteger
     UnsignedInteger
 
-# The same as cython.numeric with the addition of int8
 ctypedef fused Numeric:
     int8_t
     int16_t

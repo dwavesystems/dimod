@@ -18,8 +18,6 @@
 
 from libcpp.vector cimport vector
 
-cimport numpy as np
-
 from dimod.libcpp.binary_quadratic_model cimport BinaryQuadraticModel as cppBinaryQuadraticModel
 from dimod.typing cimport float64_t, int32_t, Numeric, Integer
 

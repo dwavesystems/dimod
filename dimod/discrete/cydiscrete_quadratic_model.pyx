@@ -25,7 +25,7 @@ import numpy as np
 
 from dimod.utilities import asintegerarrays, asnumericarrays
 from dimod.cyutilities cimport as_numpy_float
-from dimod.typing cimport Integer
+from dimod.typing cimport Integer, int64_t, uint16_t, uint32_t, uint64_t
 
 BIAS_DTYPE = np.float64
 INDEX_DTYPE = np.int32
@@ -53,8 +53,8 @@ cdef extern from *:
     }
     """
     struct LinearTerm:
-        np.int64_t variable
-        np.int64_t case "case_v"
+        int64_t variable
+        int64_t case "case_v"
         double bias
     void sort_terms(vector[LinearTerm]&)
 
@@ -713,11 +713,11 @@ cdef class cyDiscreteQuadraticModel:
         qdata = np.empty(num_interactions, dtype=self.dtype)
 
         if index_dtype == np.uint16:
-            self._into_numpy_vectors[np.uint16_t](starts, ldata, irow, icol, qdata)
+            self._into_numpy_vectors[uint16_t](starts, ldata, irow, icol, qdata)
         elif index_dtype == np.uint32:
-            self._into_numpy_vectors[np.uint32_t](starts, ldata, irow, icol, qdata)
+            self._into_numpy_vectors[uint32_t](starts, ldata, irow, icol, qdata)
         else:
-            self._into_numpy_vectors[np.uint64_t](starts, ldata, irow, icol, qdata)
+            self._into_numpy_vectors[uint64_t](starts, ldata, irow, icol, qdata)
 
         if return_offset:
             return starts, ldata, (irow, icol, qdata), self.offset
