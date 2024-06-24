@@ -27,7 +27,6 @@ import dimod
 
 from dimod.cyqmbase.cyqmbase_float64 import _dtype, _index_dtype
 from dimod.cyutilities cimport as_numpy_float
-from dimod.cyutilities cimport ConstNumeric
 from dimod.cyvariables cimport cyVariables
 from dimod.libcpp.abc cimport QuadraticModelBase as cppQuadraticModelBase
 from dimod.libcpp.constrained_quadratic_model cimport Penalty as cppPenalty
@@ -38,6 +37,7 @@ from dimod.serialization.fileview import (
     read_header, write_header,
     IndicesSection, LinearSection, OffsetSection, NeighborhoodSection, QuadraticSection,
     )
+from dimod.typing cimport Numeric
 from dimod.variables import Variables
 
 
@@ -124,7 +124,7 @@ cdef class _cyExpression:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _energies(self, ConstNumeric[:, ::1] samples, cyVariables labels):
+    def _energies(self, const Numeric[:, ::1] samples, cyVariables labels):
         cdef cppExpression[bias_type, index_type]* expression = self.expression()
 
         cdef Py_ssize_t num_samples = samples.shape[0]
@@ -140,7 +140,7 @@ cdef class _cyExpression:
         # the same length of the sample array, but let's not for now
 
         # we could do this manually, but way better to let NumPy handle it
-        cdef ConstNumeric[:, ::1] subsamples = np.ascontiguousarray(np.asarray(samples)[:, reindex])
+        cdef const Numeric[:, ::1] subsamples = np.ascontiguousarray(np.asarray(samples)[:, reindex])
 
         cdef np.float64_t[::1] energies = np.empty(num_samples, dtype=np.float64)
         cdef Py_ssize_t si

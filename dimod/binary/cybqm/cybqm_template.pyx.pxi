@@ -30,11 +30,12 @@ from libcpp.unordered_set cimport unordered_set
 from libcpp.vector cimport vector
 
 from dimod.binary.cybqm cimport cyBQM
-from dimod.cyutilities cimport as_numpy_float, ConstInteger
+from dimod.cyutilities cimport as_numpy_float
 from dimod.cyutilities import coo_sort
 from dimod.libcpp.vartypes cimport Vartype as cppVartype
 from dimod.sampleset import as_samples
 from dimod.typing import BQMVectors, LabelledBQMVectors, QuadraticVectors
+from dimod.typing cimport Integer, Numeric
 from dimod.utilities import asintegerarrays, asnumericarrays
 from dimod.variables import Variables
 from dimod.vartypes import Vartype, as_vartype
@@ -173,7 +174,7 @@ cdef class cyBQM_template(cyQMBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Py_ssize_t add_linear_from_array(self, ConstNumeric[:] linear) except -1:
+    cpdef Py_ssize_t add_linear_from_array(self, const Numeric[:] linear) except -1:
         cdef Py_ssize_t vi
         cdef Py_ssize_t length = linear.shape[0]
 
@@ -191,7 +192,7 @@ cdef class cyBQM_template(cyQMBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def add_offset_from_array(self, ConstNumeric[::1] offset):
+    def add_offset_from_array(self, const Numeric[::1] offset):
         if offset.shape[0] != 1:
             raise ValueError("array should be of length 1")
         self.cppbqm.add_offset(offset[0])
@@ -205,9 +206,9 @@ cdef class cyBQM_template(cyQMBase):
         self.cppbqm.add_quadratic(ui, vi, bias)
 
     def add_quadratic_from_arrays(self,
-                                  ConstInteger[::1] irow,
-                                  ConstInteger[::1] icol,
-                                  ConstNumeric[::1] qdata):
+                                  const Integer[::1] irow,
+                                  const Integer[::1] icol,
+                                  const Numeric[::1] qdata):
 
         if not irow.shape[0] == icol.shape[0] == qdata.shape[0]:
             raise ValueError("quadratic vectors should be equal length")
@@ -223,7 +224,7 @@ cdef class cyBQM_template(cyQMBase):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Py_ssize_t add_quadratic_from_dense(self, ConstNumeric[:, ::1] quadratic) except -1:
+    cpdef Py_ssize_t add_quadratic_from_dense(self, const Numeric[:, ::1] quadratic) except -1:
         if quadratic.shape[0] != quadratic.shape[1]:
             raise ValueError("quadratic must be a square matrix")
 
@@ -268,10 +269,10 @@ cdef class cyBQM_template(cyQMBase):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def _from_numpy_vectors(cls,
-                            ConstNumeric[::1] linear,
-                            ConstInteger[::1] irow,
-                            ConstInteger[::1] icol,
-                            ConstNumeric[::1] qdata,
+                            const Numeric[::1] linear,
+                            const Integer[::1] irow,
+                            const Integer[::1] icol,
+                            const Numeric[::1] qdata,
                             bias_type offset,
                             object vartype):
         """Equivalent of from_numpy_vectors with fused types."""

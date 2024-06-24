@@ -27,10 +27,11 @@ from libcpp.vector cimport vector
 import dimod
 
 from dimod.binary.cybqm cimport cyBQM
-from dimod.cyutilities cimport as_numpy_float, ConstInteger, ConstNumeric, cppvartype
+from dimod.cyutilities cimport as_numpy_float, cppvartype
 from dimod.libcpp.vartypes cimport vartype_info as cppvartype_info
 from dimod.quadratic cimport cyQM
 from dimod.sampleset import as_samples
+from dimod.typing cimport Integer, Numeric
 from dimod.variables import Variables
 from dimod.vartypes import as_vartype, Vartype
 
@@ -126,7 +127,7 @@ cdef class cyQM_template(cyQMBase):
 
         self.cppqm.add_linear(vi, bias)
 
-    def add_linear_from_array(self, ConstNumeric[:] linear):
+    def add_linear_from_array(self, const Numeric[:] linear):
         cdef Py_ssize_t length = linear.shape[0]
         cdef Py_ssize_t vi
 
@@ -172,8 +173,8 @@ cdef class cyQM_template(cyQMBase):
         self._add_quadratic(ui, vi, bias)
 
     def add_quadratic_from_arrays(self,
-                                  ConstInteger[::1] irow, ConstInteger[::1] icol,
-                                  ConstNumeric[::1] qdata):
+                                  const Integer[::1] irow, const Integer[::1] icol,
+                                  const Numeric[::1] qdata):
         if not irow.shape[0] == icol.shape[0] == qdata.shape[0]:
             raise ValueError("quadratic vectors should be equal length")
         cdef Py_ssize_t length = irow.shape[0]

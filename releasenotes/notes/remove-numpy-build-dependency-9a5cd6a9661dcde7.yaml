@@ -1,0 +1,22 @@
+---
+features:
+  - |
+    Add ``dimod/typing.pdx``. This allows users to ``cimport`` common C
+    types into other namespaces.
+upgrade:
+  - |
+    Remove Cython fused types
+    ``dimod.cyutilities.SignedInteger``,
+    ``dimod.cyutilities.UnsignedInteger``,
+    ``dimod.cyutilities.Integer``, and
+    ``dimod.cyutilities.ConstInteger``,
+    ``dimod.cyutilities.Numeric``, and
+    ``dimod.cyutilities.ConstNumeric``.
+    Use the types in ``dimod.typing`` instead.
+  - |
+    Remove Cython fused types
+    ``dimod.discrete.cydiscrete_quadratic_model.Unsigned``,
+    ``dimod.discrete.cydiscrete_quadratic_model.Integral32plus``,
+    ``dimod.discrete.cydiscrete_quadratic_model.Numeric``, and
+    ``dimod.discrete.cydiscrete_quadratic_model.Numeric32plus``.
+    Use the types in ``dimod.typing`` instead.

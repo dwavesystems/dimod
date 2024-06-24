@@ -21,38 +21,10 @@ from libcpp.vector cimport vector
 cimport numpy as np
 
 from dimod.libcpp.binary_quadratic_model cimport BinaryQuadraticModel as cppBinaryQuadraticModel
+from dimod.typing cimport float64_t, int32_t, Numeric, Integer
 
-ctypedef np.float64_t bias_type
-ctypedef np.int32_t index_type
-
-ctypedef fused Unsigned:
-    np.uint8_t
-    np.uint16_t
-    np.uint32_t
-    np.uint64_t
-
-ctypedef fused Integral32plus:
-    np.uint32_t
-    np.uint64_t
-    np.int32_t
-    np.int64_t
-
-ctypedef fused Numeric:
-    np.uint8_t
-    np.uint16_t
-    np.uint32_t
-    np.uint64_t
-    np.int8_t
-    np.int16_t
-    np.int32_t
-    np.int64_t
-    np.float32_t
-    np.float64_t
-
-ctypedef fused Numeric32plus:
-    Integral32plus
-    np.float32_t
-    np.float64_t
+ctypedef float64_t bias_type
+ctypedef int32_t index_type
 
 cdef class cyDiscreteQuadraticModel:
     cdef cppBinaryQuadraticModel[bias_type, index_type] cppbqm
@@ -76,5 +48,9 @@ cdef class cyDiscreteQuadraticModel:
     cpdef bias_type get_quadratic_case(
         self, index_type, index_type, index_type, index_type)  except? -45.3
 
-    cdef void _into_numpy_vectors(self, Unsigned[:] starts, bias_type[:] ldata,
-        Unsigned[:] irow, Unsigned[:] icol, bias_type[:] qdata)
+    cdef void _into_numpy_vectors(
+        self,
+        Integer[:] starts,
+        bias_type[:] ldata,
+        Integer[:] irow, Integer[:] icol, bias_type[:] qdata,
+        )

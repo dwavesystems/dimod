@@ -22,8 +22,8 @@ from libcpp.algorithm cimport lower_bound as cpplower_bound
 from dimod.libcpp.vartypes cimport Vartype as cppVartype
 
 from dimod.cyutilities cimport as_numpy_float
-from dimod.cyutilities cimport ConstNumeric
 from dimod.sampleset import as_samples
+from dimod.typing cimport Numeric
 from dimod.variables import Variables
 from dimod.vartypes import Vartype
 
@@ -70,7 +70,7 @@ cdef class cyQMBase_template:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _energies(self, ConstNumeric[:, ::1] samples, cyVariables labels):
+    def _energies(self, const Numeric[:, ::1] samples, cyVariables labels):
         cdef Py_ssize_t num_samples = samples.shape[0]
         cdef Py_ssize_t num_variables = samples.shape[1]
 

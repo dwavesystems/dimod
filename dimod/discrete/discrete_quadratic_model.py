@@ -676,6 +676,12 @@ class DiscreteQuadraticModel:
             biases (array-like): The linear biases in an array.
 
         """
+        biases = np.asarray(biases)
+
+        # handle unsigned
+        if np.issubdtype(biases.dtype, np.unsignedinteger):
+            biases = np.asarray(biases, dtype=np.int64)
+
         self._cydqm.set_linear(self.variables.index(v), np.asarray(biases))
 
     def set_linear_case(self, v, case, bias):
