@@ -3,7 +3,7 @@ features:
   - |
     Add ``dimod/typing.pdx``. This allows users to ``cimport`` common C
     types into other namespaces.
-  - No longer require NumPy at build-time.
+  - Support NumPy 2.0. Also, no longer require NumPy at build-time.
 upgrade:
   - |
     Remove Cython fused types
