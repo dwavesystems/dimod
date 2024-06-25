@@ -120,7 +120,7 @@ class IdentitySampler(Sampler, Initialized):
                 identical results. If not provided, a random seed is chosen.
 
         Returns:
-            A :obj:`.SampleSet` with the specified initial states, optionally
+            A :obj:`~dimod.SampleSet` with the specified initial states, optionally
             truncated or augmented.
 
         """

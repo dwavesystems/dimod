@@ -562,7 +562,7 @@ def mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK
     a linear sum of bits, the optimization problem is a binary quadratic model.
     
     Depending on its parameters, this function can model code division multiple
-    access (CDMA) _[#T02, #R20], 5G communication networks _[#Prince], or 
+    access (CDMA)\  [#]_\ [#]_, 5G communication networks\ [#]_, or 
     other problems.
 
     Args:
@@ -683,14 +683,14 @@ def mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK
         ...     SNRb=SNRb, 
         ...     F_distribution = ('binary', 'real'))
 
-    .. [#T02] T. Tanaka IEEE TRANSACTIONS ON INFORMATION THEORY, VOL. 48, NO. 11, NOVEMBER 2002
+    .. [#] T. Tanaka IEEE TRANSACTIONS ON INFORMATION THEORY, VOL. 48, NO. 11, NOVEMBER 2002
 
-    .. [#R20] J. Raymond, N. Ndiaye, G. Rayaprolu and A. D. King, 
+    .. [#] J. Raymond, N. Ndiaye, G. Rayaprolu and A. D. King, 
         "Improving performance of logical qubits by parameter tuning and topology compensation," 
         2020 IEEE International Conference on Quantum Computing and Engineering (QCE), 
         Denver, CO, USA, 2020, pp. 295-305, doi: 10.1109/QCE49297.2020.00044.
 
-    .. [#Prince] Various (https://paws.princeton.edu/)
+    .. [#] Various (https://paws.princeton.edu/)
     """
 
     random_state = np.random.default_rng(seed)

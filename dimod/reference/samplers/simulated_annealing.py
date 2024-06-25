@@ -78,7 +78,7 @@ class SimulatedAnnealingSampler(Sampler):
                 Number of sweeps or steps.
 
         Returns:
-            :obj:`.SampleSet`
+            :obj:`~dimod.SampleSet`
 
         Note:
             This is a reference implementation, not optimized for speed

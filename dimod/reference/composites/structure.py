@@ -96,7 +96,7 @@ class StructureComposite(Sampler, Composite, Structured):
                 Binary quadratic model to be sampled from.
 
         Returns:
-            :obj:`.SampleSet`
+            :obj:`~dimod.SampleSet`
 
         Examples:
             This example submits an Ising problem to a composed sampler that uses

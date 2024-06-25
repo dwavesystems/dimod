@@ -63,7 +63,7 @@ class RandomSampler(Sampler):
                 provided, a random seed is chosen.
 
         Returns:
-            :obj:`.SampleSet`
+            :obj:`~dimod.SampleSet`
 
         """
         # as an implementation detail, we can use IdentitySampler here, but
