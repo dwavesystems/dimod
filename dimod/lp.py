@@ -44,7 +44,7 @@ def _sign(bias: float) -> str:
 def _abs(bias: float) -> str:
     # todo: use bias.is_integer() instead of int(bias) == bias once we can require
     # numpy>=1.22.0.  this is needed to support Float32BQM on numpy<1.22.0.
-    return repr(abs(int(bias))) if int(bias) == bias else repr(abs(bias))
+    return repr(abs(int(bias))) if int(bias) == bias else repr(abs(float(bias)))
 
 
 def _sense(s: Sense) -> str:

@@ -39,7 +39,7 @@ class TermsView:
         stream.write('{')
         last = len(self) - 1
         for i, (key, value) in enumerate(self.items()):
-            stream.write(f'{key!r}: {value!r}')
+            stream.write(f'{key!r}: {value}')
             if i != last:
                 stream.write(', ')
         stream.write('}')
@@ -527,7 +527,7 @@ class QuadraticViewsMixin(abc.ABC):
         def neg(bias: float) -> bool: return bias < 0
 
         def string(bias: float) -> str:
-            return repr(abs(int(bias))) if bias.is_integer() else repr(abs(bias))
+            return repr(abs(int(bias))) if bias.is_integer() else repr(abs(float(bias)))
 
         def coefficient(bias: float) -> str:
             return '' if abs(bias) == 1 else f"{string(bias)}*"
