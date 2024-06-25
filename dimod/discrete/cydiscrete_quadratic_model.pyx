@@ -25,6 +25,7 @@ import numpy as np
 
 from dimod.utilities import asintegerarrays, asnumericarrays
 from dimod.cyutilities cimport as_numpy_float
+from dimod.typing cimport Integer, int64_t, uint16_t, uint32_t, uint64_t
 
 BIAS_DTYPE = np.float64
 INDEX_DTYPE = np.int32
@@ -52,8 +53,8 @@ cdef extern from *:
     }
     """
     struct LinearTerm:
-        np.int64_t variable
-        np.int64_t case "case_v"
+        int64_t variable
+        int64_t case "case_v"
         double bias
     void sort_terms(vector[LinearTerm]&)
 
@@ -280,11 +281,11 @@ cdef class cyDiscreteQuadraticModel:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def _from_numpy_vectors(cls,
-                            Integral32plus[::1] case_starts,
-                            Numeric32plus[::1] linear_biases,
-                            Integral32plus[::1] irow,
-                            Integral32plus[::1] icol,
-                            Numeric32plus[::1] quadratic_biases,
+                            Integer[::1] case_starts,
+                            Numeric[::1] linear_biases,
+                            Integer[::1] irow,
+                            Integer[::1] icol,
+                            Numeric[::1] quadratic_biases,
                             bias_type offset):
         """Equivalent of from_numpy_vectors with fused types."""
 
@@ -661,8 +662,11 @@ cdef class cyDiscreteQuadraticModel:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef void _into_numpy_vectors(self, Unsigned[:] starts, bias_type[:] ldata,
-                                  Unsigned[:] irow, Unsigned[:] icol, bias_type[:] qdata):
+    cdef void _into_numpy_vectors(self,
+                                  Integer[:] starts,
+                                  bias_type[:] ldata,
+                                  Integer[:] irow, Integer[:] icol, bias_type[:] qdata,
+                                  ):
         # we don't do array length checking so be careful! This can segfault
         # if the given arrays are incorrectly sized
 
@@ -709,11 +713,11 @@ cdef class cyDiscreteQuadraticModel:
         qdata = np.empty(num_interactions, dtype=self.dtype)
 
         if index_dtype == np.uint16:
-            self._into_numpy_vectors[np.uint16_t](starts, ldata, irow, icol, qdata)
+            self._into_numpy_vectors[uint16_t](starts, ldata, irow, icol, qdata)
         elif index_dtype == np.uint32:
-            self._into_numpy_vectors[np.uint32_t](starts, ldata, irow, icol, qdata)
+            self._into_numpy_vectors[uint32_t](starts, ldata, irow, icol, qdata)
         else:
-            self._into_numpy_vectors[np.uint64_t](starts, ldata, irow, icol, qdata)
+            self._into_numpy_vectors[uint64_t](starts, ldata, irow, icol, qdata)
 
         if return_offset:
             return starts, ldata, (irow, icol, qdata), self.offset

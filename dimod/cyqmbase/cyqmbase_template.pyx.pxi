@@ -22,8 +22,8 @@ from libcpp.algorithm cimport lower_bound as cpplower_bound
 from dimod.libcpp.vartypes cimport Vartype as cppVartype
 
 from dimod.cyutilities cimport as_numpy_float
-from dimod.cyutilities cimport ConstNumeric
 from dimod.sampleset import as_samples
+from dimod.typing cimport Numeric, float64_t, int8_t
 from dimod.variables import Variables
 from dimod.vartypes import Vartype
 
@@ -70,7 +70,7 @@ cdef class cyQMBase_template:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _energies(self, ConstNumeric[:, ::1] samples, cyVariables labels):
+    def _energies(self, const Numeric[:, ::1] samples, cyVariables labels):
         cdef Py_ssize_t num_samples = samples.shape[0]
         cdef Py_ssize_t num_variables = samples.shape[1]
 
@@ -86,7 +86,7 @@ cdef class cyQMBase_template:
         for si in range(self.num_variables()):
             qm_to_sample[si] = labels.index(self.variables.at(si))
 
-        cdef np.float64_t[::1] energies = np.empty(num_samples, dtype=np.float64)
+        cdef float64_t[::1] energies = np.empty(num_samples, dtype=np.float64)
 
         # alright, now let's calculate some energies!
         cdef Py_ssize_t ui, vi
@@ -215,7 +215,7 @@ cdef class cyQMBase_template:
                          align=False)
         varinfo = np.empty(num_variables, dtype)
 
-        cdef np.int8_t[:] vartype_view = varinfo['vartype']
+        cdef int8_t[:] vartype_view = varinfo['vartype']
         cdef bias_type[:] lb_view = varinfo['lb']
         cdef bias_type[:] ub_view = varinfo['ub']
 

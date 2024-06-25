@@ -15,10 +15,10 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-cimport numpy as np
+from dimod.typing cimport float32_t, int32_t
 
-ctypedef np.float32_t bias_type
-ctypedef np.int32_t index_type
+ctypedef float32_t bias_type
+ctypedef int32_t index_type
 
 include "cyqmbase_template.pxd.pxi"
 

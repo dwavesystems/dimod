@@ -16,59 +16,16 @@
 #    limitations under the License.
 
 cimport cython
-cimport numpy as np
 
 from dimod.libcpp.vartypes cimport Vartype as cppVartype
+from dimod.typing cimport Integer
 
 __all__ = [
     'as_numpy_float',
     'coo_sort',
-    'Integer',
-    'SignedInteger',
-    'UnsignedInteger',
     ]
 
-cdef fused SignedInteger:
-    np.int8_t
-    np.int16_t
-    np.int32_t
-    np.int64_t
-
-cdef fused UnsignedInteger:
-    np.uint8_t
-    np.uint16_t
-    np.uint32_t
-    np.uint64_t
-
-cdef fused Integer:
-    SignedInteger
-    UnsignedInteger
-
-cdef fused ConstInteger:
-    const short
-    const int
-    const long long
-    const unsigned short
-    const unsigned int
-    const unsigned long long
-
-ctypedef fused Numeric:
-    signed char
-    cython.integral  # short, int, long
-    cython.floating  # float, double
-
-# cython doesn't like const Numeric
-ctypedef fused ConstNumeric:
-    const signed char
-    const signed short
-    const signed int
-    const signed long long
-    const float
-    const double
-
-
 cdef object as_numpy_float(cython.floating)
-
 
 cpdef Py_ssize_t coo_sort(Integer[:], Integer[:], cython.floating[:]) except -1
 

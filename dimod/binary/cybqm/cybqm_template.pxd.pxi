@@ -14,7 +14,7 @@
 
 cimport cython
 
-from dimod.cyutilities cimport ConstNumeric
+from dimod.typing cimport Numeric
 from dimod.libcpp.binary_quadratic_model cimport BinaryQuadraticModel as cppBinaryQuadraticModel
 
 
@@ -26,8 +26,8 @@ cdef class cyBQM_template(cyQMBase):
     # likes to use
 
     cdef Py_ssize_t _index(self, object, bint permissive=*) except -1
-    cpdef Py_ssize_t add_linear_from_array(self, ConstNumeric[:] linear) except -1
-    cpdef Py_ssize_t add_quadratic_from_dense(self, ConstNumeric[:, ::1] quadratic) except -1
+    cpdef Py_ssize_t add_linear_from_array(self, const Numeric[:] linear) except -1
+    cpdef Py_ssize_t add_quadratic_from_dense(self, const Numeric[:, ::1] quadratic) except -1
     cpdef Py_ssize_t change_vartype(self, object) except -1
     cdef const cppBinaryQuadraticModel[bias_type, index_type]* data(self)
     cpdef Py_ssize_t resize(self, Py_ssize_t) except? 0
