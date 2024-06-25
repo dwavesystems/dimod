@@ -2,8 +2,8 @@ version: 2.1
 
 orbs:
   codecov: codecov/codecov@3
-  win: circleci/windows@5.0.0
-  macos: circleci/macos@2.4.1
+  win: circleci/windows@5.0
+  macos: circleci/macos@2.4
 
 environment: &global-environment
   PIP_PROGRESS_BAR: 'off'
