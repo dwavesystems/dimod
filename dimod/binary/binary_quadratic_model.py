@@ -292,7 +292,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return self.num_variables
 
     def __repr__(self):
-        return "{!s}({!s}, {!s}, {}, {!r})".format(type(self).__name__,
+        return "{!s}({!s}, {!s}, {!s}, {!r})".format(type(self).__name__,
                                                      self.linear,
                                                      self.quadratic,
                                                      self.offset,
