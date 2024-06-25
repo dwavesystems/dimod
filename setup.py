@@ -21,12 +21,12 @@ from setuptools.command.build_ext import build_ext as _build_ext
 
 extra_compile_args = {
     'msvc': ['/EHsc'],
-    'unix': ['-std=c++11'],
+    'unix': ['-std=c++11', '-g1'],
 }
 
 extra_link_args = {
     'msvc': [],
-    'unix': ['-std=c++11'],
+    'unix': ['-std=c++11', '-g1'],
 }
 
 
@@ -40,7 +40,7 @@ class build_ext(_build_ext):
 
         link_args = extra_link_args[compiler]
         for ext in self.extensions:
-            ext.extra_compile_args.extend(link_args)
+            ext.extra_link_args.extend(link_args)
 
         super().build_extensions()
 

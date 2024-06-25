@@ -1,0 +1,5 @@
+---
+features:
+  - Reduce the size of manylinux wheels.
+deprecations:
+  - Don't include debug info in built ``.so`` files.
