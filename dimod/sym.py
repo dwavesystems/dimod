@@ -79,7 +79,7 @@ class Comparison(abc.ABC):
             A string representing the comparison.
 
         """
-        return f"{self.lhs.to_polystring(encoder)} {self.sense.value} {self.rhs!r}"
+        return f"{self.lhs.to_polystring(encoder)} {self.sense.value} {self.rhs}"
 
 
 class Eq(Comparison, sense='=='):

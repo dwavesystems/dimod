@@ -204,13 +204,18 @@ def append_variables(sampleset, samples_like, sort_labels=True):
                                         **sampleset.data_vectors)
 
 
-def _sample_array(array_like: ArrayLike, dtype: Optional[DTypeLike] = None, **kwargs) -> np.ndarray:
+def _sample_array(array_like: ArrayLike, *, dtype: Optional[DTypeLike] = None, copy=False, **kwargs) -> np.ndarray:
     """Convert an array-like into a samples array."""
 
     if dtype is None:
         dtype = getattr(array_like, 'dtype', None)
 
-    arr = np.array(array_like, dtype=dtype, **kwargs)
+    # NumPy 2.0 change the behavior of the copy kwarg where False raises an error
+    # if there must be a copy, but we maintain dimod's existing behavior
+    if copy:
+        arr = np.array(array_like, dtype=dtype, copy=True, **kwargs)
+    else:
+        arr = np.asarray(array_like, dtype=dtype, **kwargs)
 
     # make sure it's exactly 2d and handle the obvious edge cases
     if arr.ndim < 2:
@@ -1534,7 +1539,7 @@ class SampleSet(abc.Iterable, abc.Sized):
         # fix the number of occurrences
         record.num_occurrences = 0
         for old_idx, new_idx in enumerate(inverse):
-            record[new_idx].num_occurrences += self.record[old_idx].num_occurrences
+            record["num_occurrences"][new_idx] += self.record[old_idx].num_occurrences
 
         # dev note: we don't check the energies as they should be the same
         # for individual samples

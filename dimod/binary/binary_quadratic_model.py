@@ -292,7 +292,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return self.num_variables
 
     def __repr__(self):
-        return "{!s}({!s}, {!s}, {!r}, {!r})".format(type(self).__name__,
+        return "{!s}({!s}, {!s}, {}, {!r})".format(type(self).__name__,
                                                      self.linear,
                                                      self.quadratic,
                                                      self.offset,
@@ -543,6 +543,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @offset.setter
     def offset(self, offset):
+        if isinstance(offset, np.ndarray):
+            offset = offset.reshape(tuple())  # try to just flatten into a scalar
         self.data.offset = offset
 
     @property
