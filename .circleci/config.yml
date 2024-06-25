@@ -2,7 +2,8 @@ version: 2.1
 
 orbs:
   codecov: codecov/codecov@3
-  win: circleci/windows@5.0.0
+  win: circleci/windows@5.0
+  macos: circleci/macos@2.4
 
 environment: &global-environment
   PIP_PROGRESS_BAR: 'off'
@@ -74,14 +75,21 @@ jobs:
         type: string
 
     macos:
-      xcode: 13.4.0
+      xcode: 15.3.0
+    resource_class: macos.m1.medium.gen1
 
     environment:
       <<: *global-environment
       CIBW_PROJECT_REQUIRES_PYTHON: ~=<< parameters.python-version>>
 
-    steps: *build-steps
-
+    steps:
+      - checkout
+      - macos/install-rosetta
+      - restore_cache: *build-linux-restore-cache
+      - run: *build-linux-wheels
+      - save_cache: *build-linux-save-cache
+      - store_artifacts: *store-artifacts
+      - persist_to_workspace: *persist-to-workspace
   build-sdist:
     docker:
       - image: cimg/python:3.9
@@ -259,7 +267,7 @@ jobs:
             python -m venv env
             . env/bin/activate
             pip install dimod --no-index -f dist/ --force-reinstall --no-deps
-            pip install << parameters.dependencies >> --upgrade --only-binary=numpy
+            pip install "<< parameters.dependencies >>" --upgrade --only-binary=numpy
       - run: &unix-run-tests
           name: run tests
           command: |
@@ -281,7 +289,8 @@ jobs:
 
   test-osx-cpp:
     macos:
-      xcode: 13.4.0
+      xcode: 15.3.0
+    resource_class: macos.m1.medium.gen1
 
     steps:
       - checkout
@@ -324,7 +333,7 @@ workflows:
           matrix:
             parameters:
               # test the lowest supported numpy and the latest
-              dependencies: [oldest-supported-numpy, numpy]
+              dependencies: [oldest-supported-numpy, numpy<2.0.0]
               python-version: *python-versions
       - test-linux-cpp
       - test-osx-cpp
