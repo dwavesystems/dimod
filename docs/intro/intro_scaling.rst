@@ -97,7 +97,7 @@ Time the construction:
 
     bin_packing(weights)
 
-.. code-block:: python
+.. code-block:: text
 
     In [1]: %timeit bin_packing(weights)
     385 ms ± 9.8 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
@@ -155,7 +155,7 @@ This simple change already reduces the runtime.
 
     bin_packing(weights)
 
-.. code-block:: python
+.. code-block:: text
 
     In [1]: %timeit bin_packing(weights)
     294 ms ± 9.39 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
@@ -188,7 +188,7 @@ between variables and labels.
     make_bqm_symbolic(1000)
     make_bqm_labels(1000)
 
-.. code-block:: python
+.. code-block:: text
 
     In [1]: %timeit make_bqm_symbolic(1000)
     12.7 ms ± 213 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
@@ -244,7 +244,7 @@ This change significantly reduces runtime.
 
     bin_packing(weights)
 
-.. code-block:: python
+.. code-block:: text
 
     In [1]: %timeit bin_packing(weights)
     95.5 ms ± 2.87 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
@@ -304,7 +304,7 @@ This results in another performance improvement.
 
     bin_packing(weights)
 
-.. code-block:: python
+.. code-block:: text
 
     In [1]: %timeit bin_packing(weights)
     68.1 ms ± 299 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
