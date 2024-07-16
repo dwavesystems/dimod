@@ -15,6 +15,8 @@ import warnings
 
 import collections.abc as abc
 
+import numbers
+
 from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
@@ -24,7 +26,7 @@ from dimod.decorators import graph_argument
 from dimod.typing import Bias, GraphLike, Variable, VartypeLike
 from dimod.vartypes import Vartype
 
-__all__ = ['gnm_random_bqm', 'gnp_random_bqm', 'uniform', 'ran_r', 'randint', 'doped']
+__all__ = ['gnm_random_bqm', 'gnp_random_bqm', 'uniform', 'ran_r', 'randint', 'doped', "power_r"]
 
 
 def gnm_random_bqm(variables: Union[int, Sequence[Variable]],
@@ -500,3 +502,66 @@ def doped(p: float, graph: GraphLike,
         bqm.add_interaction(u, v, J)
 
     return bqm
+
+
+@graph_argument("graph")
+def power_r(
+    r: int,
+    graph: GraphLike,
+    *,
+    seed: Union[None, int, np.random.Generator] = None,
+) -> BinaryQuadraticModel:
+    """Generate an Ising model for a POWERr problem.
+
+    In POWERr problems all linear biases are zero and quadratic values are integers
+    between ``-r`` to ``r``, excluding zero. Quadratic values are distributed as a
+    power-law, inversely proportional to their magnitude P(value) ~ 1/|value|. As a result,
+    values with small magnitude appear in higher frequency than values with large magnitude.
+
+    This class of problems is relevant for binary quadratic models (BQM) with spin variables (Ising models).
+
+    Args:
+        r: Order of the POWERr problem.
+
+        graph:
+            Graph to build the BQM on. Either an integer, `n`, interpreted as a
+            complete graph of size `n`, a nodes/edges pair, a list of edges or a
+            NetworkX graph.
+
+        seed:
+            Seed for the random number generator.
+            Passed to :func:`numpy.random.default_rng()`.
+
+    Returns:
+        A binary quadratic model.
+
+    """
+
+    if not isinstance(r, numbers.Integral):
+        raise TypeError("r should be a positive integer")
+    if r < 1:
+        raise ValueError("r should be a positive integer")
+
+    if seed is None:
+        seed = np.random.randint(2**32, dtype=np.uint32)
+    rng = np.random.default_rng(seed)
+
+    variables, edges = graph
+
+    index = {v: idx for idx, v in enumerate(variables)}
+
+    if edges:
+        irow, icol = zip(*((index[u], index[v]) for u, v in edges))
+    else:
+        irow = icol = tuple()
+
+    ldata = np.zeros(len(variables))
+
+    rvals = np.concatenate((np.arange(-r, 0), np.arange(1, r + 1)))
+    pvals =  1 / abs(rvals) / sum(1 / abs(rvals)) 
+    qdata = rng.choice(rvals, p=pvals, size=len(irow))
+
+    offset = 0
+
+    return BinaryQuadraticModel.from_numpy_vectors(ldata, (irow, icol, qdata), offset, vartype='SPIN',
+                                  variable_order=variables)

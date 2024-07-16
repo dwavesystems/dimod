@@ -1,0 +1,5 @@
+---
+
+features:
+  - |
+    Add ``power_r()`` generator function to ``dimod.generators``. The weights of the generated Ising problems follow a power-law distribution with respect to their magnitude. 
