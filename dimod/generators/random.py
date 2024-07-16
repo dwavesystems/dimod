@@ -15,6 +15,8 @@ import warnings
 
 import collections.abc as abc
 
+import numbers
+
 from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
@@ -505,7 +507,7 @@ def doped(p: float, graph: GraphLike,
 
 @graph_argument('graph')
 def power_r(r: int, graph: GraphLike,
-          seed: Optional[int] = None) -> BinaryQuadraticModel:
+          seed: Union[None, int, np.random.Generator] = None,) -> BinaryQuadraticModel:
     """Generate an Ising model for a POWERr problem.
 
     In POWERr problems all linear biases are zero and quadratic values are integers 
@@ -523,21 +525,23 @@ def power_r(r: int, graph: GraphLike,
             complete graph of size `n`, a nodes/edges pair, a list of edges or a
             NetworkX graph.
 
-        seed: Random seed.
+        seed:
+            Seed for the random number generator.
+            Passed to :func:`numpy.random.default_rng()`.
 
     Returns:
         A binary quadratic model.
 
     """
 
-    if not isinstance(r, int):
+    if not isinstance(r, numbers.Integral):
         raise TypeError("r should be a positive integer")
     if r < 1:
         raise ValueError("r should be a positive integer")
 
     if seed is None:
         seed = np.random.randint(2**32, dtype=np.uint32)
-    rnd = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
 
     variables, edges = graph
 
@@ -552,7 +556,7 @@ def power_r(r: int, graph: GraphLike,
 
     rvals = np.concatenate((np.arange(-r, 0), np.arange(1, r + 1)))
     pvals =  1 / abs(rvals) / sum(1 / abs(rvals)) 
-    qdata = rnd.choice(rvals, p=pvals, size=len(irow))
+    qdata = rng.choice(rvals, p=pvals, size=len(irow))
 
     offset = 0
 
