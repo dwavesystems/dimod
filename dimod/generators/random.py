@@ -504,17 +504,20 @@ def doped(p: float, graph: GraphLike,
     return bqm
 
 
-
-@graph_argument('graph')
-def power_r(r: int, graph: GraphLike,
-          seed: Union[None, int, np.random.Generator] = None,) -> BinaryQuadraticModel:
+@graph_argument("graph")
+def power_r(
+    r: int,
+    graph: GraphLike,
+    *,
+    seed: Union[None, int, np.random.Generator] = None,
+) -> BinaryQuadraticModel:
     """Generate an Ising model for a POWERr problem.
 
-    In POWERr problems all linear biases are zero and quadratic values are integers 
+    In POWERr problems all linear biases are zero and quadratic values are integers
     between ``-r`` to ``r``, excluding zero. Quadratic values are distributed as a
     power-law, inversely proportional to their magnitude P(value) ~ 1/|value|. As a result,
     values with small magnitude appear in higher frequency than values with large magnitude.
-    
+
     This class of problems is relevant for binary quadratic models (BQM) with spin variables (Ising models).
 
     Args:
