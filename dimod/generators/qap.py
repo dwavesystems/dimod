@@ -24,18 +24,18 @@ __all__ = ['quadratic_assignment']
 def quadratic_assignment(distance_matrix: np.typing.ArrayLike,
                          flow_matrix: np.typing.ArrayLike,
                          ) -> ConstrainedQuadraticModel:
-    """Generates a constrained quadratic model encoding a quadratic assignment problem.
+    """Generates a constrained quadratic model encoding a quadratic-assignment problem.
 
     Given distance and flow matrices, generates a :class:`~dimod.ConstrainedQuadraticModel` 
-    for the corresponding quadratic assignment problem. 
+    for the corresponding quadratic-assignment problem. 
 
     Args:
-        distances: numpy array containing the distance between location i and location j
+        distances: Distances between locations :math:`i` and :math:`j` as a NumPy array.
 
-        flows: numpy array containing the flow between facility i and facility j
+        flows: Flows between facilities :math:`i` and :math:`j` as a NumPy array.
 
     Returns:
-        The constrained quadratic model encoding the quadratic assignment problem. Variables are
+        The constrained quadratic model encoding the quadratic-assignment problem. Variables are
         denoted as ``x_{i}_{j}`` where ``x_{i}_{j} == 1`` means that facility ``i`` is
         placed in location ``j``.
 
