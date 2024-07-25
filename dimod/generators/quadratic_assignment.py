@@ -74,8 +74,8 @@ def quadratic_assignment(distance_matrix: np.typing.ArrayLike,
     model.set_objective(obj)
 
     for i in range(num_locations):
-        constraint = [(x[(i,j)], 1) for j in range(num_locations)] + [(-1,)]
-        model.add_constraint(constraint, sense='==')
+        constraint_vars = [x[(i,j)] for j in range(num_locations)]
+        model.add_discrete(constraint_vars)
 
     for j in range(num_locations):
         constraint = [(x[(i,j)], 1) for i in range(num_locations)] + [(-1,)]
