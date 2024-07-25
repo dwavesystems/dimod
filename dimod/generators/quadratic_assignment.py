@@ -41,6 +41,9 @@ def quadratic_assignment(distance_matrix: np.typing.ArrayLike,
 
     """
 
+    distance_matrix = np.atleast_2d(np.asarray(distance_matrix))
+    flow_matrix = np.atleast_2d(np.asarray(flow_matrix))
+
     if distance_matrix.shape != flow_matrix.shape:
         raise ValueError("'distance_matrix' and 'flow_matrix' must have the same shape")
 
