@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Add ``quadratic_assignment`` generator function to ``dimod.generators``.
