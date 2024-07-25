@@ -47,6 +47,18 @@ def quadratic_assignment(distance_matrix: np.typing.ArrayLike,
     if distance_matrix.shape != flow_matrix.shape:
         raise ValueError("'distance_matrix' and 'flow_matrix' must have the same shape")
 
+    if distance_matrix.shape[0] != distance_matrix.shape[1]:
+        raise ValueError("'distance_matrix' must be square")
+
+    if flow_matrix.shape[0] != flow_matrix.shape[1]:
+        raise ValueError("'flow_matrix' must be square")
+
+    if distance_matrix.ndim != 2:
+        raise ValueError("'distance_matrix' must be 2-dimensional")
+
+    if flow_matrix.ndim != 2: 
+        raise ValueError("'flow_matrix' must be 2-dimensional")
+
     num_locations = distance_matrix.shape[0]
 
     model = ConstrainedQuadraticModel()
