@@ -15,14 +15,15 @@
 from itertools import product
 
 import numpy as np
+import numpy.typing as npt
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
 
 __all__ = ['quadratic_assignment']
 
-def quadratic_assignment(distance_matrix: np.typing.ArrayLike,
-                         flow_matrix: np.typing.ArrayLike,
+def quadratic_assignment(distance_matrix: npt.ArrayLike,
+                         flow_matrix: npt.ArrayLike,
                          ) -> ConstrainedQuadraticModel:
     """Generates a constrained quadratic model encoding a quadratic-assignment problem.
 
