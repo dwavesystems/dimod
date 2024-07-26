@@ -1742,13 +1742,13 @@ class TestQuadraticAssignment(unittest.TestCase):
         distance_matrix = np.array([[1,2], [3,4]])
         flow_matrix = np.array([5])
         with self.assertRaises(ValueError):
-            dimod.generators.quadratic_assignment.quadratic_assignment(distance_matrix, flow_matrix)
+            dimod.generators.quadratic_assignment(distance_matrix, flow_matrix)
 
     def test_not_square(self):
         distance_matrix = np.array([[1,2],[3,4],[5,6]])
         flow_matrix = np.array([[1,2],[3,4],[5,6]])
         with self.assertRaises(ValueError):
-            dimod.generators.quadratic_assignment.quadratic_assignment(distance_matrix, flow_matrix)
+            dimod.generators.quadratic_assignment(distance_matrix, flow_matrix)
 
     def test_not_2d(self):
         distance_matrix = np.array([
@@ -1768,14 +1768,13 @@ class TestQuadraticAssignment(unittest.TestCase):
                                 [21, 22, 23, 24]]
                             ])
         with self.assertRaises(ValueError):
-            dimod.generators.quadratic_assignment.quadratic_assignment(distance_matrix, flow_matrix)
+            dimod.generators.quadratic_assignment(distance_matrix, flow_matrix)
 
     def test_model(self):
         distance_matrix = np.array([[0,2,3],[4,0,5],[6,1,0]])
         flow_matrix = np.array([[0,1,7],[2,0,3],[8,5,0]])
         num_locations = distance_matrix.shape[0]
-        cqm = dimod.generators.quadratic_assignment.quadratic_assignment(distance_matrix,
-                                                                         flow_matrix)
+        cqm = dimod.generators.quadratic_assignment(distance_matrix, flow_matrix)
         self.assertEqual(len(cqm.variables), num_locations**2)
         self.assertEqual(len(cqm.constraints), 2*num_locations)
 
@@ -1783,8 +1782,7 @@ class TestQuadraticAssignment(unittest.TestCase):
         distance_matrix = np.array([[0,2,3],[4,0,5],[6,1,0]])
         flow_matrix = np.array([[0,1,7],[2,0,3],[8,5,0]])
         num_locations = distance_matrix.shape[0]
-        cqm = dimod.generators.quadratic_assignment.quadratic_assignment(distance_matrix,
-                                                                         flow_matrix)
+        cqm = dimod.generators.quadratic_assignment(distance_matrix, flow_matrix)
 
         for i in range(num_locations):
             x = {f'x_{i}_{j}': 1 for j in range(num_locations)}
@@ -1800,8 +1798,7 @@ class TestQuadraticAssignment(unittest.TestCase):
         distance_matrix = np.array([[0,2,3],[4,0,5],[6,1,0]])
         flow_matrix = np.array([[0,1,7],[2,0,3],[8,5,0]])
         num_locations = distance_matrix.shape[0]
-        cqm = dimod.generators.quadratic_assignment.quadratic_assignment(distance_matrix,
-                                                                         flow_matrix)
+        cqm = dimod.generators.quadratic_assignment(distance_matrix, flow_matrix)
 
         for i in range(num_locations):
             x = {f'x_{i}_{j}': 1 if i==j else 0 for j in range(num_locations)}
