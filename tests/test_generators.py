@@ -1753,20 +1753,16 @@ class TestQuadraticAssignment(unittest.TestCase):
     def test_not_2d(self):
         distance_matrix = np.array([
                                     [[1, 2, 3, 4],
-                                    [5, 6, 7, 8],
-                                    [9, 10, 11, 12]],                                    
+                                    [5, 6, 7, 8]],                                    
                                     [[13, 14, 15, 16],
-                                    [17, 18, 19, 20],
-                                    [21, 22, 23, 24]]
+                                    [17, 18, 19, 20]]
                                 ])
         flow_matrix = np.array([
-                                [[1, 2, 3, 4],
-                                [5, 6, 7, 8],
-                                [9, 10, 11, 12]],
-                                [[13, 14, 15, 16],
-                                [17, 18, 19, 20],
-                                [21, 22, 23, 24]]
-                            ])
+                                    [[1, 2, 3, 4],
+                                    [5, 6, 7, 8]],                                    
+                                    [[13, 14, 15, 16],
+                                    [17, 18, 19, 20]]
+                                ])
         with self.assertRaises(ValueError):
             dimod.generators.quadratic_assignment(distance_matrix, flow_matrix)
 
