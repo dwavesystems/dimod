@@ -24,6 +24,7 @@ from dimod.generators.integer import *
 from dimod.generators.knapsack import *
 from dimod.generators.magic_square import *
 from dimod.generators.multi_knapsack import *
+from dimod.generators.quadratic_assignment import *
 from dimod.generators.random import *
 from dimod.generators.satisfiability import *
 from dimod.generators.wireless import *

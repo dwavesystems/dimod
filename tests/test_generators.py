@@ -1734,3 +1734,74 @@ class TestPowerR(unittest.TestCase):
         self.assertTrue(all(val != 0 for val in bqm.quadratic.values()))
         self.assertTrue(all(val <= 5 for val in bqm.quadratic.values()))
         self.assertTrue(all(val >= -5 for val in bqm.quadratic.values()))
+
+
+class TestQuadraticAssignment(unittest.TestCase):
+
+    def test_unequal_shape(self):
+        distance_matrix = np.array([[1,2], [3,4]])
+        flow_matrix = np.array([5])
+        with self.assertRaises(ValueError):
+            dimod.generators.quadratic_assignment(distance_matrix, flow_matrix)
+
+    def test_not_square(self):
+        distance_matrix = np.array([[1,2],[3,4],[5,6]])
+        flow_matrix = np.array([[1,2],[3,4],[5,6]])
+        with self.assertRaises(ValueError):
+            dimod.generators.quadratic_assignment(distance_matrix, flow_matrix)
+
+    def test_not_2d(self):
+        distance_matrix = np.array([
+                                    [[1, 2, 3, 4],
+                                    [5, 6, 7, 8]],                                    
+                                    [[13, 14, 15, 16],
+                                    [17, 18, 19, 20]]
+                                ])
+        flow_matrix = np.array([
+                                    [[1, 2, 3, 4],
+                                    [5, 6, 7, 8]],                                    
+                                    [[13, 14, 15, 16],
+                                    [17, 18, 19, 20]]
+                                ])
+        with self.assertRaises(ValueError):
+            dimod.generators.quadratic_assignment(distance_matrix, flow_matrix)
+
+    def test_model(self):
+        distance_matrix = np.array([[0,2,3],[4,0,5],[6,1,0]])
+        flow_matrix = np.array([[0,1,7],[2,0,3],[8,5,0]])
+        num_locations = distance_matrix.shape[0]
+        cqm = dimod.generators.quadratic_assignment(distance_matrix, flow_matrix)
+        self.assertEqual(len(cqm.variables), num_locations**2)
+        self.assertEqual(len(cqm.constraints), 2*num_locations)
+
+    def test_infeasible(self):
+        distance_matrix = np.array([[0,2,3],[4,0,5],[6,1,0]])
+        flow_matrix = np.array([[0,1,7],[2,0,3],[8,5,0]])
+        num_locations = distance_matrix.shape[0]
+        cqm = dimod.generators.quadratic_assignment(distance_matrix, flow_matrix)
+
+        for i in range(num_locations):
+            x = {f'x_{i}_{j}': 1 for j in range(num_locations)}
+            lhs = cqm.constraints[f'discrete_constraint_{i}'].lhs.energy(x)
+            self.assertNotEqual(lhs, 1)
+
+        for j in range(num_locations):
+            x = {f'x_{i}_{j}': 1 for i in range(num_locations)}
+            lhs = cqm.constraints[f'facility_constraint_{j}'].lhs.energy(x)
+            self.assertNotEqual(lhs, 0)
+
+    def test_feasible(self):
+        distance_matrix = np.array([[0,2,3],[4,0,5],[6,1,0]])
+        flow_matrix = np.array([[0,1,7],[2,0,3],[8,5,0]])
+        num_locations = distance_matrix.shape[0]
+        cqm = dimod.generators.quadratic_assignment(distance_matrix, flow_matrix)
+
+        for i in range(num_locations):
+            x = {f'x_{i}_{j}': 1 if i==j else 0 for j in range(num_locations)}
+            lhs = cqm.constraints[f'discrete_constraint_{i}'].lhs.energy(x)
+            self.assertEqual(lhs, 1)
+
+        for j in range(num_locations):
+            x = {f'x_{i}_{j}': 1 if i==j else 0 for i in range(num_locations)}
+            lhs = cqm.constraints[f'facility_constraint_{j}'].lhs.energy(x)
+            self.assertEqual(lhs, 0)
