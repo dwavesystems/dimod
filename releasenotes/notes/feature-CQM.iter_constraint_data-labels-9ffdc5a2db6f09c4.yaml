@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add ``labels`` keyword argument to ``ConstrainedQuadraticModel.iter_constraint_data()``
+    and ``ConstrainedQuadraticModel.iter_violations()`` methods.
+    The ``labels`` keyword argument allows a user to generate the data/violations for
+    a subset of the constraints.
+    See `#1381 <https://github.com/dwavesystems/dimod/issues/1381>`_.

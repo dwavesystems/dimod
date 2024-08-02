@@ -1144,7 +1144,11 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         return cqm
 
-    def iter_constraint_data(self, sample_like: SamplesLike) -> Iterator[ConstraintData]:
+    def iter_constraint_data(self,
+                             sample_like: SamplesLike,
+                             *,
+                             labels: typing.Optional[typing.Iterable[typing.Hashable]] = None,
+                             ) -> Iterator[ConstraintData]:
         """Yield information about the constraints for the given sample.
 
         Note that this method iterates over constraints in the same order as
@@ -1153,6 +1157,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         Args:
             sample_like: A sample. `sample-like` is an extension of
                 NumPy's array_like structure. See :func:`.as_samples`.
+            labels: A subset of the constraint labels over which to iterate.
 
         Yields:
             A :class:`collections.namedtuple` with the following fields.
@@ -1185,14 +1190,23 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         """
         # We go ahead and coerce to Variables for performance, since .energies() prefers
         # that format
-        sample, labels = as_samples(sample_like, labels_type=Variables)
+        sample, variable_labels = as_samples(sample_like, labels_type=Variables)
 
         if sample.shape[0] != 1:
             raise ValueError("sample_like should be a single sample, "
                              f"received {sample.shape[0]} samples")
 
-        for label, constraint in self.constraints.items():
-            lhs = constraint.lhs.energy((sample, labels))
+        # by default iterate over all constraints in the model
+        if labels is None:
+            labels = self.constraint_labels
+
+        for label in labels:
+            try:
+                constraint = self.constraints[label]
+            except KeyError as err:
+                raise ValueError(f"unknown constraint label: {label!r}") from err
+
+            lhs = constraint.lhs.energy((sample, variable_labels))
             rhs = constraint.rhs
             sense = constraint.sense
 
@@ -1219,6 +1233,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     def iter_violations(self, sample_like: SamplesLike, *,
                         skip_satisfied: bool = False,
                         clip: bool = False,
+                        labels: typing.Optional[typing.Iterable[typing.Hashable]] = None,
                         ) -> Iterator[Tuple[Hashable, Bias]]:
         """Yield violations for all constraints.
 
@@ -1227,6 +1242,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 NumPy's array_like structure. See :func:`.as_samples`..
             skip_satisfied: If True, does not yield constraints that are satisfied.
             clip: If True, negative violations are rounded up to 0.
+            labels: A subset of the constraint labels over which to iterate.
 
         Yields:
             A 2-tuple containing the constraint label and the amount of the
@@ -1273,14 +1289,14 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         if skip_satisfied:
             # clip doesn't matter in this case
             # todo: feasibility tolerance?
-            for datum in self.iter_constraint_data(sample_like):
+            for datum in self.iter_constraint_data(sample_like, labels=labels):
                 if datum.violation > 0:
                     yield datum.label, datum.violation
         elif clip:
-            for datum in self.iter_constraint_data(sample_like):
+            for datum in self.iter_constraint_data(sample_like, labels=labels):
                 yield datum.label, max(datum.violation, 0.0)
         else:
-            for datum in self.iter_constraint_data(sample_like):
+            for datum in self.iter_constraint_data(sample_like, labels=labels):
                 yield datum.label, datum.violation
 
     def is_almost_equal(self, other: 'ConstrainedQuadraticModel',

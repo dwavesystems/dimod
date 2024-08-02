@@ -676,6 +676,37 @@ class TestIterViolations(unittest.TestCase):
         sample = {'j': -1, 'i': 1004, 'k': 1000}
         self.assertEqual(cqm.violations(sample, clip=False), {label_ge: -3.0, label_le: -1.0})
 
+    def test_iter_violations(self):
+        cqm = CQM()
+        x, y, z = dimod.Binaries(['x', 'y', 'z'])
+
+        c0 = cqm.add_constraint(x + y <= 1, label="c0")
+        c1 = cqm.add_constraint(x - y >= 1, label="c1")
+        c2 = cqm.add_constraint(z >= 0, label="c2")
+
+        with self.subTest("no other kwargs"):
+            data = list(cqm.iter_violations({"x": 0, "y": 1, "z": 0}, labels=[c0, c1]))
+
+            self.assertEqual(len(data), 2)
+            self.assertEqual(data[0][0], c0)  # ordered by labels
+            self.assertEqual(data[1][0], c1)
+
+        with self.subTest("with clip kwarg"):
+            data = list(cqm.iter_violations({"x": 0, "y": 1, "z": 0}, labels=[c0, c1], clip=True))
+
+            self.assertEqual(len(data), 2)
+            self.assertEqual(data[0][0], c0)  # ordered by labels
+            self.assertEqual(data[1][0], c1)
+
+        with self.subTest("with skip_satisfied kwarg"):
+            data = list(cqm.iter_violations({"x": 0, "y": 1, "z": 0}, labels=[c0, c1], skip_satisfied=True))
+
+            self.assertEqual(len(data), 1)
+            self.assertEqual(data[0][0], c1)
+
+        with self.assertRaisesRegex(ValueError, "unknown constraint label: 'unknown label'"):
+            list(cqm.iter_violations({"x": 0, "y": 1, "z": 0}, labels=[c0, "unknown label"]))
+
 
 class TestIsAlmostEqual(unittest.TestCase):
     def test_simple(self):
@@ -1789,6 +1820,23 @@ class TestIterConstraintData(unittest.TestCase):
         self.assertEqual(len(cqm.constraints), 6)
         self.assertEqual(list(cqm.constraints.keys()),
             [datum.label for datum in cqm.iter_constraint_data({'x': 1, 'y': 0, 'z': 0})])
+
+    def test_labels(self):
+        cqm = CQM()
+        x, y, z = dimod.Binaries(['x', 'y', 'z'])
+
+        c0 = cqm.add_constraint(x + y <= 1, label="c0")
+        c1 = cqm.add_constraint(x - y >= 1, label="c1")
+        c2 = cqm.add_constraint(z >= .5, label="c2")
+
+        data = list(cqm.iter_constraint_data({"x": 0, "y": 1, "z": 0}, labels=[c0, c1]))
+
+        self.assertEqual(len(data), 2)
+        self.assertEqual(data[0].label, c0)  # ordered by labels
+        self.assertEqual(data[1].label, c1)
+
+        with self.assertRaisesRegex(ValueError, "unknown constraint label: 'unknown label'"):
+            list(cqm.iter_constraint_data({"x": 0, "y": 1, "z": 0}, labels=[c0, "unknown label"]))
 
 
 class TestStr(unittest.TestCase):
