@@ -49,6 +49,7 @@ Optimization
    maximum_weight_independent_set
    mimo
    quadratic_assignment
+   bin_packing
    random_bin_packing
    random_knapsack
    random_multi_knapsack
