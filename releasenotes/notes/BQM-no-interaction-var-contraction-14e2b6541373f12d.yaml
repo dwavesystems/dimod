@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Contracting variables that do not have a quadratic interaction with
+    `BinaryQuadraticModel.contract_variables` is allowed (and equivalent to the
+    case that they have explicit zero interaction), rather than raising
+    `ValueError`.
