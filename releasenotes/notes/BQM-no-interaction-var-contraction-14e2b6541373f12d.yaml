@@ -1,7 +1,5 @@
 ---
-fixes:
+features:
   - |
-    Contracting variables that do not have a quadratic interaction with
-    `BinaryQuadraticModel.contract_variables` is allowed (and equivalent to the
-    case that they have explicit zero interaction), rather than raising
-    `ValueError`.
+    Allow  ``BinaryQuadraticModel.contract_variables()`` to contract variables without
+    an interaction. Previously it raised a ``ValueError``.
