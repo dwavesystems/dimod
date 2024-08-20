@@ -43,13 +43,13 @@ Optimization
 .. autosummary::
    :toctree: generated/
 
+   bin_packing
    coordinated_multipoint
    independent_set
    maximum_independent_set
    maximum_weight_independent_set
    mimo
    quadratic_assignment
-   bin_packing
    random_bin_packing
    random_knapsack
    random_multi_knapsack

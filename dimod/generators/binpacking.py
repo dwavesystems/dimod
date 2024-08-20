@@ -67,7 +67,7 @@ def bin_packing(weights: typing.List[int], capacity: int) -> ConstrainedQuadrati
 
 
 def random_bin_packing(num_items: int,
-                       seed: typing.Optional[int] = None,
+                       seed: typing.Union[None, int, np.random.Generator] = None,
                        weight_range: typing.Tuple[int, int] = (10, 30),
                        ) -> ConstrainedQuadraticModel:
     """Generate a random bin packing problem as a constrained quadratic model.
@@ -77,7 +77,7 @@ def random_bin_packing(num_items: int,
 
     Args:
         num_items: Number of items to choose from.
-        seed: Seed for NumPy random number generator.
+        seed: Seed for the random number generator. Passed to :func:`numpy.random.default_rng()`.
         weight_range: The range of the randomly generated weights for each item.
 
     Returns:
@@ -88,8 +88,8 @@ def random_bin_packing(num_items: int,
 
     """
 
-    rng = np.random.RandomState(seed)
-    weights = list(rng.randint(*weight_range, num_items))
+    rng = np.random.default_rng(seed)
+    weights = list(rng.integers(*weight_range, num_items))
     bin_capacity = int(num_items * np.mean(weights) / 5)
 
     model = bin_packing(weights, bin_capacity)
