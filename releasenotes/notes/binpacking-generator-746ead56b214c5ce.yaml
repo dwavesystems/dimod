@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Add ``bin_packing`` generator function to ``dimod.generators``.

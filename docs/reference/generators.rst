@@ -43,6 +43,7 @@ Optimization
 .. autosummary::
    :toctree: generated/
 
+   bin_packing
    coordinated_multipoint
    independent_set
    maximum_independent_set

@@ -20,24 +20,20 @@ from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
 from dimod.vartypes import BINARY
 
-__all__ = ['random_bin_packing']
+__all__ = ['bin_packing', 'random_bin_packing']
 
 
-def random_bin_packing(num_items: int,
-                       seed: typing.Optional[int] = None,
-                       weight_range: typing.Tuple[int, int] = (10, 30),
-                       ) -> ConstrainedQuadraticModel:
+def bin_packing(weights: typing.List[float], capacity: float) -> ConstrainedQuadraticModel:
     """Generate a bin packing problem as a constrained quadratic model.
 
-    The weights for each item are integers uniformly drawn from in the
-    ``weight_range``. The bin capacity is set to ``num_items * mean(weights) / 5``.
+    The bin packing problem,
+    `BPP <https://en.wikipedia.org/wiki/Bin_packing_problem>`_,
+    seeks to find the smallest number of bins that will fit
+    a set of weighted items given that each bin has a weight capacity.
 
     Args:
-        num_items: Number of items to choose from.
-
-        seed: Seed for NumPy random number generator.
-
-        weight_range: The range of the randomly generated weights for each item.
+        weights: The weights for each item.
+        capacity: The capacity of the bin.
 
     Returns:
         The constrained quadratic model encoding the bin packing problem.
@@ -46,12 +42,8 @@ def random_bin_packing(num_items: int,
         that item ``i`` has been placed in bin ``j``.
 
     """
-
-    rng = np.random.RandomState(seed)
-
-    max_num_bins = num_items
-    weights = list(rng.randint(*weight_range, num_items))
-    bin_capacity = int(num_items * np.mean(weights) / 5)
+    num_items = len(weights)
+    max_num_bins = num_items # upper bound
     model = ConstrainedQuadraticModel()
 
     obj = BinaryQuadraticModel(BINARY)
@@ -73,7 +65,38 @@ def random_bin_packing(num_items: int,
     # Bin capacity constraint
     for j in range(max_num_bins):
         model.add_constraint(
-            [(x[(i, j)], weights[i]) for i in range(num_items)] + [(y[j], -bin_capacity)],
+            [(x[(i, j)], weights[i]) for i in range(num_items)] + [(y[j], -capacity)],
             sense="<=", label='capacity_bin_{}'.format(j))
+
+    return model
+
+
+def random_bin_packing(num_items: int,
+                       seed: typing.Union[None, int, np.random.Generator] = None,
+                       weight_range: typing.Tuple[int, int] = (10, 30),
+                       ) -> ConstrainedQuadraticModel:
+    """Generate a random bin packing problem as a constrained quadratic model.
+
+    The weights for each item are integers uniformly drawn from in the
+    ``weight_range``. The bin capacity is set to ``num_items * mean(weights) / 5``.
+
+    Args:
+        num_items: Number of items to choose from.
+        seed: Seed for the random number generator. Passed to :func:`numpy.random.default_rng()`.
+        weight_range: The range of the randomly generated weights for each item.
+
+    Returns:
+        The constrained quadratic model encoding the bin packing problem.
+        Variables are labeled as ``y_{j}`` where ``y_{j} == 1`` means that bin
+        ``j`` has been used and ``x_{i}_{j}`` where ``x_{i}_{j} == 1`` means
+        that item ``i`` has been placed in bin ``j``.
+
+    """
+
+    rng = np.random.default_rng(seed)
+    weights = list(rng.integers(*weight_range, num_items))
+    bin_capacity = int(num_items * np.mean(weights) / 5)
+
+    model = bin_packing(weights, bin_capacity)
 
     return model
