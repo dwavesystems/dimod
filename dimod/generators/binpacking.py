@@ -26,6 +26,11 @@ __all__ = ['bin_packing', 'random_bin_packing']
 def bin_packing(weights: typing.List[float], capacity: float) -> ConstrainedQuadraticModel:
     """Generate a bin packing problem as a constrained quadratic model.
 
+    The bin packing problem,
+    `BPP <https://en.wikipedia.org/wiki/Bin_packing_problem>`_,
+    seeks to find the smallest number of bins that will fit
+    a set of weighted items given that each bin has a weight capacity.
+
     Args:
         weights: The weights for each item.
         capacity: The capacity of the bin.
