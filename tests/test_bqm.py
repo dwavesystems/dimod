@@ -717,6 +717,18 @@ class TestContractVariables(unittest.TestCase):
 
         assert_bqm_almost_equal(bqm, target, places=5)
 
+    @parameterized.expand(BQMs.items())
+    def test_no_interaction(self, name, BQM):
+        bqm = BQM({'a': 2, 'b': -8}, {('a', 'b'): -2, ('b', 'c'): 1}, 1.2,
+                  dimod.BINARY)
+
+        bqm.contract_variables('a', 'c')
+
+        assert_consistent_bqm(bqm)
+
+        target = BQM({'a': 2, 'b': -8}, {('a', 'b'): -1}, 1.2, dimod.BINARY)
+
+        self.assertEqual(bqm, target)
 
 class TestCoo(unittest.TestCase):
     @parameterized.expand(BQM_CLSs.items())

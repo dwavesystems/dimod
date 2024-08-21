@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Allow  ``BinaryQuadraticModel.contract_variables()`` to contract variables without
+    an interaction. Previously it raised a ``ValueError``.

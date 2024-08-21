@@ -1009,7 +1009,10 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         else:
             raise RuntimeError(f"unknown vartype: {self.vartype}")
 
-        self.remove_interaction(u, v)
+        try:
+            self.remove_interaction(u, v)
+        except ValueError:
+            pass
 
         # add all of v's interactions to u's
         for w, b in self.iter_neighborhood(v):
