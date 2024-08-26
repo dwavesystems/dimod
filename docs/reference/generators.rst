@@ -46,6 +46,7 @@ Optimization
    bin_packing
    coordinated_multipoint
    independent_set
+   knapsack
    maximum_independent_set
    maximum_weight_independent_set
    mimo

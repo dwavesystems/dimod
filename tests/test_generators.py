@@ -528,6 +528,10 @@ class TestDoped(unittest.TestCase):
 
 class TestKnapsack(unittest.TestCase):
 
+    def test_exceptions(self):
+        with self.assertRaises(ValueError):
+            dimod.generators.knapsack([1], [], 1)
+
     def test_model(self):
         num_items = 10
         cqm = dimod.generators.random_knapsack(num_items=num_items)
