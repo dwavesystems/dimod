@@ -34,7 +34,7 @@ __all__ = ['ising_energy',
 
 
 def ising_energy(sample, h, J, offset=0.0):
-    """Calculate the energy for the specified sample of an Ising model.
+    r"""Calculate the energy for the specified sample of an Ising model.
 
     Energy of a sample for a binary quadratic model is defined as a sum, offset
     by the constant energy offset associated with the model, of
@@ -97,7 +97,7 @@ def ising_energy(sample, h, J, offset=0.0):
 
 
 def qubo_energy(sample, Q, offset=0.0):
-    """Calculate the energy for the specified sample of a QUBO model.
+    r"""Calculate the energy for the specified sample of a QUBO model.
 
     Energy of a sample for a binary quadratic model is defined as a sum, offset
     by the constant energy offset associated with the model, of

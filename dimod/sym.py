@@ -22,7 +22,7 @@ __all__ = ['Sense', 'Eq', 'Ge', 'Le']
 
 
 class Sense(enum.Enum):
-    """Sense of a constraint.
+    r"""Sense of a constraint.
 
     Supported values are:
 

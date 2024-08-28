@@ -63,7 +63,7 @@ def anti_crossing_clique(num_variables: int) -> BinaryQuadraticModel:
 
 
 def anti_crossing_loops(num_variables: int) -> BinaryQuadraticModel:
-    """Generate an anti-crossing problem with two loops.
+    r"""Generate an anti-crossing problem with two loops.
 
     The low-energy space of this model consists of a unique ground state of all
     :math:`+1`\ s and a degenerate first excited state, centered at all
