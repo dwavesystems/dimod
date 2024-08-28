@@ -36,7 +36,7 @@ mod_config = {
     "256QAM": mod_params(8, 8, 8, 5, 4)}
 
 def _quadratic_form(y, F):
-    """Convert :math:`O(v) = ||y - F v||^2` to sparse quadratic form.
+    r"""Convert :math:`O(v) = ||y - F v||^2` to sparse quadratic form.
 
     Constructs coefficients for the form
     :math:`O(v) = v^{\dagger} J v - 2 \Re(h^{\dagger} v) + \\text{offset}`.
@@ -175,7 +175,7 @@ def _symbols_to_bits(symbols, modulation="BPSK"):
     return bits
 
 def _yF_to_hJ(y, F, modulation="BPSK"):
-    """Convert :math:`O(v) = ||y - F v||^2` to modulated quadratic form.
+    r"""Convert :math:`O(v) = ||y - F v||^2` to modulated quadratic form.
 
     Constructs coefficients for the form
     :math:`O(v) = v^{\dagger} J v - 2 \Re(h^{\dagger} v) + \\text{offset}`.
@@ -446,7 +446,7 @@ def _create_signal(F,
                    modulation='BPSK', 
                    channel_power=None, 
                    random_state=None):
-    """Simulate a transmission signal. 
+    r"""Simulate a transmission signal. 
 
     Generates random transmitted symbols and optionally noise, math:`y = F v + n`,
     where the channel, :math:`F`, is assumed to consist of independent and 
@@ -549,7 +549,7 @@ def mimo(modulation: Literal["BPSK", "QPSK", "16QAM", "64QAM", "256QAM"] = "BPSK
          seed: Union[None, int, np.random.RandomState] = None,
          F_distribution: Union[None, tuple] = None,
          attenuation_matrix = None) -> dimod.BinaryQuadraticModel:
-    """Generate a multi-input multiple-output (MIMO) channel-decoding problem.
+    r"""Generate a multi-input multiple-output (MIMO) channel-decoding problem.
 
     In radio networks, `MIMO <https://en.wikipedia.org/wiki/MIMO>`_ is a method 
     of increasing link capacity by using multiple transmission and receiving 
@@ -897,7 +897,7 @@ def coordinated_multipoint(lattice: 'networkx.Graph',
 # and are maintained here for user convenience 
  
 def linear_filter(F, method='zero_forcing', SNRoverNt=float('Inf'), PoverNt=1):
-    """Construct a linear filter for estimating transmitted signals.
+    r"""Construct a linear filter for estimating transmitted signals.
 
     Following the conventions of MacKay\ [#Mackay]_, a filter is constructed 
     for independent and identically distributed Gaussian noise at power spectral 

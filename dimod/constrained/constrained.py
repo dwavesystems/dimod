@@ -1149,7 +1149,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                              *,
                              labels: typing.Optional[typing.Iterable[typing.Hashable]] = None,
                              ) -> Iterator[ConstraintData]:
-        """Yield information about the constraints for the given sample.
+        r"""Yield information about the constraints for the given sample.
 
         Note that this method iterates over constraints in the same order as
         they appear in :attr:`.constraints`.

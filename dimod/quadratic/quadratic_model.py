@@ -698,7 +698,7 @@ class QuadraticModel(QuadraticViewsMixin):
         return energy
 
     def flip_variable(self, v: Variable):
-        """Flip the specified binary-valued variable.
+        r"""Flip the specified binary-valued variable.
 
         Args:
             v: Binary-valued (:math:`\{0, 1\}` or :math:`\{-1, 1\}`) variable in

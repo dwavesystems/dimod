@@ -191,7 +191,7 @@ class DiscreteQuadraticModel:
     def add_linear_equality_constraint(self, terms: LinearTriplets,
                                        lagrange_multiplier: float,
                                        constant: float):
-        """Add a linear constraint as a quadratic objective.
+        r"""Add a linear constraint as a quadratic objective.
 
         Adds a linear constraint of the form
         :math:`\sum_{i,k} a_{i,k} x_{i,k} + C = 0`
@@ -219,7 +219,7 @@ class DiscreteQuadraticModel:
                                          cross_zero: bool = False)\
             -> LinearTriplets:
 
-        """Add a linear inequality constraint as a quadratic objective.
+        r"""Add a linear inequality constraint as a quadratic objective.
 
         Adds a linear inequality constraint of the form:
 

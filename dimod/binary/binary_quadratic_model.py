@@ -487,7 +487,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
 
     @property
     def binary(self) -> 'BinaryQuadraticModel':
-        """Binary-valued version of the binary quadratic model.
+        r"""Binary-valued version of the binary quadratic model.
 
         If the binary quadratic model is binary-valued, this references itself,
         otherwise it references a view.
@@ -656,7 +656,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
     def add_linear_equality_constraint(
             self, terms: Iterable[Tuple[Variable, Bias]],
             lagrange_multiplier: Bias, constant: Bias):
-        """Add a linear constraint as a quadratic objective.
+        r"""Add a linear constraint as a quadratic objective.
 
         Adds a linear constraint of the form
         :math:`\\sum_{i} a_{i} x_{i} + C = 0`
@@ -713,7 +713,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                 cross_zero: bool = False,
                 penalization_method: Literal["slack", "unbalanced"] = "slack",
         ) -> Iterable[Tuple[Variable, int]]:
-        """Add a linear inequality constraint as a quadratic objective.
+        r"""Add a linear inequality constraint as a quadratic objective.
 
         The linear inequality constraint is of the form:
         :math:`lb <= \sum_{i,k} a_{i,k} x_{i,k} + constant <= ub`.
@@ -2617,7 +2617,7 @@ AdjVectorBQM = Float64BQM
 @unique_variable_labels
 def Binary(label: Optional[Variable] = None, bias: Bias = 1,
            dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
-    """Return a binary quadratic model with a single binary variable.
+    r"""Return a binary quadratic model with a single binary variable.
 
     Args:
         label: Hashable label to identify the variable. Defaults to a
@@ -2643,7 +2643,7 @@ def Binary(label: Optional[Variable] = None, bias: Bias = 1,
 
 def Binaries(labels: Union[int, Iterable[Variable]],
              dtype: Optional[DTypeLike] = None) -> Iterator[BinaryQuadraticModel]:
-    """Yield binary quadratic models, each with a single binary variable.
+    r"""Yield binary quadratic models, each with a single binary variable.
 
     Args:
         labels: Either an iterable of variable labels or a number. If a number
@@ -2679,7 +2679,7 @@ def Binaries(labels: Union[int, Iterable[Variable]],
 
 def BinaryArray(labels: Union[int, Iterable[Variable]],
                 dtype: Optional[DTypeLike] = None) -> np.ndarray:
-    """Return a NumPy array of binary quadratic models, each with a
+    r"""Return a NumPy array of binary quadratic models, each with a
     single binary variable.
 
     Args:
@@ -2718,7 +2718,7 @@ def BinaryArray(labels: Union[int, Iterable[Variable]],
 @unique_variable_labels
 def Spin(label: Optional[Variable] = None, bias: Bias = 1,
          dtype: Optional[DTypeLike] = None) -> BinaryQuadraticModel:
-    """Return a binary quadratic model with a single spin variable.
+    r"""Return a binary quadratic model with a single spin variable.
 
     Args:
         label: Hashable label to identify the variable. Defaults to a
@@ -2781,7 +2781,7 @@ def Spins(labels: Union[int, Iterable[Variable]],
 
 def SpinArray(labels: Union[int, Iterable[Variable]],
               dtype: Optional[DTypeLike] = None) -> np.ndarray:
-    """Return a NumPy array of binary quadratic models, each with a
+    r"""Return a NumPy array of binary quadratic models, each with a
     single spin variable.
 
     Args:
