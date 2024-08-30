@@ -5,6 +5,31 @@ orbs:
   win: circleci/windows@5.0
   macos: circleci/macos@2.4
 
+commands:
+  run-cibuildwheel:
+    parameters:
+      cibw-version:
+        type: string
+        default: 2.20.0
+    steps:
+      - run:
+          name: run cibuildwheel
+          shell: bash -eo pipefail
+          command: |
+            if [[ $OS == Windows_NT ]]; then
+              python -m pip install --user cibuildwheel==<< parameters.cibw-version >>
+              python -m cibuildwheel --output-dir dist
+            else
+              python3 -m pip install --user cibuildwheel==<< parameters.cibw-version >>
+              python3 -m cibuildwheel --output-dir dist
+            fi
+
+      - store_artifacts: &store-artifacts
+          path: ./dist
+      - persist_to_workspace: &persist-to-workspace
+          root: ./dist/
+          paths: .
+
 environment: &global-environment
   PIP_PROGRESS_BAR: 'off'
 
@@ -25,26 +50,7 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - restore_cache: &build-linux-restore-cache
-          keys:
-            - pip-{{ .Environment.CIRCLE_JOB }}-{{ checksum "pyproject.toml" }}
-      - run: &build-linux-wheels
-          name: build wheels
-          command: |
-            python3 -m venv env
-            . env/bin/activate
-            pip install pip --upgrade
-            pip install cibuildwheel==2.16.2
-            cibuildwheel --output-dir dist
-      - save_cache: &build-linux-save-cache
-          paths:
-            - ~/.cache/pip
-          key: pip-{{ .Environment.CIRCLE_JOB }}-{{ checksum "pyproject.toml" }}
-      - store_artifacts: &store-artifacts
-          path: ./dist
-      - persist_to_workspace: &persist-to-workspace
-          root: ./dist/
-          paths: .
+      - run-cibuildwheel
 
   build-linux-aarch64:
     parameters:
@@ -63,11 +69,7 @@ jobs:
 
     steps: &build-steps
       - checkout
-      - restore_cache: *build-linux-restore-cache
-      - run: *build-linux-wheels
-      - save_cache: *build-linux-save-cache
-      - store_artifacts: *store-artifacts
-      - persist_to_workspace: *persist-to-workspace
+      - run-cibuildwheel
 
   build-osx:
     parameters:
@@ -75,7 +77,7 @@ jobs:
         type: string
 
     macos:
-      xcode: 15.3.0
+      xcode: 16.1.0
     resource_class: macos.m1.medium.gen1
 
     environment:
@@ -85,11 +87,8 @@ jobs:
     steps:
       - checkout
       - macos/install-rosetta
-      - restore_cache: *build-linux-restore-cache
-      - run: *build-linux-wheels
-      - save_cache: *build-linux-save-cache
-      - store_artifacts: *store-artifacts
-      - persist_to_workspace: *persist-to-workspace
+      - run-cibuildwheel
+
   build-sdist:
     docker:
       - image: cimg/python:3.9
@@ -124,14 +123,7 @@ jobs:
 
     steps:
       - checkout
-      - run:
-          name: build wheels
-          command: |
-            python -m pip install pip --upgrade
-            python -m pip install cibuildwheel==2.16.2
-            python -m cibuildwheel --output-dir dist
-      - store_artifacts: *store-artifacts
-      - persist_to_workspace: *persist-to-workspace
+      - run-cibuildwheel
 
   deploy-all:
     docker:
@@ -318,7 +310,7 @@ workflows:
       - build-linux: &build
           matrix:
             parameters:
-              python-version: &python-versions [3.8.9, 3.9.4, 3.10.0, 3.11.0, 3.12.0]
+              python-version: &python-versions [3.8.9, 3.9.4, 3.10.0, 3.11.0, 3.12.0, 3.13.0]
       - build-linux-aarch64: *build
       - build-sdist
       - build-osx: *build
@@ -335,6 +327,15 @@ workflows:
               # test the lowest supported numpy and the latest
               dependencies: [oldest-supported-numpy, numpy]
               python-version: *python-versions
+            exclude:
+              - dependencies: oldest-supported-numpy  # oldest-supported-numpy deprecated after 3.12
+                python-version: 3.13.0
+              
+              # this one is skipped because there isn't a 3.13.0-slim docker image yet
+              # also, this would be identical to the tests done by cibuildwheel for now
+              # we can restore this once there is a non-rc release of 3.13
+              - dependencies: numpy
+                python-version: 3.13.0
       - test-linux-cpp
       - test-osx-cpp
       - test-sdist:
