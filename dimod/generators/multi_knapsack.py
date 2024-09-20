@@ -17,8 +17,62 @@ import numpy as np
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
 from typing import Tuple
+from dimod.typing import ArrayLike
 
-__all__ = ['random_multi_knapsack']
+__all__ = ['multi_knapsack', 'random_multi_knapsack']
+
+
+def multi_knapsack(values: ArrayLike,
+                   weights: ArrayLike,
+                   capacities: ArrayLike,
+                   ) -> ConstrainedQuadraticModel:
+    """Generate a constrained quadratic model encoding a multiple knapsack problem.
+
+    The multiple knapsack problem seeks to fit the most value into each knapsack
+    of weight less than or equal to each knapsack's capacity for a given list of
+    items with associated values and weights.
+
+    Args:
+        values: A list of each item's value.
+        weights: A list of each item's associated weight.
+        capacities: A list of the maximum weights each knapsack can hold.
+
+    Returns:
+
+        A constrained quadratic model encoding the multiple-knapsack problem.
+        Variables are labelled as ``x_{i}_{j}``, where ``x_{i}_{j} == 1`` means
+        that item ``i`` is placed in bin ``j``.
+
+    """
+    values = np.asarray(values)
+    weights = np.asarray(weights)
+
+    if values.shape != weights.shape:
+        raise ValueError("`values` and `weights` must have the same shape")
+
+    model = ConstrainedQuadraticModel()
+    obj = BinaryQuadraticModel(vartype='BINARY')
+    x = {(i, j): obj.add_variable(f'x_{i}_{j}') for i in range(values.shape[0]) for j in range(len(capacities))}
+
+    for i, value in enumerate(values):
+        for j in range(len(capacities)):
+            obj.set_linear(x[(i, j)], -value)
+
+    model.set_objective(obj)
+
+    # Each item at most goes to one bin.
+    for i in range(values.shape[0]):
+        model.add_constraint(
+            [(x[(i, j)], 1) for j in range(len(capacities))] + [(-1,)],
+            sense="<=", label='item_placing_{}'.format(i))
+
+    # Build knapsack capacity constraints
+    for j, capacity in enumerate(capacities):
+        model.add_constraint(
+            [(x[(i, j)], weight) for i, weight in enumerate(weights)] + [(-capacity,)],
+            sense="<=", label='capacity_bin_{}'.format(j))
+
+    return model
 
 
 def random_multi_knapsack(num_items: int,
@@ -37,13 +91,9 @@ def random_multi_knapsack(num_items: int,
 
     Args:
         num_items: Number of items.
-
         num_bins: Number of bins.
-
-        seed: Seed for RNG.
-
+        seed: Seed for random number generator.
         value_range: Range of the randomly generated values for each item.
-
         weight_range: Range of the randomly generated weights for each item.
 
     Returns:
@@ -54,35 +104,15 @@ def random_multi_knapsack(num_items: int,
 
     """
 
-    rng = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
 
-    weights = rng.randint(*weight_range, num_items)
-    values = rng.randint(*value_range, num_items)
+    values = rng.integers(*value_range, num_items)
+    weights = rng.integers(*weight_range, num_items)
 
     cap_low = int(weight_range[0] * num_items / num_bins)
     cap_high = int(weight_range[1] * num_items / num_bins)
-    capacities = rng.randint(cap_low, cap_high, num_bins)
+    capacities = rng.integers(cap_low, cap_high, num_bins)
 
-    model = ConstrainedQuadraticModel()
-
-    obj = BinaryQuadraticModel(vartype='BINARY')
-    x = {(i, j): obj.add_variable(f'x_{i}_{j}') for i in range(num_items) for j in range(num_bins)}
-
-    for i in range(num_items):
-        for j in range(num_bins):
-            obj.set_linear(x[(i, j)], -values[i])
-
-    model.set_objective(obj)
-
-    # Each item at most goes to one bin.
-    for i in range(num_items):
-        model.add_constraint([(x[(i, j)], 1) for j in range(num_bins)] + [(-1,)], sense="<=",
-                             label='item_placing_{}'.format(i))
-
-    # Build knapsack capacity constraints
-    for j in range(num_bins):
-        model.add_constraint(
-            [(x[(i, j)], weights[i]) for i in range(num_items)] + [(-capacities[j],)],
-            sense="<=", label='capacity_bin_{}'.format(j))
+    model = multi_knapsack(values, weights, capacities)
 
     return model
