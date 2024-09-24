@@ -599,6 +599,10 @@ class TestBinPacking(unittest.TestCase):
 
 class TestMultiKnapsack(unittest.TestCase):
 
+    def test_exceptions(self):
+        with self.assertRaises(ValueError):
+            dimod.generators.multi_knapsack([1], [], [])
+
     def test_model(self):
         num_items = 20
         num_bins = 10

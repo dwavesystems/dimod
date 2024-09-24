@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Add ``multi_knapsack`` generator function to ``dimod.generators``.
