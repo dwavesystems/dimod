@@ -20,7 +20,7 @@ from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
 from dimod.typing import ArrayLike
 
-__all__ = ['knapsack', 'random_knapsack', 'quadratic_knapsack']
+__all__ = ['knapsack', 'quadratic_knapsack', 'random_knapsack']
 
 
 def knapsack(values: ArrayLike,
@@ -61,43 +61,6 @@ def knapsack(values: ArrayLike,
     model.set_objective(obj)
     constraint = [(x[i], weight) for i, weight in enumerate(weights)] + [(-capacity, )]
     model.add_constraint(constraint, sense="<=", label='capacity')
-
-    return model
-
-
-def random_knapsack(num_items: int,
-                    seed: typing.Optional[int] = None,
-                    value_range: typing.Tuple[int, int] = (10, 30),
-                    weight_range: typing.Tuple[int, int] = (10, 30),
-                    tightness_ratio: float = 0.5,
-                    ) -> ConstrainedQuadraticModel:
-    """Generates a constrained quadratic model encoding a random knapsack problem.
-
-    Given the number of items, generates a random knapsack problem, formulated as
-    a :class:`~dimod.ConstrainedQuadraticModel`. The capacity of bins is set
-    to be ``tightness_ratio`` times the sum of the weights.
-
-    Args:
-        num_items: Number of items to choose from.
-        seed: Seed for NumPy random number generator.
-        value_range: Range of the randomly generated values for each item.
-        weight_range: Range of the randomly generated weights for each item.
-        tightness_ratio: Ratio of capacity over sum of weights.
-
-    Returns:
-        The quadratic model encoding the knapsack problem. Variables are
-        denoted as ``x_{i}`` where ``x_{i} == 1`` means that item ``i`` is
-        placed in the knapsack.
-
-    """
-
-    rng = np.random.default_rng(seed)
-
-    values = list(rng.integers(*value_range, num_items))
-    weights = list(rng.integers(*weight_range, num_items))
-    capacity = int(np.sum(weights) * tightness_ratio)
-
-    model = knapsack(values, weights, capacity)
 
     return model
 
@@ -153,5 +116,42 @@ def quadratic_knapsack(
     model.set_objective(obj)
     constraint = [(x[i], weight) for i, weight in enumerate(weights)] + [(-capacity, )]
     model.add_constraint(constraint, sense='<=', label='capacity')
+
+    return model
+
+
+def random_knapsack(num_items: int,
+                    seed: typing.Optional[int] = None,
+                    value_range: typing.Tuple[int, int] = (10, 30),
+                    weight_range: typing.Tuple[int, int] = (10, 30),
+                    tightness_ratio: float = 0.5,
+                    ) -> ConstrainedQuadraticModel:
+    """Generates a constrained quadratic model encoding a random knapsack problem.
+
+    Given the number of items, generates a random knapsack problem, formulated as
+    a :class:`~dimod.ConstrainedQuadraticModel`. The capacity of bins is set
+    to be ``tightness_ratio`` times the sum of the weights.
+
+    Args:
+        num_items: Number of items to choose from.
+        seed: Seed for NumPy random number generator.
+        value_range: Range of the randomly generated values for each item.
+        weight_range: Range of the randomly generated weights for each item.
+        tightness_ratio: Ratio of capacity over sum of weights.
+
+    Returns:
+        The quadratic model encoding the knapsack problem. Variables are
+        denoted as ``x_{i}`` where ``x_{i} == 1`` means that item ``i`` is
+        placed in the knapsack.
+
+    """
+
+    rng = np.random.default_rng(seed)
+
+    values = list(rng.integers(*value_range, num_items))
+    weights = list(rng.integers(*weight_range, num_items))
+    capacity = int(np.sum(weights) * tightness_ratio)
+
+    model = knapsack(values, weights, capacity)
 
     return model
