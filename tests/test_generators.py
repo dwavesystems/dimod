@@ -556,6 +556,49 @@ class TestKnapsack(unittest.TestCase):
         lhs = cqm.constraints['capacity'].lhs.energy(x)
         self.assertLessEqual(lhs, 0)
 
+    def test_quadratic_exceptions(self):
+        with self.assertRaises(ValueError):
+            dimod.generators.quadratic_knapsack([1], [], [], 1)
+
+        with self.assertRaises(ValueError):
+            dimod.generators.quadratic_knapsack([1], [1], [[1, 1]], 1)
+
+        with self.assertRaises(ValueError):
+            dimod.generators.quadratic_knapsack([1], [1], [[1, 1], [1, 1]], 1)
+
+    def test_quadratic_model(self):
+        values = [1, 2]
+        weights = [2, 1]
+        profits = [[1, 2], [2, 1]]
+        capacity = 1
+        cqm = dimod.generators.quadratic_knapsack(values, weights, profits, capacity)
+        self.assertEqual(len(cqm.variables), len(values))
+        self.assertEqual(len(cqm.constraints), 1)
+
+    def test_quadratic_infeasible(self):
+        values = [1, 2]
+        weights = [2, 1]
+        profits = [[1, 2], [2, 1]]
+        capacity = 1
+        cqm = dimod.generators.quadratic_knapsack(values, weights, profits, capacity)
+
+        # create an infeasible state, by selecting all the items
+        x = {i: 1 for i in cqm.variables}
+        lhs = cqm.constraints['capacity'].lhs.energy(x)
+        self.assertGreater(lhs, 0)
+
+    def test_quadratic_feasible(self):
+        values = [1, 2]
+        weights = [2, 1]
+        profits = [[1, 2], [2, 1]]
+        capacity = 1
+        cqm = dimod.generators.quadratic_knapsack(values, weights, profits, capacity)
+
+        # create feasible state, by not selecting any item
+        x = {i: 0 for i in cqm.variables}
+        lhs = cqm.constraints['capacity'].lhs.energy(x)
+        self.assertLessEqual(lhs, 0)
+
 
 class TestBinPacking(unittest.TestCase):
 
@@ -1809,40 +1852,3 @@ class TestQuadraticAssignment(unittest.TestCase):
             x = {f'x_{i}_{j}': 1 if i==j else 0 for i in range(num_locations)}
             lhs = cqm.constraints[f'facility_constraint_{j}'].lhs.energy(x)
             self.assertEqual(lhs, 0)
-
-
-class TestQuadraticKnapsack(unittest.TestCase):
-
-    def test_exceptions(self):
-        with self.assertRaises(ValueError):
-            dimod.generators.quadratic_knapsack([1], [], [], 1)
-
-        with self.assertRaises(ValueError):
-            dimod.generators.quadratic_knapsack([1], [1], [[1, 1]], 1)
-
-        with self.assertRaises(ValueError):
-            dimod.generators.quadratic_knapsack([1], [1], [[1, 1], [1, 1]], 1)
-
-    def test_model(self):
-        num_items = 10
-        cqm = dimod.generators.random_quadratic_knapsack(num_items=num_items)
-        self.assertEqual(len(cqm.variables), num_items)
-        self.assertEqual(len(cqm.constraints), 1)
-
-    def test_infeasible(self):
-        num_items = 10
-        cqm = dimod.generators.random_quadratic_knapsack(num_items=num_items)
-
-        # create an infeasible state, by selecting all the items
-        x = {i: 1 for i in cqm.variables}
-        lhs = cqm.constraints['capacity'].lhs.energy(x)
-        self.assertGreater(lhs, 0)
-
-    def test_feasible(self):
-        num_items = 10
-        cqm = dimod.generators.random_quadratic_knapsack(num_items=num_items)
-
-        # create feasible state, by not selecting any item
-        x = {i: 0 for i in cqm.variables}
-        lhs = cqm.constraints['capacity'].lhs.energy(x)
-        self.assertLessEqual(lhs, 0)
