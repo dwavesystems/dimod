@@ -51,9 +51,11 @@ Optimization
    maximum_weight_independent_set
    mimo
    quadratic_assignment
+   quadratic_knapsack
    random_bin_packing
    random_knapsack
    random_multi_knapsack
+   random_quadratic_knapsack
 
 Random
 ======
@@ -70,6 +72,7 @@ Random
    random_knapsack
    random_multi_knapsack
    random_nae3sat
+   random_quadratic_knapsack
    ran_r
    uniform
 

@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add ``quadratic_knapsack`` generator function to ``dimod.generators``.
+    Add ``random_quadratic_knapsack`` generator function to ``dimod.generators``.
