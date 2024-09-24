@@ -12,11 +12,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+from typing import Tuple
+
 import numpy as np
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
-from typing import Tuple
 from dimod.typing import ArrayLike
 
 __all__ = ['multi_knapsack', 'random_multi_knapsack']
