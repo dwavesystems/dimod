@@ -52,6 +52,7 @@ Optimization
    mimo
    multi_knapsack
    quadratic_assignment
+   quadratic_knapsack
    random_bin_packing
    random_knapsack
    random_multi_knapsack
