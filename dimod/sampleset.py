@@ -1489,8 +1489,27 @@ class SampleSet(abc.Iterable, abc.Sized):
         if hasattr(self, '_future'):
             samples = self._result_hook(self._future)
             self.__init__(samples.record, samples.variables, samples.info, samples.vartype)
+
+            # cache problem id if we just resolved from a cloud-client's future
+            if hasattr(self._future, 'wait_id'):
+                self._future_wait_id_result = self._future.wait_id(timeout=0)
+
             del self._future
             del self._result_hook
+
+    def wait_id(self, timeout: Optional[float] = None) -> Optional[str]:
+        """Return a QPU problem ID when the sample set is constructed from a QPU
+        computation answer (future) using :meth:`.from_future`.
+
+        For details, see :meth:`~dwave.cloud.client.computation.Future.wait_id`.
+        """
+        # note: after the sample set is resolved and the underlying future deleted,
+        # we cache the ``wait_id`` result so that the future is not referenced and
+        # it can be gc'ed.
+        if hasattr(self, '_future_wait_id_result'):
+            return self._future_wait_id_result
+        if hasattr(self, '_future') and hasattr(self._future, 'wait_id'):
+            return self._future.wait_id(timeout=timeout)
 
     def aggregate(self):
         """Create a new SampleSet with repeated samples aggregated.

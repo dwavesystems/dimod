@@ -786,6 +786,29 @@ class TestFromFuture(unittest.TestCase):
 
         np.testing.assert_equal(matrix, result['samples'])
 
+    def test_cloud_client_future(self):
+        answer = dimod.SampleSet.from_samples(samples_like=[[1]], vartype='SPIN', energy=[1])
+        pid = 'problem-id'
+
+        future = concurrent.futures.Future()
+        future.wait_id = lambda timeout=None: pid
+
+        ss = dimod.SampleSet.from_future(future)
+
+        with self.subTest('unresolved sampleset from qpu computation has a functional wait_id'):
+            self.assertFalse(ss.done())
+            self.assertTrue(hasattr(ss, 'wait_id'))
+            self.assertEqual(ss.wait_id(), pid)
+
+        future.set_result(answer)
+        ss.resolve()
+
+        with self.subTest('resolved sampleset caches wait_id result'):
+            self.assertTrue(ss.done())
+            self.assertTrue(hasattr(ss, 'wait_id'))
+            self.assertEqual(ss.wait_id(), pid)
+            self.assertFalse(hasattr(ss, '_future'))
+
 
 class TestKeepVariables(unittest.TestCase):
     def test_empty(self):
