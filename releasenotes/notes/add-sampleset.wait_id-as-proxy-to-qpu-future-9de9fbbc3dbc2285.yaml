@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add ``SampleSet.wait_id()`` as a proxy to the underlying QPU result future,
+    when sample set is constructed from such a future.
+    See `#1392 <https://github.com/dwavesystems/dimod/issues/1392>`_.
