@@ -10,7 +10,7 @@ commands:
     parameters:
       cibw-version:
         type: string
-        default: 2.20.0
+        default: 2.21.3
     steps:
       - run:
           name: run cibuildwheel
@@ -40,7 +40,7 @@ jobs:
         type: string
 
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.12
 
     environment:
       <<: *global-environment
@@ -91,7 +91,7 @@ jobs:
 
   build-sdist:
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.12
 
     steps:
       - checkout
@@ -127,7 +127,7 @@ jobs:
 
   deploy-all:
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.12
 
     steps:
       - attach_workspace:
@@ -169,7 +169,7 @@ jobs:
   # suffices to just do it once
   test-codecov:
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.12
 
     steps:
       - checkout
@@ -195,7 +195,7 @@ jobs:
 
   test-doctest:
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.10  # As of October 2024, RTD uses 3.10
 
     steps:
       - checkout
@@ -270,7 +270,7 @@ jobs:
 
   test-linux-cpp:
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.12
 
     steps:
       - checkout
@@ -290,7 +290,7 @@ jobs:
 
   test-sdist:
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.12
 
     steps:
       - checkout
@@ -310,7 +310,7 @@ workflows:
       - build-linux: &build
           matrix:
             parameters:
-              python-version: &python-versions [3.8.9, 3.9.4, 3.10.0, 3.11.0, 3.12.0, 3.13.0]
+              python-version: &python-versions [3.9.4, 3.10.0, 3.11.0, 3.12.0, 3.13.0]
       - build-linux-aarch64: *build
       - build-sdist
       - build-osx: *build
@@ -329,12 +329,6 @@ workflows:
               python-version: *python-versions
             exclude:
               - dependencies: oldest-supported-numpy  # oldest-supported-numpy deprecated after 3.12
-                python-version: 3.13.0
-              
-              # this one is skipped because there isn't a 3.13.0-slim docker image yet
-              # also, this would be identical to the tests done by cibuildwheel for now
-              # we can restore this once there is a non-rc release of 3.13
-              - dependencies: numpy
                 python-version: 3.13.0
       - test-linux-cpp
       - test-osx-cpp
