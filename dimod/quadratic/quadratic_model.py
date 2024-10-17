@@ -1110,7 +1110,7 @@ class QuadraticModel(QuadraticViewsMixin):
         """Relabel the variables according to the given mapping.
 
         Args:
-            mapping: collections.abc.Mapping of current variable labels to new ones. If an
+            mapping: Mapping of current variable labels to new ones. If an
                 incomplete mapping is provided, unmapped variables retain their
                 current labels.
 

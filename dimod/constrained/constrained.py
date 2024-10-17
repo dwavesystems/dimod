@@ -1471,7 +1471,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         return n
 
-    def relabel_constraints(self, mapping: Mapping[collections.abc.Hashable, collections.abc.Hashable]):
+    def relabel_constraints(
+            self,
+            mapping: collections.abc.Mapping[collections.abc.Hashable, collections.abc.Hashable],
+            ):
         """Relabel the constraints.
 
         Note that this method does not maintain the constraint order.
@@ -1587,8 +1590,11 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         return self
 
-    def _substitute_self_loops_from_model(self, qm: typing.Union[ConstraintView, ObjectiveView],
-                                          mapping: collections.abc.MutableMapping[Variable, Variable]):
+    def _substitute_self_loops_from_model(
+            self,
+            qm: typing.Union[ConstraintView, ObjectiveView],
+            mapping: collections.abc.MutableMapping[Variable, Variable],
+            ):
         for u in qm.variables:
             vartype = qm.vartype(u)
 
@@ -1988,8 +1994,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 CQM = ConstrainedQuadraticModel
 
 
-def _qm_to_bqm(qm: QuadraticModel, integers: MutableMapping[Variable, BinaryQuadraticModel],
-               ) -> BinaryQuadraticModel:
+def _qm_to_bqm(
+        qm: QuadraticModel,
+        integers: collections.abc.MutableMapping[Variable, BinaryQuadraticModel],
+        ) -> BinaryQuadraticModel:
     # dev note: probably we'll want to make this function or something similar
     # public facing at some point, but right now the interface is pretty weird
     # and it only returns BINARY bqms
@@ -2026,12 +2034,12 @@ class CQMToBQMInverter:
     __slots__ = ('_binary', '_integers')
 
     def __init__(self,
-                 binary: Mapping[Variable, Vartype],
-                 integers: Mapping[Variable, BinaryQuadraticModel]):
+                 binary: collections.abc.Mapping[Variable, Vartype],
+                 integers: collections.abc.Mapping[Variable, BinaryQuadraticModel]):
         self._binary = binary
         self._integers = integers
 
-    def __call__(self, sample: Mapping[Variable, int]) -> Mapping[Variable, int]:
+    def __call__(self, sample: collections.abc.Mapping[Variable, int]) -> dict[Variable, int]:
         new = {}
 
         for v, vartype in self._binary.items():
@@ -2050,7 +2058,7 @@ class CQMToBQMInverter:
         return new
 
     @classmethod
-    def from_dict(cls, doc: dict[str, dict[Variable, Any]]) -> CQMToBQMInverter:
+    def from_dict(cls, doc: dict[str, dict[Variable, typing.Any]]) -> CQMToBQMInverter:
         """Construct an inverter from a serialized representation."""
 
         integers = {}
@@ -2068,7 +2076,7 @@ class CQMToBQMInverter:
             integers,
             )
 
-    def to_dict(self) -> dict[str, dict[Variable, Any]]:
+    def to_dict(self) -> dict[str, dict[Variable, typing.Any]]:
         """Return a json-serializable encoding of the inverter."""
         # todo: in 3.8 we can used TypedDict for the typing
         return dict(
@@ -2083,7 +2091,7 @@ class CQMToBQMInverter:
 # A BQM.from_cqm method or similar, but for now I think it makes sense to
 # expose that functionality as a function for easier later deprecation.
 def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: typing.Optional[Bias] = None,
-               ) -> Tuple[BinaryQuadraticModel, CQMToBQMInverter]:
+               ) -> tuple[BinaryQuadraticModel, CQMToBQMInverter]:
     """Construct a binary quadratic model from a constrained quadratic model.
 
     Args:
