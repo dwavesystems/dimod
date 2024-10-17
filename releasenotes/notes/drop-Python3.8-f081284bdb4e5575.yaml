@@ -1,3 +1,5 @@
 ---
+fixes:
+  - Fix warnings caused by using deprecated type aliases.
 upgrade:
   - Drop support for Python 3.8.

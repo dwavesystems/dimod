@@ -42,7 +42,7 @@ class _ExpressionMixin(QuadraticViewsMixin):
         pass
 
     @property
-    def shape(self) -> typing.Tuple[int, int]:
+    def shape(self) -> tuple[int, int]:
         return self.num_variables, self.num_interactions
 
     def energy(self, sample, dtype=None) -> dimod.typing.Bias:

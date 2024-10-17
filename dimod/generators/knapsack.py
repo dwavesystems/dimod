@@ -122,8 +122,8 @@ def quadratic_knapsack(
 
 def random_knapsack(num_items: int,
                     seed: typing.Optional[int] = None,
-                    value_range: typing.Tuple[int, int] = (10, 30),
-                    weight_range: typing.Tuple[int, int] = (10, 30),
+                    value_range: tuple[int, int] = (10, 30),
+                    weight_range: tuple[int, int] = (10, 30),
                     tightness_ratio: float = 0.5,
                     ) -> ConstrainedQuadraticModel:
     """Generates a constrained quadratic model encoding a random knapsack problem.

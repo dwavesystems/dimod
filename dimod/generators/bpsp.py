@@ -12,16 +12,21 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-__all__ = ["random_binary_paint_shop_problem"]
+__all__ = [
+    "binary_paint_shop_problem",
+    "random_binary_paint_shop_problem",
+]
 
-import typing
+import collections.abc
 
 import numpy.random
 
 import dimod
 
 
-def binary_paint_shop_problem(car_sequence: typing.Sequence[typing.Hashable]) -> dimod.BinaryQuadraticModel:
+def binary_paint_shop_problem(
+        car_sequence: collections.abc.Sequence[collections.abc.Hashable],
+        ) -> dimod.BinaryQuadraticModel:
     """Generates a binary quadratic model representing a binary paint shop problem.
 
     Ising formulation for Binary Paint Shop Problem:
@@ -72,9 +77,12 @@ def random_binary_paint_shop_problem(n_cars: int, seed: int = None) -> dimod.Bin
     return binary_paint_shop_problem(car_sequence)
 
 
-def sample_to_coloring(sample: typing.Mapping, car_sequence: typing.Sequence[typing.Hashable]) -> typing.Tuple[typing.List, int]:
+def sample_to_coloring(
+        sample: collections.abc.Mapping,
+        car_sequence: collections.abc.Sequence[collections.abc.Hashable],
+        ) -> tuple[list, int]:
     """Colors the car sequence based on a bqm sample and returns BPSP objective.
-    
+
     Args:
         sample: Solution to `binary_paint_shop_problem` mapping variables to color.
         car_sequence: Sequence of appearence of cars.

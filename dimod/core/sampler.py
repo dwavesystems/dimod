@@ -107,6 +107,7 @@ non-empty dicts.
 """
 
 import abc
+import collections.abc
 import typing
 import warnings
 
@@ -174,7 +175,7 @@ class Sampler(metaclass=SamplerABCMeta):
     """
 
     @abc.abstractproperty  # for python2 compatibility
-    def parameters(self) -> typing.Dict[str, typing.Any]:
+    def parameters(self) -> dict[str, typing.Any]:
         """Parameters as a dict, where keys are keyword parameters accepted by the
         sampler methods and values are lists of the properties relevent to each
         parameter.
@@ -182,7 +183,7 @@ class Sampler(metaclass=SamplerABCMeta):
         pass
 
     @abc.abstractproperty  # for python2 compatibility
-    def properties(self) -> typing.Dict[str, typing.Any]:
+    def properties(self) -> dict[str, typing.Any]:
         """Properties as a dict containing any additional information about the
         sampler.
         """
@@ -237,8 +238,8 @@ class Sampler(metaclass=SamplerABCMeta):
         return sampleset.change_vartype(bqm.vartype, energy_offset=offset)
 
     @samplemixinmethod
-    def sample_ising(self, h: typing.Union[typing.Mapping[Variable, Bias], typing.Sequence[Bias]],
-                     J: typing.Mapping[typing.Tuple[Variable, Variable], Bias],
+    def sample_ising(self, h: typing.Union[collections.abc.Mapping[Variable, Bias], collections.abc.Sequence[Bias]],
+                     J: collections.abc.Mapping[tuple[Variable, Variable], Bias],
                      **parameters) -> SampleSet:
         """Sample from an Ising model using the implemented sample method.
 
@@ -266,7 +267,7 @@ class Sampler(metaclass=SamplerABCMeta):
         return self.sample(bqm, **parameters)
 
     @samplemixinmethod
-    def sample_qubo(self, Q: typing.Mapping[typing.Tuple[Variable, Variable], Bias],
+    def sample_qubo(self, Q: collections.abc.Mapping[tuple[Variable, Variable], Bias],
                     **parameters)  -> SampleSet:
         """Sample from a QUBO using the implemented sample method.
 
@@ -290,7 +291,7 @@ class Sampler(metaclass=SamplerABCMeta):
         bqm = BinaryQuadraticModel.from_qubo(Q)
         return self.sample(bqm, **parameters)
 
-    def remove_unknown_kwargs(self, **kwargs) -> typing.Dict[str, typing.Any]:
+    def remove_unknown_kwargs(self, **kwargs) -> dict[str, typing.Any]:
         """Remove with warnings any keyword arguments not accepted by the sampler.
 
         Args:

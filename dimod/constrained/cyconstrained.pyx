@@ -347,7 +347,7 @@ cdef class cyConstrainedQuadraticModel:
         self.variables._remove(v)
 
     def fix_variables(self, fixed, *, bint inplace = True):
-        if isinstance(fixed, typing.Mapping):
+        if isinstance(fixed, collections.abc.Mapping):
             fixed = fixed.items()
 
         if inplace:
@@ -617,7 +617,7 @@ cdef class cyConstrainedQuadraticModel:
             >>> cqm.set_objective(2*i - 0.5*i*j + 10)
 
         """
-        if isinstance(objective, typing.Iterable):
+        if isinstance(objective, collections.abc.Iterable):
             terms = objective
         else:
             if isinstance(objective, BinaryQuadraticModel) and objective.dtype == object:

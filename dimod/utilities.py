@@ -12,10 +12,10 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import collections.abc
 import copy
 import itertools
 import os
-import typing
 import uuid
 
 from functools import reduce
@@ -351,9 +351,9 @@ def resolve_label_conflict(mapping, existing, old_labels=None, new_labels=None):
     return old_to_intermediate, intermediate_to_new
 
 
-def iter_safe_relabels(mapping: typing.Mapping[Variable, Variable],
-                       existing: typing.Container[Variable],
-                       ) -> typing.Iterator[typing.Mapping[Variable, Variable]]:
+def iter_safe_relabels(mapping: collections.abc.Mapping[Variable, Variable],
+                       existing: collections.abc.Container[Variable],
+                       ) -> collections.abc.Iterator[dict[Variable, Variable]]:
     """Iterator over "safe" intermediate relabelings.
 
     Args:

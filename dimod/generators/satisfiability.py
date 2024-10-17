@@ -33,7 +33,7 @@ def _kmcsat_interactions(num_variables: int, k: int, num_clauses: int,
                          *,
                          plant_solution: bool = False,
                          seed: typing.Union[None, int, np.random.Generator] = None,
-                         ) -> typing.Iterator[typing.Tuple[int, int, int]]:
+                         ) -> collections.abc.Iterator[tuple[int, int, int]]:
     rng = np.random.default_rng(seed)
 
     # Use of for and while loops is for clarity, optimizations are possible.
@@ -54,7 +54,7 @@ def _kmcsat_interactions(num_variables: int, k: int, num_clauses: int,
             yield u, v, usign*vsign
 
 
-def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Variable]],
+def random_kmcsat(variables: typing.Union[int, collections.abc.Sequence[dimod.typing.Variable]],
                   k: int,
                   num_clauses: int,
                   *,
@@ -129,7 +129,7 @@ def random_kmcsat(variables: typing.Union[int, typing.Sequence[dimod.typing.Vari
     return bqm
 
 
-def random_nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Variable]],
+def random_nae3sat(variables: typing.Union[int, collections.abc.Sequence[dimod.typing.Variable]],
                    num_clauses: int,
                    *,
                    plant_solution: bool = False,
@@ -193,7 +193,7 @@ def random_nae3sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Var
     return random_kmcsat(variables, 3, num_clauses, plant_solution=plant_solution, seed=seed)
 
 
-def random_2in4sat(variables: typing.Union[int, typing.Sequence[dimod.typing.Variable]],
+def random_2in4sat(variables: typing.Union[int, collections.abc.Sequence[dimod.typing.Variable]],
                    num_clauses: int,
                    *,
                    plant_solution: bool = False,

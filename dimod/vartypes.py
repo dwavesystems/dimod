@@ -143,8 +143,15 @@ DISCRETE = Vartype.DISCRETE
 REAL = Vartype.REAL
 
 
-# when we drop 3.7 we can just use typing.Literal
-VartypeLike = typing.Union[Vartype, str, frozenset]
+# There are other types we allow (e.g. frozenset((-1, +1)))) but they are very
+# rarely used over the years so IMO more succinct typing is more useful.
+# Also, Literal doesn't accept frozensets in its list so we'd have to do a Union.
+VartypeLike = typing.Literal[
+    Vartype.SPIN, "SPIN",
+    Vartype.BINARY, "BINARY",
+    Vartype.INTEGER, "INTEGER",
+    Vartype.REAL, "REAL",
+]
 """Objects that can be interpreted as a variable type.
 
 This includes:

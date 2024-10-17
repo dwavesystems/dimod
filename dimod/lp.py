@@ -51,12 +51,12 @@ def _sense(s: Sense) -> str:
     return '=' if s.value == "==" else s.value
 
 
-def _label_error(label: typing.Hashable, rule: str) -> str:
+def _label_error(label: collections.abc.Hashable, rule: str) -> str:
     raise ValueError(f'Label {label!r} cannot be output to an LP file; {rule}. '
                      'Use CQM.relabel_variables() or CQM.relabel_constraints() to fix')
 
 
-def _validate_label(label: typing.Hashable):
+def _validate_label(label: collections.abc.Hashable):
     if not isinstance(label, str):
         _label_error(label, 'labels must be strings')
 
@@ -342,7 +342,7 @@ def load(file_like: typing.Union[str, bytes, io.IOBase]) -> dimod.ConstrainedQua
         os.unlink(tf.name)
 
 
-def loads(obj: typing.Union[str, typing.ByteString]) -> dimod.ConstrainedQuadraticModel:
+def loads(obj: typing.Union[str, typing.Union[bytes, bytearray]]) -> dimod.ConstrainedQuadraticModel:
     """Construct a constrained quadratic model from a string formatted as a LP file.
 
     LP files are a common format for encoding optimization models. See

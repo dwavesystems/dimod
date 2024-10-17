@@ -15,6 +15,7 @@
 """
 Type hints for common dimod inputs.
 """
+import collections.abc
 import typing
 
 import numpy as np
@@ -25,14 +26,14 @@ try:
     from numpy.typing import ArrayLike, DTypeLike
 except ImportError:
     # support numpy < 1.20
-    ArrayLike = typing.Sequence
+    ArrayLike = collections.abc.Sequence
     DTypeLike = typing.Any
 
 try:
     from numpy.typing import NDArray
 except ImportError:
     # support numpy < 1.21
-    NDArray = typing.Sequence
+    NDArray = collections.abc.Sequence
 
 
 __all__ = ['Bias',
@@ -61,13 +62,13 @@ This includes:
 # a typing class is a pain accross our supported Python versions. In the future
 # we should handle it
 
-Variable = typing.Hashable
+Variable = collections.abc.Hashable
 """Objects that can be used as variable labels.
 
 .. note::
 
     In `dimod` variables can be labelled using any hashable object except for
-    :obj:`None`. However, for simplicity we alias :class:`~typing.Hashable` which
+    :obj:`None`. However, for simplicity we alias :class:`~collections.abc.Hashable` which
     does permit :obj:`None`.
 
 """
@@ -75,8 +76,11 @@ Variable = typing.Hashable
 
 GraphLike = typing.Union[
     int,  # number of nodes
-    typing.Tuple[typing.Collection[Variable], typing.Collection[typing.Tuple[Variable, Variable]]],
-    typing.Collection[typing.Tuple[Variable, Variable]],  # edges
+    tuple[
+        collections.abc.Collection[Variable],
+        collections.abc.Collection[tuple[Variable, Variable]]
+    ],
+    collections.abc.Collection[tuple[Variable, Variable]],  # edges
     ]
 """Objects that can be interpreted as a graph.
 
@@ -96,7 +100,7 @@ except ImportError:
 else:
     GraphLike = typing.Union[GraphLike, nx.Graph]
 
-Polynomial = typing.Mapping[typing.Sequence[Variable], Bias]
+Polynomial = collections.abc.Mapping[collections.abc.Sequence[Variable], Bias]
 """A polynomial represented by a mapping."""
 
 
@@ -116,22 +120,22 @@ class LabelledBQMVectors(typing.NamedTuple):
     linear_biases: NDArray[np.floating]
     quadratic: QuadraticVectors
     offset: Bias
-    labels: typing.Sequence[Variable]
+    labels: collections.abc.Sequence[Variable]
 
 
 class DQMVectors(typing.NamedTuple):
     case_starts: NDArray[np.integer]
     linear_biases: NDArray[np.floating]
     quadratic: QuadraticVectors
-    labels: typing.Sequence[Variable]
+    labels: collections.abc.Sequence[Variable]
     offset: Bias
 
 
 SampleLike = typing.Union[
-    typing.Sequence[Bias],
-    typing.Mapping[Variable, Bias],
-    typing.Tuple[typing.Sequence[Bias], typing.Sequence[Variable]],
-    typing.Tuple[np.ndarray, typing.Sequence[Variable]],
+    collections.abc.Sequence[Bias],
+    collections.abc.Mapping[Variable, Bias],
+    tuple[collections.abc.Sequence[Bias], collections.abc.Sequence[Variable]],
+    tuple[np.ndarray, collections.abc.Sequence[Variable]],
     np.ndarray,  # this is overgenerous, but there is no way to specify 1-dimensional
     ]
 """Objects that can be interpreted as a single sample.
@@ -153,10 +157,10 @@ NumPy array_like_ is a very flexible definition.
 
 SamplesLike = typing.Union[
     SampleLike,
-    typing.Sequence[typing.Sequence[Bias]],  # 2d array
-    typing.Tuple[typing.Sequence[typing.Sequence[Bias]], typing.Sequence[Variable]],
-    typing.Sequence[SampleLike],
-    typing.Iterator[SampleLike],
+    collections.abc.Sequence[collections.abc.Sequence[Bias]],  # 2d array
+    tuple[collections.abc.Sequence[collections.abc.Sequence[Bias]], collections.abc.Sequence[Variable]],
+    collections.abc.Sequence[SampleLike],
+    collections.abc.Iterator[SampleLike],
     ]
 """Objects that can be interpreted as a collection of samples.
 

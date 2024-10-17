@@ -23,7 +23,7 @@ from dimod.vartypes import BINARY
 __all__ = ['bin_packing', 'random_bin_packing']
 
 
-def bin_packing(weights: typing.List[float], capacity: float) -> ConstrainedQuadraticModel:
+def bin_packing(weights: list[float], capacity: float) -> ConstrainedQuadraticModel:
     """Generate a bin packing problem as a constrained quadratic model.
 
     The bin packing problem,
@@ -73,7 +73,7 @@ def bin_packing(weights: typing.List[float], capacity: float) -> ConstrainedQuad
 
 def random_bin_packing(num_items: int,
                        seed: typing.Union[None, int, np.random.Generator] = None,
-                       weight_range: typing.Tuple[int, int] = (10, 30),
+                       weight_range: tuple[int, int] = (10, 30),
                        ) -> ConstrainedQuadraticModel:
     """Generate a random bin packing problem as a constrained quadratic model.
 
