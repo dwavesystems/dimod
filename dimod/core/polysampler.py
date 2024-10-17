@@ -19,9 +19,8 @@ not constrained to quadratic interactions.
 """
 
 import abc
+import collections.abc
 import warnings
-
-import typing
 
 from dimod.core.composite import Composite
 from dimod.higherorder.polynomial import BinaryPolynomial
@@ -57,8 +56,12 @@ class PolySampler(abc.ABC):
         """Sample from a higher-order polynomial."""
         pass
 
-    def sample_hising(self, h: typing.Mapping[Variable, Bias],
-                      J: typing.Mapping[typing.Tuple[Variable, Variable], Bias], **kwargs) -> SampleSet:
+    def sample_hising(
+            self,
+            h: collections.abc.Mapping[Variable, Bias],
+            J: collections.abc.Mapping[tuple[Variable, Variable], Bias],
+            **kwargs,
+            ) -> SampleSet:
         """Sample from a higher-order Ising model.
 
         Converts the given higher-order Ising model to a :obj:`.BinaryPolynomial`
@@ -80,7 +83,7 @@ class PolySampler(abc.ABC):
         """
         return self.sample_poly(BinaryPolynomial.from_hising(h, J), **kwargs)
 
-    def sample_hubo(self, H: typing.Mapping[typing.Tuple[Variable, Variable], Bias],
+    def sample_hubo(self, H: collections.abc.Mapping[tuple[Variable, Variable], Bias],
                     **kwargs) -> SampleSet:
         """Sample from a higher-order unconstrained binary optimization problem.
 

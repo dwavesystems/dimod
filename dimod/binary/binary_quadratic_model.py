@@ -34,10 +34,11 @@ import io
 import json
 import operator
 import tempfile
+import typing
 import warnings
 
 from numbers import Integral, Number
-from typing import (Any, BinaryIO, ByteString, Callable, Dict,
+from typing import (Any, BinaryIO, Callable, Dict,
                     Hashable, Iterable, Iterator,
                     Mapping, MutableMapping, Optional, Sequence,
                     Tuple, Union, Literal
@@ -1214,13 +1215,13 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         return coo.load(obj, cls=cls, vartype=vartype)
 
     @classmethod
-    def from_file(cls, fp: Union[BinaryIO, ByteString]):
+    def from_file(cls, fp: Union[BinaryIO, typing.Union[bytes, bytearray]]):
         """Construct a binary quadratic model from a file-like object.
 
         The inverse of :meth:`~BinaryQuadraticModel.to_file`.
 
         """
-        if isinstance(fp, ByteString):
+        if isinstance(fp, (bytes, bytearray, memoryview)):
             file_like: BinaryIO = _BytesIO(fp)  # type: ignore[assignment]
         else:
             file_like = fp

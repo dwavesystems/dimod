@@ -253,7 +253,7 @@ def as_samples(samples_like: SamplesLike,
                copy: bool = False,
                order: ArrayOrder = 'C',
                labels_type: type = list,
-               ) -> typing.Tuple[np.ndarray, typing.Sequence[Variable]]:
+               ) -> tuple[np.ndarray, collections.abc.Sequence[Variable]]:
     """Convert a samples_like object to a NumPy array and list of labels.
 
     Args:
@@ -347,10 +347,10 @@ def as_samples(samples_like: SamplesLike,
 
 
 @as_samples.register(abc.Iterator)
-def _as_samples_iterator(samples_like: typing.Iterator[SampleLike],
+def _as_samples_iterator(samples_like: collections.abc.Iterator[SampleLike],
                          labels_type: type = list,
                          **kwargs,
-                         ) -> typing.Tuple[np.ndarray, typing.Sequence[Variable]]:
+                         ) -> tuple[np.ndarray, collections.abc.Sequence[Variable]]:
 
     stack = (as_samples(sl, **kwargs) for sl in samples_like)
 
@@ -379,12 +379,12 @@ def _as_samples_iterator(samples_like: typing.Iterator[SampleLike],
 
 
 @as_samples.register(abc.Mapping)
-def _as_samples_dict(samples_like: typing.Mapping[Variable, float],
+def _as_samples_dict(samples_like: collections.abc.Mapping[Variable, float],
                      dtype: Optional[DTypeLike] = None,
                      copy: bool = False,
                      order: ArrayOrder = 'C',
                      labels_type: type = list,
-                     ) -> typing.Tuple[np.ndarray, typing.Sequence[Variable]]:
+                     ) -> tuple[np.ndarray, collections.abc.Sequence[Variable]]:
     if samples_like:
         labels, samples = zip(*samples_like.items())
         return as_samples((samples, labels), dtype=dtype, copy=copy, order=order,
@@ -394,12 +394,12 @@ def _as_samples_dict(samples_like: typing.Mapping[Variable, float],
 
 
 @as_samples.register(tuple)
-def _as_samples_tuple(samples_like: typing.Tuple[ArrayLike, typing.Sequence[Variable]],
+def _as_samples_tuple(samples_like: tuple[ArrayLike, collections.abc.Sequence[Variable]],
                       dtype: Optional[DTypeLike] = None,
                       copy: bool = False,
                       order: ArrayOrder = 'C',
                       labels_type: type = list,
-                      ) -> typing.Tuple[np.ndarray, typing.Sequence[Variable]]:
+                      ) -> tuple[np.ndarray, collections.abc.Sequence[Variable]]:
 
     try:
         array_like, labels = samples_like
@@ -1976,7 +1976,7 @@ def _as_samples_sampleset(samples_like: SampleSet,
                           copy: bool = False,
                           order: ArrayOrder = 'C',
                           labels_type: type = list,
-                          ) -> typing.Tuple[np.ndarray, typing.List[Variable]]:
+                          ) -> tuple[np.ndarray, list[Variable]]:
     # this isn't strictly necessary, but it improves performance
     labels = labels_type(samples_like.variables)
     if dtype is None:

@@ -14,14 +14,15 @@
 #
 
 import abc
+import collections.abc
 import io
 import json
 import struct
 import tempfile
+import typing
 import warnings
 
 from collections import namedtuple
-from typing import BinaryIO, ByteString, Callable, Mapping, Tuple
 
 import numpy as np
 
@@ -334,10 +335,10 @@ class _BytesIO(io.RawIOBase):
         return True
 
 
-_loaders: Mapping[bytes, Callable] = dict()
+_loaders: collections.abc.Mapping[bytes, collections.abc.Callable] = dict()
 
 
-def register(prefix: bytes, loader: Callable):
+def register(prefix: bytes, loader: collections.abc.Callable):
     """Register a new loader."""
     _loaders[prefix] = loader
 
@@ -378,8 +379,8 @@ def load(fp, cls=None):
                       "will be removed in 0.12.0. It does nothing.",
                       DeprecationWarning, stacklevel=2)
 
-    if isinstance(fp, ByteString):
-        file_like: BinaryIO = _BytesIO(fp)  # type: ignore[assignment]
+    if isinstance(fp, (bytes, bytearray, memoryview)):
+        file_like: typing.BinaryIO = _BytesIO(fp)  # type: ignore[assignment]
     else:
         file_like = fp
 
@@ -407,7 +408,7 @@ def load(fp, cls=None):
 load.register = register
 
 
-def make_header(prefix: bytes, data: Mapping, version: Tuple[int, int]) -> bytearray:
+def make_header(prefix: bytes, data: collections.abc.Mapping, version: tuple[int, int]) -> bytearray:
     """Construct a header for serializing dimod models.
 
     The first `len(prefix)` bytes will be exactly the contents of `prefix`.
@@ -452,7 +453,7 @@ def make_header(prefix: bytes, data: Mapping, version: Tuple[int, int]) -> bytea
     return header
 
 
-def write_header(file_like: BinaryIO, prefix: bytes, data: Mapping, version: Tuple[int, int]):
+def write_header(file_like: typing.BinaryIO, prefix: bytes, data: collections.abc.Mapping, version: tuple[int, int]):
     """Write a header constructed by :func:`.make_header` to a file-like."""
     file_like.write(make_header(prefix, data, version))
 
@@ -460,7 +461,7 @@ def write_header(file_like: BinaryIO, prefix: bytes, data: Mapping, version: Tup
 HeaderInfo = namedtuple('HeaderInfo', ['data', 'version'])
 
 
-def read_header(file_like: BinaryIO, prefix: bytes) -> HeaderInfo:
+def read_header(file_like: typing.BinaryIO, prefix: bytes) -> HeaderInfo:
     """Read the information from a header constructed by :func:`.make_header`.
 
     The return value should be accessed by attribute for easy future expansion.

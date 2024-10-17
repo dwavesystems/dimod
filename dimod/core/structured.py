@@ -86,9 +86,9 @@ __all__ = ['Structured']
 
 
 class _Structure(typing.NamedTuple):
-    nodelist: typing.List[Variable]
-    edgelist: typing.List[typing.Tuple[Variable, Variable]]
-    adjacency: typing.Dict[Variable, typing.Set]
+    nodelist: list[Variable]
+    edgelist: list[tuple[Variable, Variable]]
+    adjacency: dict[Variable, set]
 
 
 class Structured(abc.ABC):
@@ -102,18 +102,18 @@ class Structured(abc.ABC):
 
     """
     @abc.abstractproperty
-    def nodelist(self) -> typing.List[Variable]:
+    def nodelist(self) -> list[Variable]:
         """Nodes/variables allowed by the sampler."""
         pass
 
     @abc.abstractproperty
-    def edgelist(self) -> typing.List[typing.Tuple[Variable, Variable]]:
+    def edgelist(self) -> list[tuple[Variable, Variable]]:
         """Edges/interactions allowed by the sampler.
         """
         pass
 
     @property
-    def adjacency(self) -> typing.Dict[Variable, typing.Set]:
+    def adjacency(self) -> dict[Variable, set]:
         """Adjacency structure formatted as a dict, where keys are the nodes of
         the structured sampler and values are sets of all adjacent nodes for each
         key node.

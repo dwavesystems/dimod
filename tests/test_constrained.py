@@ -1217,14 +1217,15 @@ class TestSerialization(unittest.TestCase):
         cqm.add_constraint(((v, 1) for v in range(num_variables)), '==', 0)
 
         with self.subTest("functional"):
-            new = dimod.CQM.from_file(cqm.to_file(compress=True))
+            with cqm.to_file(compress=True) as f:
+                new = dimod.CQM.from_file(f)
             self.assertTrue(new.is_equal(cqm))
 
         with self.subTest("size"):
-            self.assertLess(len(cqm.to_file(compress=True).read()),
-                            len(cqm.to_file(compress=False).read()))
-            self.assertLess(len(cqm.to_file(compress=True).read()),
-                            len(cqm.to_file().read()))  # default
+            with cqm.to_file(compress=True) as f1, cqm.to_file(compress=False) as f2:
+                self.assertLess(len(f1.read()), len(f2.read()))
+            with cqm.to_file(compress=True) as f1, cqm.to_file() as f2:
+                self.assertLess(len(f1.read()), len(f2.read()))
 
     def test_functional(self):
         cqm = CQM()
@@ -1289,7 +1290,8 @@ class TestSerialization(unittest.TestCase):
         cqm.add_constraint(bqm, '<=', weight=2.0, penalty='quadratic')
         cqm.add_constraint(Spin('a') * Integer('d') * 5 <= 3, weight=3.0)
 
-        new = CQM.from_file(cqm.to_file())
+        with cqm.to_file() as f:
+            new = CQM.from_file(f)
 
         self.assertTrue(new.objective.variables >= cqm.objective.variables)
         for v, bias in cqm.objective.iter_linear():

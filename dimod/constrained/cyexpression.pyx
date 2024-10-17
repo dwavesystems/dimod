@@ -13,7 +13,6 @@
 #    limitations under the License.
 
 import numbers
-import typing
 
 cimport cython
 import numpy as np
@@ -389,7 +388,7 @@ cdef class _cyExpression:
         if expr.num_variables():
             raise RuntimeError("._from_file() can only be called on an empty expression")
 
-        if isinstance(fp, typing.ByteString):
+        if isinstance(fp, (bytes, bytearray, memoryview)):
             file_like = _BytesIO(fp)
         else:
             file_like = fp

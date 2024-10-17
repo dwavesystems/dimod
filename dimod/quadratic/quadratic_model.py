@@ -29,15 +29,13 @@ variables and :math:`a_{i}, b_{ij}, c` are real values.
 
 from __future__ import annotations
 
+import collections.abc
 import struct
 import tempfile
 import typing
 
-from collections.abc import Callable, Set
 from copy import deepcopy
 from numbers import Number
-from typing import Any, Dict, Iterator, Iterable, Mapping, Optional, Sequence, Sized, Tuple, Union
-from typing import BinaryIO, ByteString
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -45,8 +43,8 @@ import numpy as np
 try:
     from numpy.typing import ArrayLike, DTypeLike
 except ImportError:
-    ArrayLike = Any
-    DTypeLike = Any
+    ArrayLike = typing.Any
+    DTypeLike = typing.Any
 
 from dimod.decorators import forwarding_method, unique_variable_labels
 from dimod.quadratic.cyqm import cyQM_float32, cyQM_float64
@@ -79,7 +77,8 @@ __all__ = ['QuadraticModel', 'QM', 'Integer', 'Integers', 'IntegerArray', 'Real'
 QM_MAGIC_PREFIX = b'DIMODQM'
 
 
-Vartypes = Union[Mapping[Variable, Vartype], Iterable[Tuple[Variable, VartypeLike]]]
+Vartypes = typing.Union[collections.abc.Mapping[Variable, Vartype],
+                        collections.abc.Iterable[tuple[Variable, VartypeLike]]]
 
 
 class QuadraticModel(QuadraticViewsMixin):
@@ -94,17 +93,17 @@ class QuadraticModel(QuadraticViewsMixin):
     """The default dtype used to construct the class."""
 
     def __init__(self,
-                 linear: Optional[Mapping[Variable, Bias]] = None,
-                 quadratic: Optional[Mapping[Tuple[Variable, Variable], Bias]] = None,
+                 linear: typing.Optional[collections.abc.Mapping[Variable, Bias]] = None,
+                 quadratic: typing.Optional[collections.abc.Mapping[tuple[Variable, Variable], Bias]] = None,
                  offset: Bias = 0,
-                 vartypes: Optional[Vartypes] = None,
+                 vartypes: typing.Optional[Vartypes] = None,
                  *,
-                 dtype: Optional[DTypeLike] = None):
+                 dtype: typing.Optional[DTypeLike] = None):
         dtype = np.dtype(self.DEFAULT_DTYPE) if dtype is None else np.dtype(dtype)
         self.data = self._DATA_CLASSES[np.dtype(dtype)]()
 
         if vartypes is not None:
-            if isinstance(vartypes, Mapping):
+            if isinstance(vartypes, collections.abc.Mapping):
                 vartypes = vartypes.items()
             for v, vartype in vartypes:
                 self.add_variable(vartype, v)
@@ -120,7 +119,7 @@ class QuadraticModel(QuadraticViewsMixin):
                 self.add_quadratic(u, v, bias)
         self.offset += offset
 
-    def __deepcopy__(self, memo: Dict[int, Any]) -> 'QuadraticModel':
+    def __deepcopy__(self, memo: dict[int, typing.Any]) -> 'QuadraticModel':
         new = type(self).__new__(type(self))
         new.data = deepcopy(self.data, memo)
         memo[id(self)] = new
@@ -131,7 +130,7 @@ class QuadraticModel(QuadraticViewsMixin):
         return (f"{type(self).__name__}({self.linear}, {self.quadratic}, "
                 f"{self.offset}, {vartypes}, dtype={self.dtype.name!r})")
 
-    def __add__(self, other: Union['QuadraticModel', Bias]) -> 'QuadraticModel':
+    def __add__(self, other: typing.Union['QuadraticModel', Bias]) -> 'QuadraticModel':
         # in python 3.8+ we could do this is functools.singledispatchmethod
         if isinstance(other, QuadraticModel):
             new = self.copy()
@@ -143,7 +142,7 @@ class QuadraticModel(QuadraticViewsMixin):
             return new
         return NotImplemented
 
-    def __iadd__(self, other: Union['QuadraticModel', Bias]) -> 'QuadraticModel':
+    def __iadd__(self, other: typing.Union['QuadraticModel', Bias]) -> 'QuadraticModel':
         # in python 3.8+ we could do this is functools.singledispatchmethod
         if isinstance(other, QuadraticModel):
             self.update(other)
@@ -161,7 +160,7 @@ class QuadraticModel(QuadraticViewsMixin):
             return new
         return NotImplemented
 
-    def __mul__(self, other: Union['QuadraticModel', Bias]) -> 'QuadraticModel':
+    def __mul__(self, other: typing.Union['QuadraticModel', Bias]) -> 'QuadraticModel':
         if isinstance(other, QuadraticModel):
             if not (self.is_linear() and other.is_linear()):
                 raise TypeError(
@@ -239,7 +238,7 @@ class QuadraticModel(QuadraticViewsMixin):
             return self * self
         return NotImplemented
 
-    def __sub__(self, other: Union['QuadraticModel', Bias]) -> 'QuadraticModel':
+    def __sub__(self, other: typing.Union['QuadraticModel', Bias]) -> 'QuadraticModel':
         if isinstance(other, QuadraticModel):
             new = self.copy()
             new.scale(-1)
@@ -252,7 +251,7 @@ class QuadraticModel(QuadraticViewsMixin):
             return new
         return NotImplemented
 
-    def __isub__(self, other: Union['QuadraticModel', Bias]) -> 'QuadraticModel':
+    def __isub__(self, other: typing.Union['QuadraticModel', Bias]) -> 'QuadraticModel':
         if isinstance(other, QuadraticModel):
             self.scale(-1)
             self.update(other)
@@ -322,7 +321,7 @@ class QuadraticModel(QuadraticViewsMixin):
         self.data.offset = offset
 
     @property
-    def shape(self) -> Tuple[int, int]:
+    def shape(self) -> tuple[int, int]:
         """A 2-tuple of :attr:`num_variables` and :attr:`num_interactions`."""
         return self.num_variables, self.num_interactions
 
@@ -376,7 +375,7 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.add_linear
 
     def add_linear_from(self,
-                        linear: Union[Mapping[Variable, Bias], Iterable[Tuple[Variable, Bias]]],
+                        linear: typing.Union[collections.abc.Mapping[Variable, Bias], collections.abc.Iterable[tuple[Variable, Bias]]],
                         *,
                         default_vartype=None,
                         default_lower_bound=None,
@@ -409,7 +408,7 @@ class QuadraticModel(QuadraticViewsMixin):
         """
         add_linear = self.data.add_linear
 
-        if isinstance(linear, Mapping):
+        if isinstance(linear, collections.abc.Mapping):
             linear = linear.items()
 
         # checking whether the keyword arguments are present actually
@@ -458,8 +457,8 @@ class QuadraticModel(QuadraticViewsMixin):
         """
         return self.data.add_quadratic
 
-    def add_quadratic_from(self, quadratic: Union[Mapping[Tuple[Variable, Variable], Bias],
-                                                  Iterable[Tuple[Variable, Variable, Bias]]]):
+    def add_quadratic_from(self, quadratic: typing.Union[collections.abc.Mapping[tuple[Variable, Variable], Bias],
+                                                         collections.abc.Iterable[tuple[Variable, Variable, Bias]]]):
         """Add quadratic biases.
 
         Args:
@@ -475,17 +474,17 @@ class QuadraticModel(QuadraticViewsMixin):
             ValueError: If any self-loops are given on binary-valued variables.
                 E.g. ``(u, u, bias)`` is not a valid triplet for spin variables.
         """
-        if isinstance(quadratic, Mapping):
+        if isinstance(quadratic, collections.abc.Mapping):
             self.data.add_quadratic_from_iterable(
                 (u, v, bias) for (u, v), bias in quadratic.items())
         else:
             self.data.add_quadratic_from_iterable(quadratic)
 
     @forwarding_method
-    def add_variable(self, vartype: VartypeLike, v: Optional[Variable] = None,
+    def add_variable(self, vartype: VartypeLike, v: typing.Optional[Variable] = None,
                      *,
                      lower_bound: float = 0,
-                     upper_bound: Optional[float] = None,
+                     upper_bound: typing.Optional[float] = None,
                      ) -> Variable:
         """Add a variable to the quadratic model.
 
@@ -516,7 +515,7 @@ class QuadraticModel(QuadraticViewsMixin):
         """
         return self.data.add_variable
 
-    def add_variables_from(self, vartype: VartypeLike, variables: Iterable[Variable]):
+    def add_variables_from(self, vartype: VartypeLike, variables: collections.abc.Iterable[Variable]):
         """Add multiple variables of the same type to the quadratic model.
 
         Args:
@@ -527,7 +526,7 @@ class QuadraticModel(QuadraticViewsMixin):
                 * :class:`~dimod.Vartype.INTEGER`, ``'INTEGER'``
                 * :class:`~dimod.Vartype.REAL`, ``'REAL'``
 
-            variables: Iterable of variable labels.
+            variables: collections.abc.Iterable of variable labels.
 
         Examples:
             >>> from dimod import QuadraticModel, Binary
@@ -541,11 +540,11 @@ class QuadraticModel(QuadraticViewsMixin):
             add_variable(vartype, v)
 
     def add_variables_from_model(self,
-                                 model: Union[BinaryQuadraticModel,
-                                              ConstrainedQuadraticModel,
-                                              QuadraticModel],
+                                 model: typing.Union[BinaryQuadraticModel,
+                                                     ConstrainedQuadraticModel,
+                                                     QuadraticModel],
                                  *,
-                                 variables: Optional[Iterable[Variable]] = None,
+                                 variables: typing.Optional[collections.abc.Iterable[Variable]] = None,
                                  ):
         """Add variables from another model.
 
@@ -635,7 +634,7 @@ class QuadraticModel(QuadraticViewsMixin):
         """
         return self.data.degree
 
-    def energies(self, samples_like, dtype: Optional[DTypeLike] = None) -> np.ndarray:
+    def energies(self, samples_like, dtype: typing.Optional[DTypeLike] = None) -> np.ndarray:
         """Determine the energies of the given samples-like.
 
         Args:
@@ -782,13 +781,13 @@ class QuadraticModel(QuadraticViewsMixin):
         return obj
 
     @classmethod
-    def from_file(cls, fp: Union[BinaryIO, ByteString]):
+    def from_file(cls, fp: typing.Union[typing.BinaryIO, typing.Union[bytes, bytearray]]):
         """Construct a quadratic model from a file-like object.
 
         The inverse of :meth:`~QuadraticModel.to_file`.
         """
-        if isinstance(fp, ByteString):
-            file_like: BinaryIO = _BytesIO(fp)  # type: ignore[assignment]
+        if isinstance(fp, (bytes, bytearray, memoryview)):
+            file_like: typing.BinaryIO = _BytesIO(fp)  # type: ignore[assignment]
         else:
             file_like = fp
 
@@ -836,7 +835,7 @@ class QuadraticModel(QuadraticViewsMixin):
 
     @forwarding_method
     def get_quadratic(self, u: Variable, v: Variable,
-                      default: Optional[Bias] = None) -> Bias:
+                      default: typing.Optional[Bias] = None) -> Bias:
         """Get the quadratic bias of the specified pair of variables.
 
         Args:
@@ -846,7 +845,7 @@ class QuadraticModel(QuadraticViewsMixin):
         """
         return self.data.get_quadratic
 
-    def is_almost_equal(self, other: Union['QuadraticModel', 'BinaryQuadraticModel', Bias],
+    def is_almost_equal(self, other: typing.Union['QuadraticModel', 'BinaryQuadraticModel', Bias],
                         places: int = 7) -> bool:
         """Test for near equality to all biases of a given quadratic model.
 
@@ -892,7 +891,7 @@ class QuadraticModel(QuadraticViewsMixin):
             # it's not a BQM or variables/interactions don't match
             return False
 
-    def is_equal(self, other: Union['QuadraticModel', Number]) -> bool:
+    def is_equal(self, other: typing.Union['QuadraticModel', Number]) -> bool:
         """Return True if the given model has the same variables, vartypes and biases.
 
         Args:
@@ -920,7 +919,7 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.is_linear()
 
     @forwarding_method
-    def iter_neighborhood(self, v: Variable) -> Iterator[Tuple[Variable, Bias]]:
+    def iter_neighborhood(self, v: Variable) -> collections.abc.Iterator[tuple[Variable, Bias]]:
         """Iterate over the neighbors and quadratic biases of a variable.
 
         Args:
@@ -942,7 +941,7 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.iter_neighborhood
 
     @forwarding_method
-    def iter_quadratic(self) -> Iterator[Tuple[Variable, Variable, Bias]]:
+    def iter_quadratic(self) -> collections.abc.Iterator[tuple[Variable, Variable, Bias]]:
         """Iterate over the interactions of a quadratic model.
 
         Returns:
@@ -1016,8 +1015,8 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.set_upper_bound(v, ub)
 
     @forwarding_method
-    def reduce_linear(self, function: Callable,
-                      initializer: Optional[Bias] = None) -> Any:
+    def reduce_linear(self, function: collections.abc.Callable,
+                      initializer: typing.Optional[Bias] = None) -> typing.Any:
         """Apply function of two arguments cumulatively to the linear biases.
 
         Args:
@@ -1045,8 +1044,8 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.reduce_linear
 
     @forwarding_method
-    def reduce_neighborhood(self, v: Variable, function: Callable,
-                            initializer: Optional[Bias] = None) -> Any:
+    def reduce_neighborhood(self, v: Variable, function: collections.abc.Callable,
+                            initializer: typing.Optional[Bias] = None) -> typing.Any:
         """Apply function of two arguments cumulatively to the quadratic biases
         associated with a single variable.
 
@@ -1078,8 +1077,8 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.reduce_neighborhood
 
     @forwarding_method
-    def reduce_quadratic(self, function: Callable,
-                         initializer: Optional[Bias] = None) -> Any:
+    def reduce_quadratic(self, function: collections.abc.Callable,
+                         initializer: typing.Optional[Bias] = None) -> typing.Any:
         """Apply function of two arguments cumulatively to the quadratic
         biases.
 
@@ -1106,7 +1105,7 @@ class QuadraticModel(QuadraticViewsMixin):
         """
         return self.data.reduce_quadratic
 
-    def relabel_variables(self, mapping: Mapping[Variable, Variable],
+    def relabel_variables(self, mapping: collections.abc.Mapping[Variable, Variable],
                           inplace: bool = True) -> 'QuadraticModel':
         """Relabel the variables according to the given mapping.
 
@@ -1137,7 +1136,7 @@ class QuadraticModel(QuadraticViewsMixin):
         return self
 
     def relabel_variables_as_integers(self, inplace: bool = True
-                                      ) -> Tuple['QuadraticModel', Mapping[Variable, Variable]]:
+                                      ) -> tuple['QuadraticModel', collections.abc.Mapping[Variable, Variable]]:
         """Relabel the variables as `[0, n)` and return the mapping.
 
         Args:
@@ -1165,7 +1164,7 @@ class QuadraticModel(QuadraticViewsMixin):
         return self.data.remove_interaction
 
     @forwarding_method
-    def remove_variable(self, v: Optional[Variable] = None) -> Variable:
+    def remove_variable(self, v: typing.Optional[Variable] = None) -> Variable:
         """Remove the specified variable from the quadratic model.
 
         Args:
@@ -1329,7 +1328,7 @@ class QuadraticModel(QuadraticViewsMixin):
         file.seek(0)
         return file
 
-    def update(self, other: typing.Union[QuadraticModel, BinaryQuadraticModel]):
+    def update(self, other: typing.typing.Union[QuadraticModel, BinaryQuadraticModel]):
         """Update the quadratic model from another quadratic model.
 
         Adds to the quadratic model the variables, linear biases, quadratic biases,
@@ -1436,9 +1435,9 @@ QM = QuadraticModel
 
 
 @unique_variable_labels
-def Integer(label: Optional[Variable] = None, bias: Bias = 1,
-            dtype: Optional[DTypeLike] = None,
-            *, lower_bound: float = 0, upper_bound: Optional[float] = None) -> QuadraticModel:
+def Integer(label: typing.Optional[Variable] = None, bias: Bias = 1,
+            dtype: typing.Optional[DTypeLike] = None,
+            *, lower_bound: float = 0, upper_bound: typing.Optional[float] = None) -> QuadraticModel:
     """Return a quadratic model with a single integer variable.
 
     Args:
@@ -1466,8 +1465,8 @@ def Integer(label: Optional[Variable] = None, bias: Bias = 1,
     qm.set_linear(v, bias)
     return qm
 
-def Integers(labels: Union[int, Iterable[Variable]],
-             dtype: Optional[DTypeLike] = None) -> Iterator[QuadraticModel]:
+def Integers(labels: typing.Union[int, collections.abc.Iterable[Variable]],
+             dtype: typing.Optional[DTypeLike] = None) -> collections.abc.Iterator[QuadraticModel]:
     """Yield quadratic models, each with a single integer variable.
 
     Args:
@@ -1484,14 +1483,14 @@ def Integers(labels: Union[int, Iterable[Variable]],
         >>> print(qm.to_polystring())
         -i - j + 2*i*i - 3*i*j + 2*j*j
     """
-    if isinstance(labels, Iterable):
+    if isinstance(labels, collections.abc.Iterable):
         yield from (Integer(v, dtype=dtype) for v in labels)
     else:
         yield from (Integer(dtype=dtype) for _ in range(labels))
 
 
-def IntegerArray(labels: Union[int, Iterable[Variable]],
-                 dtype: Optional[DTypeLike] = None) -> np.ndarray:
+def IntegerArray(labels: typing.Union[int, collections.abc.Iterable[Variable]],
+                 dtype: typing.Optional[DTypeLike] = None) -> np.ndarray:
     """Return a NumPy array of quadratic models, each with a
     single integer variable.
 
@@ -1517,13 +1516,13 @@ def IntegerArray(labels: Union[int, Iterable[Variable]],
     return _VariableArray(Integers, labels, dtype)
 
 
-def _VariableArray(variable_generator: Callable,
-                   labels: Union[int, Iterable[Variable]],
-                   dtype: Optional[DTypeLike] = None) -> np.ndarray:
+def _VariableArray(variable_generator: collections.abc.Callable,
+                   labels: typing.Union[int, collections.abc.Iterable[Variable]],
+                   dtype: typing.Optional[DTypeLike] = None) -> np.ndarray:
     """Builds NumPy array from a variable generator method."""
     if isinstance(labels, int):
         number_of_elements = labels
-    elif isinstance(labels, Sized):
+    elif isinstance(labels, collections.abc.Sized):
         number_of_elements = len(labels)
     else:
         labels = list(labels)
@@ -1537,9 +1536,9 @@ def _VariableArray(variable_generator: Callable,
 
 
 @unique_variable_labels
-def Real(label: Optional[Variable] = None, bias: Bias = 1,
-         dtype: Optional[DTypeLike] = None,
-         *, lower_bound: float = 0, upper_bound: Optional[float] = None) -> QuadraticModel:
+def Real(label: typing.Optional[Variable] = None, bias: Bias = 1,
+         dtype: typing.Optional[DTypeLike] = None,
+         *, lower_bound: float = 0, upper_bound: typing.Optional[float] = None) -> QuadraticModel:
     """Return a quadratic model with a single real-valued variable.
 
     Args:
@@ -1560,8 +1559,8 @@ def Real(label: Optional[Variable] = None, bias: Bias = 1,
     return qm
 
 
-def Reals(labels: Union[int, Iterable[Variable]],
-          dtype: Optional[DTypeLike] = None) -> Iterator[QuadraticModel]:
+def Reals(labels: typing.Union[int, collections.abc.Iterable[Variable]],
+          dtype: typing.Optional[DTypeLike] = None) -> collections.abc.Iterator[QuadraticModel]:
     """Yield quadratic models, each with a single real-valued variable.
 
     Args:
@@ -1573,7 +1572,7 @@ def Reals(labels: Union[int, Iterable[Variable]],
         Quadratic models, each with a single real-valued variable.
 
     """
-    if isinstance(labels, Iterable):
+    if isinstance(labels, collections.abc.Iterable):
         yield from (Real(v, dtype=dtype) for v in labels)
     else:
         yield from (Real(dtype=dtype) for _ in range(labels))

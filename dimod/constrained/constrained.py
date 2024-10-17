@@ -51,14 +51,13 @@ import json
 import os.path
 import re
 import tempfile
+import typing
 import uuid
 import warnings
 import zipfile
 
 from io import StringIO
 from numbers import Number
-from typing import Hashable, Optional, Union, BinaryIO, ByteString, Iterable, Collection, Dict
-from typing import Callable, MutableMapping, Iterator, Tuple, Mapping, Any, NamedTuple
 
 import numpy as np
 
@@ -84,8 +83,8 @@ CQM_MAGIC_PREFIX = b'DIMODCQM'
 CQM_SERIALIZATION_VERSION = (2, 0)
 
 
-class ConstraintData(NamedTuple):
-    label: Hashable
+class ConstraintData(typing.NamedTuple):
+    label: collections.abc.Hashable
     lhs_energy: float
     rhs_energy: float
     sense: Sense
@@ -135,7 +134,7 @@ class DiscreteView(collections.abc.MutableSet):
             self.parent.constraints[key].lhs.mark_discrete(False)
 
 
-class SoftConstraint(NamedTuple):
+class SoftConstraint(typing.NamedTuple):
     weight: float
     penalty: str
 
@@ -181,10 +180,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     def __init__(self):
         super().__init__()
 
-        self.discrete: Set[Hashable] = DiscreteView(self)
+        self.discrete: set[collections.abc.Hashable] = DiscreteView(self)
         self._soft = SoftView(self)  # todo: remove
 
-    def add_constraint(self, data, *args, **kwargs) -> Hashable:
+    def add_constraint(self, data, *args, **kwargs) -> collections.abc.Hashable:
         """Add a constraint to the model.
 
         This method dispatches to one of several specific methods based on
@@ -200,21 +199,21 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             return self.add_constraint_from_model(data, *args, **kwargs)
         elif isinstance(data, Comparison):
             return self.add_constraint_from_comparison(data, *args, **kwargs)
-        elif isinstance(data, Iterable):
+        elif isinstance(data, collections.abc.Iterable):
             return self.add_constraint_from_iterable(data, *args, **kwargs)
         else:
             raise TypeError("unexpected data format")
 
     def add_constraint_from_model(self,
-                                  qm: Union[BinaryQuadraticModel, QuadraticModel],
-                                  sense: Union[Sense, str],
+                                  qm: typing.Union[BinaryQuadraticModel, QuadraticModel],
+                                  sense: typing.Union[Sense, str],
                                   rhs: Bias = 0,
-                                  label: Optional[Hashable] = None,
+                                  label: typing.Optional[collections.abc.Hashable] = None,
                                   *,
                                   copy: bool = True,
-                                  weight: Optional[float] = None,
+                                  weight: typing.Optional[float] = None,
                                   penalty: str = 'linear',
-                                  ) -> Hashable:
+                                  ) -> collections.abc.Hashable:
         """Add a constraint from a quadratic model.
 
         Args:
@@ -279,11 +278,11 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
     def add_constraint_from_comparison(self,
                                        comp: Comparison,
-                                       label: Optional[Hashable] = None,
+                                       label: typing.Optional[collections.abc.Hashable] = None,
                                        copy: bool = True,
-                                       weight: Optional[float] = None,
+                                       weight: typing.Optional[float] = None,
                                        penalty: str = 'linear',
-                                       ) -> Hashable:
+                                       ) -> collections.abc.Hashable:
         r"""Add a constraint from a symbolic comparison.
 
         For a more detailed discussion of symbolic model manipulation, see
@@ -384,13 +383,13 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             raise ValueError("comparison should have a binary quadratic model "
                              "or quadratic model lhs.")
 
-    def add_constraint_from_iterable(self, iterable: Iterable,
-                                     sense: Union[Sense, str],
+    def add_constraint_from_iterable(self, iterable: collections.abc.Iterable,
+                                     sense: typing.Union[Sense, str],
                                      rhs: Bias = 0,
-                                     label: Optional[Hashable] = None,
-                                     weight: Optional[float] = None,
+                                     label: typing.Optional[collections.abc.Hashable] = None,
+                                     weight: typing.Optional[float] = None,
                                      penalty: str = 'linear',
-                                     ) -> Hashable:
+                                     ) -> collections.abc.Hashable:
         """Add a constraint from an iterable of tuples.
 
         Args:
@@ -443,7 +442,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         return super().add_constraint_from_iterable(iterable, sense, rhs, label, weight, penalty)
 
-    def add_discrete(self, data, *args, **kwargs) -> Hashable:
+    def add_discrete(self, data, *args, **kwargs) -> collections.abc.Hashable:
         """A convenience wrapper for other methods that add one-hot constraints.
 
         One-hot constraints can represent discrete variables (for example a
@@ -502,16 +501,16 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             return self.add_discrete_from_model(data, *args, **kwargs)
         elif isinstance(data, Comparison):
             return self.add_discrete_from_comparison(data, *args, **kwargs)
-        elif isinstance(data, Iterable):
+        elif isinstance(data, collections.abc.Iterable):
             return self.add_discrete_from_iterable(data, *args, **kwargs)
         else:
             raise TypeError("unexpected data format")
 
     def add_discrete_from_comparison(self,
                                      comp: Comparison,
-                                     label: Optional[Hashable] = None,
+                                     label: typing.Optional[collections.abc.Hashable] = None,
                                      copy: bool = True,
-                                     check_overlaps: bool = True) -> Hashable:
+                                     check_overlaps: bool = True) -> collections.abc.Hashable:
         """Add a one-hot constraint from a comparison.
 
         One-hot constraints can represent discrete variables (for example a
@@ -564,9 +563,9 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                                             copy=copy, check_overlaps=check_overlaps)
 
     def add_discrete_from_iterable(self,
-                                   variables: Iterable[Variable],
-                                   label: Optional[Hashable] = None,
-                                   check_overlaps: bool = True) -> Hashable:
+                                   variables: collections.abc.Iterable[Variable],
+                                   label: typing.Optional[collections.abc.Hashable] = None,
+                                   check_overlaps: bool = True) -> collections.abc.Hashable:
         """Add a one-hot constraint from an iterable.
 
         One-hot constraints can represent discrete variables (for example a
@@ -630,10 +629,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         return label
 
     def add_discrete_from_model(self,
-                                qm: Union[BinaryQuadraticModel, QuadraticModel],
-                                label: Optional[Hashable] = None,
+                                qm: typing.Union[BinaryQuadraticModel, QuadraticModel],
+                                label: typing.Optional[collections.abc.Hashable] = None,
                                 copy: bool = True,
-                                check_overlaps: bool = True) -> Hashable:
+                                check_overlaps: bool = True) -> collections.abc.Hashable:
         """Add a one-hot constraint from a model.
 
         One-hot constraints can represent discrete variables (for example a
@@ -702,10 +701,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         self.discrete.add(label)
         return label
 
-    def add_variable(self, vartype: VartypeLike, v: Optional[Variable] = None,
+    def add_variable(self, vartype: VartypeLike, v: typing.Optional[Variable] = None,
                      *,
-                     lower_bound: Optional[float] = None,
-                     upper_bound: Optional[float] = None,
+                     lower_bound: typing.Optional[float] = None,
+                     upper_bound: typing.Optional[float] = None,
                      ) -> Variable:
         """Add a variable to the model.
 
@@ -804,8 +803,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                    for datum in self.iter_constraint_data(sample_like))
 
     def fix_variable(self, v: Variable, value: float, *,
-                     cascade: Optional[bool] = None,
-                     ) -> Dict[Variable, float]:
+                     cascade: typing.Optional[bool] = None,
+                     ) -> dict[Variable, float]:
         """Fix the value of a variable in the model.
 
         Note that this function does not test feasibility.
@@ -838,11 +837,11 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         return {}
 
     def fix_variables(self,
-                      fixed: Union[Mapping[Variable, float],
-                                   Iterable[Tuple[Variable, float]]],
+                      fixed: typing.Union[collections.abc.Mapping[Variable, float],
+                                          collections.abc.Iterable[tuple[Variable, float]]],
                       *,
                       inplace: bool = True,
-                      cascade: Optional[bool] = None,
+                      cascade: typing.Optional[bool] = None,
                       ) -> ConstrainedQuadraticModel:
         """Fix the value of the variables and remove them.
 
@@ -931,7 +930,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         return cls.from_quadratic_model(qm)
 
     @classmethod
-    def from_quadratic_model(cls, qm: Union[QuadraticModel, BinaryQuadraticModel]
+    def from_quadratic_model(cls, qm: typing.Union[QuadraticModel, BinaryQuadraticModel]
                              ) -> ConstrainedQuadraticModel:
         """Construct a constrained quadratic model from a quadratic model or
         binary quadratic model.
@@ -962,7 +961,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
     @classmethod
     def _from_file_legacy(cls,
-                          file_like: BinaryIO,
+                          file_like: typing.BinaryIO,
                           header_info,
                           *,
                           check_header: bool = True,
@@ -1028,7 +1027,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
     @classmethod
     def from_file(cls,
-                  fp: Union[BinaryIO, ByteString],
+                  fp: typing.Union[typing.BinaryIO, typing.Union[bytes, bytearray]],
                   *,
                   check_header: bool = True,
                   ) -> ConstrainedQuadraticModel:
@@ -1052,8 +1051,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             -2*x + 2*x*y
 
         """
-        if isinstance(fp, ByteString):
-            file_like: BinaryIO = _BytesIO(fp)  # type: ignore[assignment]
+        if isinstance(fp, (bytes, bytearray, memoryview)):
+            file_like: typing.BinaryIO = _BytesIO(fp)  # type: ignore[assignment]
         else:
             file_like = fp
 
@@ -1147,8 +1146,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     def iter_constraint_data(self,
                              sample_like: SamplesLike,
                              *,
-                             labels: typing.Optional[typing.Iterable[typing.Hashable]] = None,
-                             ) -> Iterator[ConstraintData]:
+                             labels: typing.Optional[collections.abc.Iterable[collections.abc.Hashable]] = None,
+                             ) -> typing.Iterator[ConstraintData]:
         r"""Yield information about the constraints for the given sample.
 
         Note that this method iterates over constraints in the same order as
@@ -1233,8 +1232,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
     def iter_violations(self, sample_like: SamplesLike, *,
                         skip_satisfied: bool = False,
                         clip: bool = False,
-                        labels: typing.Optional[typing.Iterable[typing.Hashable]] = None,
-                        ) -> Iterator[Tuple[Hashable, Bias]]:
+                        labels: typing.Optional[collections.abc.Iterable[collections.abc.Hashable]] = None,
+                        ) -> collections.abc.Iterator[tuple[collections.abc.Hashable, Bias]]:
         """Yield violations for all constraints.
 
         Args:
@@ -1364,7 +1363,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             label = 'c' + uuid.uuid4().hex[:6]
         return label
 
-    def num_biases(self, vartype: Optional[VartypeLike] = None, *,
+    def num_biases(self, vartype: typing.Optional[VartypeLike] = None, *,
                    linear_only: bool = False,
                    ) -> int:
         """Number of biases in the constrained quadratic model.
@@ -1392,12 +1391,12 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         """
         if vartype is None:
-            def count(qm: Union[QuadraticModel, BinaryQuadraticModel]) -> int:
+            def count(qm: typing.Union[QuadraticModel, BinaryQuadraticModel]) -> int:
                 return qm.num_variables + (0 if linear_only else qm.num_interactions)
         else:
             vartype = as_vartype(vartype, extended=True)
 
-            def count(qm: Union[QuadraticModel, BinaryQuadraticModel]) -> int:
+            def count(qm: typing.Union[QuadraticModel, BinaryQuadraticModel]) -> int:
                 if isinstance(qm, BinaryQuadraticModel):
                     if qm.vartype is not vartype:
                         return 0
@@ -1411,8 +1410,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         return count(self.objective) + sum(count(const.lhs) for const in self.constraints.values())
 
-    def num_quadratic_variables(self, vartype: Optional[VartypeLike] = None, *,
-                                include_objective: Optional[bool] = None,
+    def num_quadratic_variables(self, vartype: typing.Optional[VartypeLike] = None, *,
+                                include_objective: typing.Optional[bool] = None,
                                 ) -> int:
         """Number of variables with at least one quadratic interaction in the constrained quadratic model.
 
@@ -1454,12 +1453,12 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
                 )
 
         if vartype is None:
-            def count(qm: Union[QuadraticModel, BinaryQuadraticModel]) -> int:
+            def count(qm: typing.Union[QuadraticModel, BinaryQuadraticModel]) -> int:
                 return sum(qm.degree(v) > 0 for v in qm.variables)
         else:
             vartype = as_vartype(vartype, extended=True)
 
-            def count(qm: Union[QuadraticModel, BinaryQuadraticModel]) -> int:
+            def count(qm: typing.Union[QuadraticModel, BinaryQuadraticModel]) -> int:
                 if isinstance(qm, BinaryQuadraticModel):
                     return sum(qm.degree(v) > 0 for v in qm.variables) if qm.vartype is vartype else 0
                 else:
@@ -1472,7 +1471,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         return n
 
-    def relabel_constraints(self, mapping: Mapping[Hashable, Hashable]):
+    def relabel_constraints(
+            self,
+            mapping: collections.abc.Mapping[collections.abc.Hashable, collections.abc.Hashable],
+            ):
         """Relabel the constraints.
 
         Note that this method does not maintain the constraint order.
@@ -1498,7 +1500,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         self.discrete |= (self.constraint_labels[i] for i in discrete_indices)
 
     def relabel_variables(self,
-                          mapping: Mapping[Variable, Variable],
+                          mapping: collections.abc.Mapping[Variable, Variable],
                           inplace: bool = True,
                           ) -> ConstrainedQuadraticModel:
         """Relabel the variables of the objective and constraints.
@@ -1520,7 +1522,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         return self
 
-    def remove_constraint(self, label: Hashable, *, cascade: bool = False):
+    def remove_constraint(self, label: collections.abc.Hashable, *, cascade: bool = False):
         """Remove a constraint from the model.
 
         Args:
@@ -1547,7 +1549,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             # We could pull this down to the C++ level, but the performance
             # is pretty bad regardless so let's keep it simple and do it here.
             # There are also some potential Python performance improvements here
-            to_remove: Set[Variable] = set()
+            to_remove: set[Variable] = set()
             to_remove.update(self.constraints[label].lhs.variables)
             to_remove.difference_update(self.objective.variables)
             for lbl, comp in self.constraints.items():
@@ -1588,8 +1590,11 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
         return self
 
-    def _substitute_self_loops_from_model(self, qm: Union[ConstraintView, ObjectiveView],
-                                          mapping: MutableMapping[Variable, Variable]):
+    def _substitute_self_loops_from_model(
+            self,
+            qm: typing.Union[ConstraintView, ObjectiveView],
+            mapping: collections.abc.MutableMapping[Variable, Variable],
+            ):
         for u in qm.variables:
             vartype = qm.vartype(u)
 
@@ -1630,7 +1635,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             qm.add_quadratic(u, new, bias)
             qm.remove_interaction(u, u)
 
-    def substitute_self_loops(self) -> Dict[Variable, Variable]:
+    def substitute_self_loops(self) -> dict[Variable, Variable]:
         """Replace any self-loops in the objective or constraints.
 
         Self-loop :math:`i^2` is removed by introducing a new variable
@@ -1647,7 +1652,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         """
         # dev note: we can cythonize this for better performance
 
-        mapping: Dict[Variable, Variable] = dict()
+        mapping: dict[Variable, Variable] = dict()
 
         self._substitute_self_loops_from_model(self.objective, mapping)
 
@@ -1841,7 +1846,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
     def violations(self, sample_like: SamplesLike, *,
                    skip_satisfied: bool = False,
-                   clip: bool = False) -> Dict[Hashable, Bias]:
+                   clip: bool = False) -> dict[collections.abc.Hashable, Bias]:
         """Return a dict of violations for all constraints.
 
         The dictionary maps constraint labels to the amount each constraint is
@@ -1878,9 +1883,9 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
     @classmethod
     def from_lp_file(cls,
-                     fp: Union[BinaryIO, ByteString],
-                     lower_bound_default: Optional[float] = None,
-                     upper_bound_default: Optional[float] = None,
+                     fp: typing.Union[typing.BinaryIO, typing.Union[bytes, bytearray]],
+                     lower_bound_default: typing.Optional[float] = None,
+                     upper_bound_default: typing.Optional[float] = None,
                      ) -> ConstrainedQuadraticModel:
         """Create a constrained quadratic model from an LP file.
 
@@ -1989,8 +1994,10 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 CQM = ConstrainedQuadraticModel
 
 
-def _qm_to_bqm(qm: QuadraticModel, integers: MutableMapping[Variable, BinaryQuadraticModel],
-               ) -> BinaryQuadraticModel:
+def _qm_to_bqm(
+        qm: QuadraticModel,
+        integers: collections.abc.MutableMapping[Variable, BinaryQuadraticModel],
+        ) -> BinaryQuadraticModel:
     # dev note: probably we'll want to make this function or something similar
     # public facing at some point, but right now the interface is pretty weird
     # and it only returns BINARY bqms
@@ -2027,12 +2034,12 @@ class CQMToBQMInverter:
     __slots__ = ('_binary', '_integers')
 
     def __init__(self,
-                 binary: Mapping[Variable, Vartype],
-                 integers: Mapping[Variable, BinaryQuadraticModel]):
+                 binary: collections.abc.Mapping[Variable, Vartype],
+                 integers: collections.abc.Mapping[Variable, BinaryQuadraticModel]):
         self._binary = binary
         self._integers = integers
 
-    def __call__(self, sample: Mapping[Variable, int]) -> Mapping[Variable, int]:
+    def __call__(self, sample: collections.abc.Mapping[Variable, int]) -> dict[Variable, int]:
         new = {}
 
         for v, vartype in self._binary.items():
@@ -2051,7 +2058,7 @@ class CQMToBQMInverter:
         return new
 
     @classmethod
-    def from_dict(cls, doc: Dict[str, Dict[Variable, Any]]) -> CQMToBQMInverter:
+    def from_dict(cls, doc: dict[str, dict[Variable, typing.Any]]) -> CQMToBQMInverter:
         """Construct an inverter from a serialized representation."""
 
         integers = {}
@@ -2069,7 +2076,7 @@ class CQMToBQMInverter:
             integers,
             )
 
-    def to_dict(self) -> Dict[str, Dict[Variable, Any]]:
+    def to_dict(self) -> dict[str, dict[Variable, typing.Any]]:
         """Return a json-serializable encoding of the inverter."""
         # todo: in 3.8 we can used TypedDict for the typing
         return dict(
@@ -2083,8 +2090,8 @@ class CQMToBQMInverter:
 # Developer note: This function is *super* ad hoc. In the future, we may want
 # A BQM.from_cqm method or similar, but for now I think it makes sense to
 # expose that functionality as a function for easier later deprecation.
-def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bias] = None,
-               ) -> Tuple[BinaryQuadraticModel, CQMToBQMInverter]:
+def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: typing.Optional[Bias] = None,
+               ) -> tuple[BinaryQuadraticModel, CQMToBQMInverter]:
     """Construct a binary quadratic model from a constrained quadratic model.
 
     Args:
@@ -2135,8 +2142,8 @@ def cqm_to_bqm(cqm: ConstrainedQuadraticModel, lagrange_multiplier: Optional[Bia
     from dimod.generators.integer import binary_encoding  # avoid circular import
 
     bqm = BinaryQuadraticModel(Vartype.BINARY)
-    binary: Dict[Variable, Vartype] = {}
-    integers: Dict[Variable, BinaryQuadraticModel] = {}
+    binary: dict[Variable, Vartype] = {}
+    integers: dict[Variable, BinaryQuadraticModel] = {}
 
     # add the variables
     for v in cqm.variables:

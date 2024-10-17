@@ -72,7 +72,7 @@ def iter_deserialize_variables(variables):
     yield from map(deserialize_variable, variables)
 
 
-class Variables(cyVariables, typing.AbstractSet[Variable], typing.Sequence[Variable]):
+class Variables(cyVariables, abc.Set[Variable], abc.Sequence[Variable]):
     """Set-like and list-like variables tracking.
 
     Args:
@@ -156,7 +156,7 @@ class Variables(cyVariables, typing.AbstractSet[Variable], typing.Sequence[Varia
         """Return True if the variables are labeled `[0,n)`."""
         return self._is_range()
 
-    def to_serializable(self) -> typing.List[typing.Union[int, float, str, tuple]]:
+    def to_serializable(self) -> list[typing.Union[int, float, str, tuple]]:
         """Return an object that is JSON-serializable.
 
         Returns:
