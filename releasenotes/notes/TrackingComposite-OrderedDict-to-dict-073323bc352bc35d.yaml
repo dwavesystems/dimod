@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Use ``dict`` rather than ``collections.OrderedDict`` to capture the inputs
+    in ``TrackingComposite``.
+    See also `#1395 <https://github.com/dwavesystems/dimod/issues/1395>`_.
