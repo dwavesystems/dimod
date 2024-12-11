@@ -13,7 +13,6 @@
 #    limitations under the License.
 
 """A composite that tracks inputs and outputs."""
-from collections import OrderedDict
 from copy import deepcopy
 from functools import wraps
 
@@ -33,7 +32,7 @@ def tracking(f):
     @wraps(f)
     def _tracking(sampler, *args, **kwargs):
 
-        inpt = OrderedDict(zip(getfullargspec(f).args[1:], args))  # skip self
+        inpt = dict(zip(getfullargspec(f).args[1:], args))  # skip self
         inpt.update(kwargs)
 
         # we need to do this before in case they get mutated
@@ -72,7 +71,7 @@ class TrackingComposite(ComposedSampler):
         >>> sampleset = sampler.sample_ising({'a': -1}, {('a', 'b'): 1},
         ...                                  num_reads=5)
         >>> sampler.input
-        OrderedDict([('h', {'a': -1}), ('J', {('a', 'b'): 1}), ('num_reads', 5)])
+        {'h': {'a': -1}, 'J': {('a', 'b'): 1}, 'num_reads': 5}
         >>> sampleset == sampler.output
         True
 
@@ -82,10 +81,10 @@ class TrackingComposite(ComposedSampler):
 
         >>> sampleset = sampler.sample_qubo({('a', 'b'): 1})
         >>> sampler.input
-        OrderedDict([('Q', {('a', 'b'): 1})])
+        {'Q': {('a', 'b'): 1}}
         >>> sampler.inputs # doctest: +SKIP
-        [OrderedDict([('h', {'a': -1}), ('J', {('a', 'b'): 1}), ('num_reads', 5)]),
-         OrderedDict([('Q', {('a', 'b'): 1})])]
+        [{'h': {'a': -1}, 'J': {('a', 'b'): 1}, 'num_reads': 5},
+         {'Q': {('a', 'b'): 1}}]
 
         In the case that you want to nest the tracking composite, there are two
         patterns for retrieving the data

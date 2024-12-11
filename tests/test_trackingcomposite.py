@@ -110,6 +110,7 @@ class TestSample(unittest.TestCase):
         ss = sampler.sample_ising(h, J, num_reads=5)
 
         self.assertEqual(sampler.input, dict(h=h, J=J, num_reads=5))
+        self.assertEqual(list(sampler.input), ["h", "J", "num_reads"])
         self.assertEqual(sampler.output, ss)
 
     def test_sample_qubo(self):
