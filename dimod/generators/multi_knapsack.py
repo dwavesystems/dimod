@@ -20,7 +20,7 @@ from dimod.binary_quadratic_model import BinaryQuadraticModel
 from dimod.constrained import ConstrainedQuadraticModel
 from dimod.typing import ArrayLike
 
-__all__ = ['multi_knapsack', 'random_multi_knapsack']
+__all__ = ['multi_knapsack', 'quadratic_multi_knapsack', 'random_multi_knapsack']
 
 
 def multi_knapsack(values: ArrayLike,
@@ -42,7 +42,7 @@ def multi_knapsack(values: ArrayLike,
 
         A constrained quadratic model encoding the multiple-knapsack problem.
         Variables are labelled as ``x_{i}_{j}``, where ``x_{i}_{j} == 1`` means
-        that item ``i`` is placed in bin ``j``.
+        that item ``i`` is placed in knapsack ``j``.
 
     """
     values = np.asarray(values)
@@ -58,6 +58,74 @@ def multi_knapsack(values: ArrayLike,
     for i, value in enumerate(values):
         for j in range(len(capacities)):
             obj.set_linear(x[(i, j)], -value)
+
+    model.set_objective(obj)
+
+    # Each item at most goes to one bin.
+    for i in range(values.shape[0]):
+        model.add_constraint(
+            [(x[(i, j)], 1) for j in range(len(capacities))] + [(-1,)],
+            sense="<=", label='item_placing_{}'.format(i))
+
+    # Build knapsack capacity constraints
+    for j, capacity in enumerate(capacities):
+        model.add_constraint(
+            [(x[(i, j)], weight) for i, weight in enumerate(weights)] + [(-capacity,)],
+            sense="<=", label='capacity_bin_{}'.format(j))
+
+    return model
+
+
+def quadratic_multi_knapsack(values: ArrayLike,
+                             weights: ArrayLike,
+                             profits: ArrayLike,
+                             capacities: ArrayLike,
+                             ) -> ConstrainedQuadraticModel:
+    """Generate a constrained quadratic model encoding a quadratic multiple
+    knapsack problem.
+
+    The quadratic multiple knapsack problem seeks to fit the most value into each
+    knapsack of weight less than or equal to each knapsack's capacity and maximize
+    profits associated with adding any two items to the same knapsack.
+
+    Args:
+        values: A list of each item's value.
+        weights: A list of each item's associated weight.
+        profits: A matrix where entry (i, j) is the value of adding items i and j together.
+        capacities: A list of the maximum weights each knapsack can hold.
+
+    Returns:
+
+        A constrained quadratic model encoding the quadratic multiple knapsack problem.
+        Variables are labelled as ``x_{i}_{j}``, where ``x_{i}_{j} == 1`` means
+        that item ``i`` is placed in knapsack ``j``.
+
+    """
+    values = np.asarray(values)
+    weights = np.asarray(weights)
+    profits = np.asarray(profits)
+
+    if values.shape != weights.shape:
+        raise ValueError("`values` and `weights` must have the same shape")
+
+    if not np.array_equal(profits, profits.T):
+        raise ValueError("`profits` must be symmetric")
+
+    if values.shape[0] != profits.shape[0]:
+        raise ValueError("`profits` must have an entry for each pair of items")
+
+    model = ConstrainedQuadraticModel()
+    obj = BinaryQuadraticModel(vartype='BINARY')
+    x = {(i, j): obj.add_variable(f'x_{i}_{j}') for i in range(values.shape[0]) for j in range(len(capacities))}
+
+    for i, value in enumerate(values):
+        for j in range(len(capacities)):
+            obj.set_linear(x[(i, j)], -value)
+
+    for i, profit in np.ndenumerate(profits):
+        if i[0] < i[1]:
+            for j in range(len(capacities)):
+                obj.set_quadratic(x[i[0], j], x[i[1], j], -profit)
 
     model.set_objective(obj)
 
@@ -101,7 +169,7 @@ def random_multi_knapsack(num_items: int,
 
         A constrained quadratic model encoding the multiple-knapsack problem.
         Variables are labelled as ``x_{i}_{j}``, where ``x_{i}_{j} == 1`` means
-        that item ``i`` is placed in bin ``j``.
+        that item ``i`` is placed in knapsack ``j``.
 
     """
 

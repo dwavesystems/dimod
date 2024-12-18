@@ -653,6 +653,25 @@ class TestMultiKnapsack(unittest.TestCase):
         self.assertEqual(len(cqm.variables), num_items*num_bins)
         self.assertEqual(len(cqm.constraints), num_bins+num_items)
 
+    def test_quadratic_exceptions(self):
+        with self.assertRaises(ValueError):
+            dimod.generators.quadratic_multi_knapsack([1], [], [], [])
+
+        with self.assertRaises(ValueError):
+            dimod.generators.quadratic_multi_knapsack([1], [1], [[1, 1]], [])
+
+        with self.assertRaises(ValueError):
+            dimod.generators.quadratic_multi_knapsack([1], [1], [[1, 1], [1, 1]], [])
+
+    def test_quadratic_model(self):
+        values = [1, 2, 3]
+        weights = [3, 2, 1]
+        profits = [[1, 2, 3], [2, 2, 2], [3, 2, 1]]
+        capacity = [1, 2]
+        cqm = dimod.generators.quadratic_multi_knapsack(values, weights, profits, capacity)
+        self.assertEqual(len(cqm.variables), len(values)*len(capacity))
+        self.assertEqual(len(cqm.constraints), len(weights)+len(capacity))
+
 
 class TestGates(unittest.TestCase):
     def test_gates_no_aux(self):
