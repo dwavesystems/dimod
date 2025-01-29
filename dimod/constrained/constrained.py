@@ -976,7 +976,8 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             constraint_labels = set()
             for arch in zf.namelist():
                 # even on windows zip uses /
-                match = re.match("constraints/([^/]+)/", arch)
+                # rely on the fact that we have at least an lhs file
+                match = re.match("^constraints/(.+)/lhs$", arch)
                 if match is not None:
                     constraint_labels.add(match.group(1))
 
@@ -1085,11 +1086,11 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             constraint_labels = set()
             for arch in zf.namelist():
                 # even on windows zip uses /
-                match = re.match("constraints/([^/]+)/", arch)
+                match = re.match("^constraints/(.+)/lhs$", arch)
                 if match is not None:
                     constraint_labels.add(match.group(1))
 
-            for constraint in constraint_labels:                
+            for constraint in constraint_labels:
                 label = deserialize_variable(json.loads(constraint))
 
                 rhs = np.frombuffer(zf.read(f"constraints/{constraint}/rhs"), np.float64)[0]
@@ -1820,7 +1821,23 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
 
             for label, constraint in self.constraints.items():
                 # put everything in a constraints/label/ directory
-                lstr = json.dumps(serialize_variable(label))
+                lstr = json.dumps(serialize_variable(label), ensure_ascii=False)
+
+                if "/" in lstr:
+                    # Because of the way we do the regex in .from_file(), we actually do
+                    # support these. But it is inconsistent with the description of the file
+                    # format so we do the simpler thing and just disallow it
+                    raise ValueError("cannot serialize constraint labels containing '/'")
+
+                if "\0" in lstr:
+                    # Similarily, this actually works, but it's weird and confusing to support it
+                    # so we disallow
+                    raise ValueError("cannot serialize constraint labels containing the NULL character")
+
+                if os.sep == '\\' and os.sep in lstr:
+                    # Irritatingly, zipfile will automatically convert \ to / on windows, so we
+                    # also don't allow that
+                    raise ValueError("cannot serialize constraint labels containing '\\' on windows")
 
                 with zf.open(f'constraints/{lstr}/lhs', "w", force_zip64=True) as fdst:
                     constraint.lhs._into_file(fdst)
