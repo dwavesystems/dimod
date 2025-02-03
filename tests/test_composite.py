@@ -39,3 +39,12 @@ class TestCompositeClass(unittest.TestCase):
         sampler = Dummy()
         with self.assertRaises(RuntimeError):
             sampler.child
+
+
+class TestInnermostChild(unittest.TestCase):
+
+    def test_composed_sampler(self):
+        innermost_child = dimod.ExactSolver()
+        sampler = dimod.ClipComposite(dimod.ScaleComposite(innermost_child))
+        self.assertTrue(sampler.innermost_child() is innermost_child)
+
