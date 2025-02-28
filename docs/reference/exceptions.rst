@@ -1,3 +1,5 @@
+.. _dimod_exceptions:
+
 ==========
 Exceptions
 ==========

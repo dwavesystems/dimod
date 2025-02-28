@@ -43,7 +43,7 @@ Examples:
     True
 
     For more examples, see the source code for the composed
-    documented in :ref:`quadratic_composites`.
+    documented in the :ref:`dimod_quadratic_composites` section.
 """
 import abc
 

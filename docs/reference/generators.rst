@@ -1,4 +1,4 @@
-.. _generators:
+.. _dimod_generators:
 
 ===================================
 Generators and Application Modeling
@@ -81,7 +81,8 @@ Random
 Single-Variable Models
 ======================
 
-Generators for single-variable models used in :ref:`symbolic math <intro_symbolic_math>`.
+Generators for single-variable models used in
+:ref:`symbolic math <concept_symbolic_math>`.
 
 .. currentmodule:: dimod
 

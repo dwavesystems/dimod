@@ -13,26 +13,19 @@
 dimod
 =====
 
-.. index-start-marker1
+.. start_dimod_about
 
 `dimod` is a shared API for samplers. It provides:
 
-* classes for quadratic models---such as the binary quadratic model (BQM) class that
-  contains Ising and QUBO models used by samplers such as the D-Wave system---and
-  higher-order (non-quadratic) models.
-* reference examples of samplers and composed samplers.
-* `abstract base classes <https://docs.python.org/3/library/abc.html>`_ for
-  constructing new samplers and composed samplers.
-
-.. index-end-marker1
-
-(For explanations of the terminology, see the
-`Ocean glossary <https://docs.ocean.dwavesys.com/en/stable/concepts/index.html>`_.)
+*   Classes for quadratic models---such as the binary quadratic model (BQM)
+    class that contains Ising and QUBO models used by samplers such as the
+    D-Wave quantum computer---and higher-order (non-quadratic) models.
+*   Reference examples of samplers and composed samplers.
+*   `Abstract base classes <https://docs.python.org/3/library/abc.html>`_ for
+    constructing new samplers and composed samplers.
 
 Example Usage
 -------------
-
-.. index-start-marker2
 
 >>> import dimod
 ...
@@ -49,15 +42,18 @@ Example Usage
 2  1  1    2.0       1
 ['BINARY', 4 rows, 4 samples, 2 variables]
 
-.. index-end-marker2
+.. end_dimod_about
+
+.. todo:: update these links
+
+For explanations of the terminology, see the
+`Ocean glossary <https://docs.ocean.dwavesys.com/en/stable/concepts/index.html>`_.
 
 See the `documentation <https://docs.ocean.dwavesys.com/en/stable/docs_dimod/>`_
 for more examples.
 
 Installation
-------------
-
-.. installation-start-marker
+============
 
 Installation from `PyPI <https://pypi.org/project/dimod>`_:
 
@@ -65,24 +61,25 @@ Installation from `PyPI <https://pypi.org/project/dimod>`_:
 
     pip install dimod
 
-.. installation-end-marker
-
 License
--------
+=======
 
 Released under the Apache License 2.0. See LICENSE file.
 
 Contributing
-------------
+============
 
-Ocean's `contributing guide <https://docs.ocean.dwavesys.com/en/stable/contributing.html>`_
-has guidelines for contributing to Ocean packages.
+.. todo:: update these links
+
+Ocean's
+`contributing <https://docs.ocean.dwavesys.com/en/stable/contributing.html>`_
+section has guidelines for contributing to Ocean packages.
 
 dimod includes some formatting customization in the
 `.clang-format <.clang-format>`_ and `setup.cfg <setup.cfg>`_ files.
 
 Release Notes
-~~~~~~~~~~~~~
+-------------
 
 dimod makes use of `reno <https://docs.openstack.org/reno/>`_ to manage its
 release notes.
@@ -98,5 +95,6 @@ You can then edit the file created under ``releasenotes/notes/``.
 Remove any sections not relevant to your changes.
 Commit the file along with your changes.
 
-See reno's `user guide <https://docs.openstack.org/reno/latest/user/usage.html>`_
-for details.
+See reno's
+`user guide <https://docs.openstack.org/reno/latest/user/usage.html>`_ for
+details.

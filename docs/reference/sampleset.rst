@@ -1,4 +1,4 @@
-.. _sampleset:
+.. _dimod_sampleset:
 
 =======
 Samples
