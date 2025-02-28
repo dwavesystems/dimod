@@ -1,4 +1,4 @@
-.. _typing_dimod:
+.. _dimod_typing:
 
 ======
 Typing

@@ -5,18 +5,21 @@ Models: BQM, CQM, QM, Others
 ============================
 
 This page describes the `dimod` package's quadratic models: classes,
-attributes, and methods. For an introduction and the data structure, see :ref:`intro_models`.
+attributes, and methods. For an introduction, see the :ref:`concept_models`
+section; for the data structure, see the :ref:`index_dimod` section.
 
 .. contents::
     :local:
     :depth: 3
 
-.. _bqm:
+.. _dimod_bqm:
 
 Binary Quadratic Models
 =======================
 
 .. automodule:: dimod.binary.binary_quadratic_model
+
+.. todo:: update links
 
 For examples, see
 `Ocean's Getting Started examples <https://docs.ocean.dwavesys.com/en/stable/getting_started.html#examples>`_
@@ -124,7 +127,7 @@ Generic BQM Constructor
 
    as_bqm
 
-.. _cqm:
+.. _dimod_cqm:
 
 Constrained Quadratic Model
 ===========================
@@ -209,7 +212,7 @@ Sense Class
 
 .. autoclass:: Sense
 
-.. _qm:
+.. _dimod_qm:
 
 Quadratic Models
 ================
@@ -302,7 +305,7 @@ QM Methods
 Additional Models
 =================
 
-.. _dqm:
+.. _dimod_dqm:
 
 Discrete Quadratic Models
 -------------------------
@@ -382,7 +385,7 @@ CaseLabelDQM Methods
    ~CaseLabelDQM.set_quadratic
    ~CaseLabelDQM.set_quadratic_case
 
-.. _higher_order:
+.. _dimod_higher_order_models:
 
 Higher-Order Models
 -------------------

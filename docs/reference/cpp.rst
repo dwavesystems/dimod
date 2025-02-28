@@ -1,4 +1,4 @@
-.. _cppdocs_dimod:
+.. _dimod_cppdocs:
 
 =======
 C++ API

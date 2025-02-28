@@ -1,4 +1,4 @@
-.. _variables:
+.. _dimod_variables:
 
 =========
 Variables

@@ -63,6 +63,7 @@ instance/
 
 # Sphinx documentation
 docs/build/
+docs/_build/
 docs/build-cpp/
 docs/reference/generated/
 docs/intro/generated/

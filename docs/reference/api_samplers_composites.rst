@@ -1,18 +1,19 @@
-.. _api:
+.. _dimod_api_samplers_composites:
 
 ===============================
 API for Samplers and Composites
 ===============================
 
-You can create your own samplers with dimod's :class:`.Sampler` abstract base class (ABC)
-providing complementary methods (e.g., ‘sample_qubo’ if only ‘sample_ising’ is implemented),
-consistent responses, etc.
+You can create your own samplers with dimod's :class:`.Sampler` abstract base
+class (ABC) providing complementary methods (e.g., 'sample_qubo' if only
+'sample_ising' is implemented), consistent responses, etc.
+
 
 Properties of dimod Sampler Abstract Base Classes
 =================================================
 
-The following table describes the inheritance, properties, methods/mixins of sampler
-ABCs.
+The following table describes the inheritance, properties, methods/mixins of
+sampler ABCs.
 
 .. list-table::
     :header-rows: 1
@@ -61,9 +62,11 @@ ABCs.
         - :meth:`~.Sampler.sample_poly`
         - :meth:`~.Sampler.sample_hising`, :meth:`~.Sampler.sample_hubo`, :attr:`~.Composite.child`
 
-The table shows, for example, that the :class:`.Sampler` class requires that you implement
-the :attr:`~.Sampler.parameters` and :attr:`~.Sampler.properties` properties and at least
-one sampler method; the class provides the unimplemented methods as mixins.
+The table shows, for example, that the :class:`.Sampler` class requires that you
+implement the :attr:`~.Sampler.parameters` and :attr:`~.Sampler.properties`
+properties and at least one sampler method; the class provides the unimplemented
+methods as mixins.
+
 
 Creating a Sampler
 ==================
@@ -100,10 +103,11 @@ Methods
 
    Sampler.remove_unknown_kwargs
 
+
 Creating a Composed Sampler
 ===========================
 
-.. figure:: ../../_images/composing_samplers.png
+.. figure:: ../_images/composing_samplers.png
     :align: center
     :name: Composing Samplers
     :scale: 70 %
@@ -135,7 +139,6 @@ Mixin Properties
    :toctree: generated/
 
    Composite.child
-
 
 
 Creating a Structured Sampler
@@ -223,6 +226,7 @@ Mixin Methods
 
    PolySampler.sample_hising
    PolySampler.sample_hubo
+
 
 Creating a Composed Binary Polynomial Sampler
 =============================================

@@ -1,4 +1,4 @@
-.. _utilities_dimod:
+.. _dimod_utilities:
 
 =========
 Utilities
@@ -115,7 +115,7 @@ Traversing BQMs as a graph:
 
 
 
-.. _serialization_dimod:
+.. _dimod_serialization:
 
 Serialization
 =============
