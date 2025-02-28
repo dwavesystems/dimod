@@ -10,6 +10,7 @@
 .. image:: https://codecov.io/gh/dwavesystems/dimod/branch/main/graph/badge.svg
     :target: https://codecov.io/gh/dwavesystems/dimod
 
+=====
 dimod
 =====
 
