@@ -1,4 +1,4 @@
-.. index_dimod:
+.. _index_dimod:
 
 =====
 dimod
