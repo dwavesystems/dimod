@@ -65,9 +65,9 @@ instance/
 docs/build/
 docs/_build/
 docs/build-cpp/
-docs/reference/generated/
+docs/generated/
 docs/intro/generated/
-docs/reference/*/generated/
+docs/*/generated/
 
 # PyBuilder
 target/

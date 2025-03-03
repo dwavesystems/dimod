@@ -4,9 +4,6 @@
 Utilities
 =========
 
-.. contents::
-    :depth: 3
-
 Converting Between Models
 =========================
 
