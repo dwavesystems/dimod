@@ -8,7 +8,7 @@ dimod
     :caption: Reference documentation for dimod:
     :maxdepth: 1
 
-    reference/api_ref
+    api_ref
 
 About dimod
 ===========

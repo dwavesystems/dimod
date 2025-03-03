@@ -8,10 +8,6 @@ This page describes the `dimod` package's quadratic models: classes,
 attributes, and methods. For an introduction, see the :ref:`concept_models`
 section; for the data structure, see the :ref:`index_dimod` section.
 
-.. contents::
-    :local:
-    :depth: 3
-
 .. _dimod_bqm:
 
 Binary Quadratic Models

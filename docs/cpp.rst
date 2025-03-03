@@ -6,10 +6,6 @@ C++ API
 
 This page describes the `dimod` package's C++ API.
 
-.. contents::
-    :local:
-    :depth: 3
-
 Models
 ======
 
