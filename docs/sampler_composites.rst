@@ -1,7 +1,5 @@
 .. _dimod_samplers_composites:
 
-.. _dimod_quadratic_samplers:
-
 =======================
 Samplers and Composites
 =======================
@@ -191,7 +189,6 @@ Methods
    ExactPolySolver.sample_hising
    ExactPolySolver.sample_hubo
    ExactPolySolver.sample_poly
-
 
 .. _dimod_composites:
 
