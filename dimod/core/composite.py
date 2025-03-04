@@ -42,8 +42,8 @@ Examples:
     >>> set(sampleset.first.sample.values()) == {-1}
     True
 
-    For more examples, see the source code for the composed
-    documented in the :ref:`dimod_quadratic_composites` section.
+    For more examples, see the source code for the composed samplers
+    documented in the :ref:`dimod_composites` section.
 """
 import abc
 
