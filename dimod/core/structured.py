@@ -72,8 +72,6 @@ Examples:
 """
 from __future__ import annotations
 
-from collections import namedtuple
-
 import abc
 import typing
 

@@ -20,7 +20,6 @@ not constrained to quadratic interactions.
 
 import abc
 import collections.abc
-import warnings
 
 from dimod.core.composite import Composite
 from dimod.higherorder.polynomial import BinaryPolynomial
