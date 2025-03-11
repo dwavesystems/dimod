@@ -190,6 +190,32 @@ Mixin Methods
    Initialized.parse_initial_states
 
 
+Creating a Scoped Sampler
+=========================
+
+.. automodule:: dimod.core.scoped
+
+.. currentmodule:: dimod
+.. autoclass:: Scoped
+
+Abstract Methods
+----------------
+
+.. autosummary::
+   :toctree: generated/
+
+   Scoped.close
+
+Mixin Methods
+-------------
+
+.. autosummary::
+   :toctree: generated/
+
+   Scoped.__enter__
+   Scoped.__exit__
+
+
 Creating a Binary Polynomial Sampler
 ====================================
 
