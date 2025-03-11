@@ -14,6 +14,7 @@
 
 import concurrent.futures
 import unittest
+from unittest import mock
 
 import numpy as np
 
@@ -362,3 +363,20 @@ class TestSamplerClass(unittest.TestCase):
 
         # Check that known kwargs are kept and unknown kwargs are removed
         self.assertDictEqual(kwargs, {'a': 1})
+
+    def test_context_manager_support(self):
+        class Sampler(dimod.Sampler):
+            parameters = None
+            properties = None
+
+            def sample(self, bqm):
+                pass
+
+            def close(self):
+                pass
+
+        with mock.patch.object(Sampler, 'close'):
+            with Sampler() as sampler:
+                pass
+
+            sampler.close.assert_called_once()

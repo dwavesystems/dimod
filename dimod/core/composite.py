@@ -48,17 +48,20 @@ Examples:
 import abc
 
 from dimod.core.sampler import Sampler
+from dimod.core.scoped import Scoped
 
 __all__ = ['Composite', 'ComposedSampler']
 
 
-class Composite(abc.ABC):
-    """Abstract base class for dimod composites.
+class Composite(Scoped):
+    """Abstract base class for dimod composites over scoped resources.
 
     Provides the :attr:`Composite.child` mixin property and defines the :attr:`Composite.children`
     abstract property to be implemented. These define the supported samplers for the composed sampler.
 
+    It also implements default :meth:`.close` operation that closes all child samplers.
     """
+
     @abc.abstractproperty
     def children(self):
         """list[ :obj:`.Sampler`]: List of child samplers that that are used by
@@ -73,6 +76,12 @@ class Composite(abc.ABC):
             return self.children[0]
         except IndexError:
             raise RuntimeError("A Composite must have at least one child Sampler")
+
+    def close(self):
+        for child in self.children:
+            if hasattr(child, 'close') and callable(child.close):
+                child.close()
+        super().close()
 
 
 class ComposedSampler(Sampler, Composite):

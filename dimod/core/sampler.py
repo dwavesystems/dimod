@@ -112,6 +112,7 @@ import typing
 import warnings
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.core.scoped import Scoped
 from dimod.exceptions import InvalidSampler, SamplerUnknownArgWarning
 from dimod.sampleset import SampleSet
 from dimod.typing import Bias, Variable
@@ -164,7 +165,7 @@ def samplemixinmethod(method):
     return method
 
 
-class Sampler(metaclass=SamplerABCMeta):
+class Sampler(Scoped, metaclass=SamplerABCMeta):
     """Abstract base class for dimod samplers.
 
     Provides all methods :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`,
@@ -317,3 +318,7 @@ class Sampler(metaclass=SamplerABCMeta):
             kwargs.pop(kw)
 
         return kwargs
+
+    def close(self):
+        """Release allocated resources."""
+        pass
