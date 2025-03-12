@@ -173,6 +173,14 @@ class Sampler(Scoped, metaclass=SamplerABCMeta):
 
     Also includes utility method :meth:`~.Sampler.remove_unknown_kwargs`,
     which may be used in sample methods to handle unknown kwargs.
+
+    Default implementation of :meth:`~.Sampler.close` does nothing, so it should
+    be overridden to release scope-based sampler resources, it any.
+
+    .. versionchanged:: 0.12.19
+        :class:`.Sampler` now implements the :class:`~dimod.core.scoped.Scoped`
+        interface, meaning all samplers support context manager protocol by
+        default.
     """
 
     @abc.abstractproperty  # for python2 compatibility
@@ -320,5 +328,8 @@ class Sampler(Scoped, metaclass=SamplerABCMeta):
         return kwargs
 
     def close(self):
-        """Release allocated resources."""
+        """Release allocated resources.
+
+        Override to release sampler-allocated resources.
+        """
         pass

@@ -99,6 +99,7 @@ Methods
    :toctree: generated/
 
    Sampler.remove_unknown_kwargs
+   Sampler.close
 
 Creating a Composed Sampler
 ===========================
@@ -127,7 +128,6 @@ Abstract Properties
 
    Composite.children
 
-
 Mixin Properties
 ----------------
 
@@ -136,6 +136,13 @@ Mixin Properties
 
    Composite.child
 
+Methods
+-------
+
+.. autosummary::
+   :toctree: generated/
+
+   Composite.close
 
 
 Creating a Structured Sampler
@@ -173,8 +180,8 @@ Mixin Methods
    Structured.to_networkx_graph
 
 
-Creating a Initialized Sampler
-==============================
+Creating an Initialized Sampler
+===============================
 
 .. automodule:: dimod.core.initialized
 
@@ -249,6 +256,7 @@ Mixin Methods
 
    PolySampler.sample_hising
    PolySampler.sample_hubo
+
 
 Creating a Composed Binary Polynomial Sampler
 =============================================

@@ -60,6 +60,11 @@ class Composite(Scoped):
     abstract property to be implemented. These define the supported samplers for the composed sampler.
 
     It also implements default :meth:`.close` operation that closes all child samplers.
+
+    .. versionchanged:: 0.12.19
+        :class:`.Composite` now implements the :class:`~dimod.core.scoped.Scoped`
+        interface, meaning all composites support context manager protocol and
+        release scope-based resources of sub-samplers/composites by default.
     """
 
     @abc.abstractproperty
@@ -78,6 +83,24 @@ class Composite(Scoped):
             raise RuntimeError("A Composite must have at least one child Sampler")
 
     def close(self):
+        """Release resources of child samplers/composites, in case they allocated
+        any scope-bound resources.
+
+        .. note::
+            If a :class:`.Composite` subclass doesn't allocate resources that have
+            to be explicitly released, there's not need to override the default
+            :meth:`~.Composite.close` implementation.
+
+            However, if you do implement it on a subclass, make sure to either
+            call ``super().close()``, or to explicitly close all child
+            samplers/composites.
+
+        .. versionadded:: 0.12.19
+            :class:`.Composite` now implements the :class:`~dimod.core.scoped.Scoped`
+            interface. The default :meth:`~.Composite.close` method recursively closes
+            composite's children.
+        """
+
         for child in self.children:
             if hasattr(child, 'close') and callable(child.close):
                 child.close()

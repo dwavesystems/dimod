@@ -79,13 +79,15 @@ class TestCompositeClass(unittest.TestCase):
         class Outer(dimod.Composite):
             def __init__(self, child):
                 self._child = child
+                self.resource = mock.Mock()
 
             @property
             def children(self):
                 return [self._child]
 
             def close(self):
-                self._child.close()
+                super().close()
+                self.resource.close()
 
         inner_1 = Inner()
         inner_2 = Inner()
@@ -93,5 +95,8 @@ class TestCompositeClass(unittest.TestCase):
         with Outer(mid) as outer:
             pass
 
+        # closed by Composite base close impl
         inner_1.resource.close.assert_called_once()
         inner_2.resource.close.assert_called_once()
+        # closed by subclass
+        outer.resource.close.assert_called_once()

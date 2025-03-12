@@ -33,8 +33,11 @@ class Scoped(abc.ABC):
 
     .. _runtime context: https://docs.python.org/3/reference/datamodel.html#with-statement-context-managers
 
-    See also: :class:`~dimod.code.sampler.ScopedSampler` and
-    :class:`~dimod.core.composite.ScopedComposite`.
+    .. versionadded:: 0.12.19
+        :class:`.Scoped` abstract base class.
+
+    Both :class:`~dimod.code.sampler.Sampler` and :class:`~dimod.core.composite.Composite`
+    implement :class:`.Scoped` interface.
     """
 
     @abc.abstractmethod
