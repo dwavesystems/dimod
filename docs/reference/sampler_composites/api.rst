@@ -257,6 +257,14 @@ Mixin Methods
    PolySampler.sample_hising
    PolySampler.sample_hubo
 
+Methods
+-------
+
+.. autosummary::
+   :toctree: generated/
+
+   PolySampler.close
+
 
 Creating a Composed Binary Polynomial Sampler
 =============================================
