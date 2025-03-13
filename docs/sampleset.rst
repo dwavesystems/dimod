@@ -1,11 +1,11 @@
-.. _sampleset:
+.. _dimod_sampleset:
 
 =======
 Samples
 =======
 
-Returned solutions and samples are described under
-:std:doc:`Binary Quadratic Models <oceandocs:concepts/solutions>`.
+Returned solutions and samples are described under the :ref:`concept_samplesets`
+section.
 
 sample_like Objects
 ===================

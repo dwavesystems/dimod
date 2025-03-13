@@ -1,4 +1,4 @@
-.. _vartypes:
+.. _dimod_vartypes:
 
 =======
 Vartype

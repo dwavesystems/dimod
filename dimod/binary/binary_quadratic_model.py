@@ -577,8 +577,8 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             This example exploits the simplicity of the Ising representation of
             a Boolean NOT gate, :math:`s_1s_2`, relative to its QUBO counterpart,
             :math:`2x_1x_2−x_1−x_2+1`, to change a QUBO representation of an AND
-            gate, derived in the :std:doc:`Ocean documentation's <oceandocs:index>`
-            :ref:`AND example <oceandocs:and>`, to represent a NAND gate.
+            gate, derived in the :ref:`AND example <qpu_example_and>`, to
+            represent a NAND gate.
 
             >>> Q = [[0, 1, -2], [0, 0, -2], [0, 0, 3]]
             >>> x = dimod.BinaryArray(["in1", "in2", "out_and"])
@@ -1135,7 +1135,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         result from flipping a single variable in a binary quadratic model.
 
         The bound is useful as a starting point for determining the values of
-        `penalty parameters`_ in a `penalty model`_.
+        `penalty parameters`_ in a :ref:`penalty model <concept_penalty>`.
 
         Returns:
             Bound on change in energy.
@@ -1147,8 +1147,6 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             5.5
 
         .. _`penalty parameters`: https://en.wikipedia.org/wiki/Penalty_method
-        .. _`penalty model`: https://docs.ocean.dwavesys.com/en/stable/concepts/index.html#term-Penalty-model
-
         """
         if not self.num_variables:
             return 0
@@ -2656,11 +2654,11 @@ def Binaries(labels: Union[int, Iterable[Variable]],
 
     Examples:
         This example generates a BQM that represents a Boolean NOT gate as a
-        penalty model, :math:`2xy - x - y`, described in
-        :std:doc:`Ocean documentation's <oceandocs:index>`
-        :ref:`NOT example <oceandocs:not>`. The output of the brute-force solver,
-        :class:`~dimod.reference.samplers.ExactSolver`, shows that best
-        solutions are for assignments of the variables where :math:`z = \overline{x}`.
+        penalty model, :math:`2xy - x - y`, described in the
+        :ref:`NOT example <qpu_example_not>` section. The output of the
+        brute-force solver, :class:`~dimod.reference.samplers.ExactSolver`,
+        shows that best solutions are for assignments of the variables where
+        :math:`z = \overline{x}`.
 
         >>> x, y = dimod.Binaries(["x", "y"])
         >>> bqm = 2*x*y - x - y
@@ -2704,8 +2702,7 @@ def BinaryArray(labels: Union[int, Iterable[Variable]],
                     0 & 0 & 3
                  \\end{bmatrix},
 
-        derived in the :std:doc:`Ocean documentation's <oceandocs:index>`
-        :ref:`AND example <oceandocs:and>`.
+        derived in the :ref:`AND example <qpu_example_and>` section.
 
         >>> Q = [[0, 1, -2], [0, 0, -2], [0, 0, 3]]
         >>> x = dimod.BinaryArray(["in1", "in2", "out"])
@@ -2758,8 +2755,7 @@ def Spins(labels: Union[int, Iterable[Variable]],
     Examples:
         This example generates a BQM that represents the constraint :math:`s_1 = s_2`
         as a penalty model, :math:`-\\frac{1}{2}s_1s_2`, described in the
-        :std:doc:`system documentation's <sysdocs_gettingstarted:index>`
-        :std:doc:`sysdocs_gettingstarted:doc_getting_started` guide.
+        :ref:`concept_penalty` section.
         The output of the brute-force solver,
         :class:`~dimod.reference.samplers.ExactSolver`, shows that best
         solutions are for eqaul assignments of the variables' values.

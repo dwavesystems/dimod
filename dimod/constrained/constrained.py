@@ -286,7 +286,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         r"""Add a constraint from a symbolic comparison.
 
         For a more detailed discussion of symbolic model manipulation, see
-        :ref:`intro_symbolic_math`.
+        the :ref:`concept_symbolic_math` section.
 
         Args:
             comp: Comparison object, generally constructed using symbolic math.

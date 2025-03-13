@@ -231,13 +231,6 @@ jobs:
           command: |
             . env/bin/activate
             make -C docs/ linkcheck
-      - run:
-          # If we add more notebooks in the future we can make this more general.
-          # We avoid a (slow) dimod install by playing around with the path.
-          name: test scaling guide
-          command: |
-            . env/bin/activate
-            PYTHONPATH=$(pwd):$PYTHONPATH jupyter nbconvert --to notebook --execute docs/intro/intro_scaling.ipynb
 
   test-linux:
     parameters:
