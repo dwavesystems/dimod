@@ -12,10 +12,9 @@ Samplers
 The `dimod` package includes several example samplers.
 
 Other Ocean packages provide production samplers; for example, the
-:std:doc:`dwave-system <oceandocs:docs_system/sdk_index>` package provides
-:std:doc:`samplers for D-Wave systems <oceandocs:docs_system/reference/samplers>`
-and :std:doc:`dwave-neal <oceandocs:docs_neal/sdk_index>` provides
-a simulated-annealing sampler.
+:ref:`dwave-system <index_system>` package provides samplers for D-Wave quantum
+computers and :ref:`dwave-samplers <index_samplers>` provides a
+simulated-annealing sampler.
 
 .. automodule:: dimod.reference.samplers
 .. currentmodule:: dimod.reference.samplers
@@ -199,9 +198,9 @@ The `dimod` package includes several example composed samplers:
 
 .. currentmodule:: dimod.reference.composites
 
-The :std:doc:`dwave-system <oceandocs:docs_system/sdk_index>` package provides
-additional :std:doc:`composites for D-Wave systems <oceandocs:docs_system/reference/composites>`
-such as those used for :term:`minor-embedding`.
+The :ref:`dwave-system <index_system>` package provides additional
+:ref:`composites <system_composites>` for D-Wave quantum computers such as those
+used for :term:`minor-embedding`.
 
 Structure Composite
 -------------------
