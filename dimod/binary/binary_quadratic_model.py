@@ -1135,7 +1135,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         result from flipping a single variable in a binary quadratic model.
 
         The bound is useful as a starting point for determining the values of
-        `penalty parameters`_ in a `penalty model`_.
+        `penalty parameters`_ in a :ref:`penalty model <concept_penalty>`.
 
         Returns:
             Bound on change in energy.
@@ -1147,8 +1147,6 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             5.5
 
         .. _`penalty parameters`: https://en.wikipedia.org/wiki/Penalty_method
-        .. _`penalty model`: https://docs.ocean.dwavesys.com/en/stable/concepts/index.html#term-Penalty-model
-
         """
         if not self.num_variables:
             return 0
@@ -2704,7 +2702,7 @@ def BinaryArray(labels: Union[int, Iterable[Variable]],
                     0 & 0 & 3
                  \\end{bmatrix},
 
-        derived in the :ref:`AND example <qpu_example_not>` section.
+        derived in the :ref:`AND example <qpu_example_and>` section.
 
         >>> Q = [[0, 1, -2], [0, 0, -2], [0, 0, 3]]
         >>> x = dimod.BinaryArray(["in1", "in2", "out"])
