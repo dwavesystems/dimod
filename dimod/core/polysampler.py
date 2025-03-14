@@ -20,9 +20,9 @@ not constrained to quadratic interactions.
 
 import abc
 import collections.abc
-import warnings
 
 from dimod.core.composite import Composite
+from dimod.core.scoped import Scoped
 from dimod.higherorder.polynomial import BinaryPolynomial
 from dimod.sampleset import SampleSet
 
@@ -31,11 +31,15 @@ from dimod.typing import Bias, Variable
 __all__ = 'PolySampler', 'ComposedPolySampler'
 
 
-class PolySampler(abc.ABC):
+class PolySampler(Scoped):
     """Sampler that supports binary polynomials.
 
     Binary polynomials are an extension of binary quadratic models that allow
     higher-order interactions.
+
+    .. versionchanged:: 0.12.19
+        :class:`.PolySampler` now implements the :class:`~dimod.core.scoped.Scoped`
+        interface, so it supports context manager protocol by default.
 
     """
     @abc.abstractproperty  # for python2 compatibility
@@ -104,6 +108,13 @@ class PolySampler(abc.ABC):
 
         """
         return self.sample_poly(BinaryPolynomial.from_hubo(H), **kwargs)
+
+    def close(self):
+        """Release allocated resources.
+
+        Override to release sampler-allocated resources.
+        """
+        pass
 
 
 class ComposedPolySampler(PolySampler, Composite):

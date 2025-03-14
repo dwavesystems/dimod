@@ -13,6 +13,7 @@
 #    limitations under the License.
 
 import unittest
+from unittest import mock
 
 import dimod
 
@@ -39,3 +40,63 @@ class TestCompositeClass(unittest.TestCase):
         sampler = Dummy()
         with self.assertRaises(RuntimeError):
             sampler.child
+
+    def test_close(self):
+        sampler = mock.MagicMock()
+
+        class Dummy(dimod.Composite):
+            @property
+            def children(self):
+                return [sampler]
+
+        composite = Dummy()
+        composite.close()
+
+        composite.child.close.assert_called_once()
+
+    def test_context_cleanup(self):
+        class Inner(dimod.Sampler):
+            parameters = None
+            properties = None
+
+            def __init__(self):
+                self.resource = mock.Mock()
+
+            def close(self):
+                self.resource.close()
+
+            def sample(self, bqm):
+                pass
+
+        class Mid(dimod.Composite):
+            def __init__(self, *children):
+                self._children = children
+
+            @property
+            def children(self):
+                return self._children
+
+        class Outer(dimod.Composite):
+            def __init__(self, child):
+                self._child = child
+                self.resource = mock.Mock()
+
+            @property
+            def children(self):
+                return [self._child]
+
+            def close(self):
+                super().close()
+                self.resource.close()
+
+        inner_1 = Inner()
+        inner_2 = Inner()
+        mid = Mid(inner_1, inner_2)
+        with Outer(mid) as outer:
+            pass
+
+        # closed by Composite base close impl
+        inner_1.resource.close.assert_called_once()
+        inner_2.resource.close.assert_called_once()
+        # closed by subclass
+        outer.resource.close.assert_called_once()

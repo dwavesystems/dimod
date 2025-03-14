@@ -48,17 +48,26 @@ Examples:
 import abc
 
 from dimod.core.sampler import Sampler
+from dimod.core.scoped import Scoped
 
 __all__ = ['Composite', 'ComposedSampler']
 
 
-class Composite(abc.ABC):
+class Composite(Scoped):
     """Abstract base class for dimod composites.
 
     Provides the :attr:`Composite.child` mixin property and defines the :attr:`Composite.children`
     abstract property to be implemented. These define the supported samplers for the composed sampler.
 
+    :class:`.Composite` implements the :class:`~dimod.core.scoped.Scoped` interface, and
+    provides :meth:`.close` method that closes all child samplers or composites.
+
+    .. versionchanged:: 0.12.19
+        Implemented the :class:`~dimod.core.scoped.Scoped` interface. Now all
+        composites support context manager protocol and release scope-based
+        resources of sub-samplers/composites by default.
     """
+
     @abc.abstractproperty
     def children(self):
         """list[ :obj:`.Sampler`]: List of child samplers that that are used by
@@ -73,6 +82,29 @@ class Composite(abc.ABC):
             return self.children[0]
         except IndexError:
             raise RuntimeError("A Composite must have at least one child Sampler")
+
+    def close(self):
+        """Release any scope-bound resources of child samplers or composites.
+
+        .. note::
+            If a :class:`.Composite` subclass doesn't allocate resources that have
+            to be explicitly released, there's no need to override the default
+            :meth:`~.Composite.close` implementation.
+
+            However, if you do implement :meth:`~.Composite.close` on a subclass,
+            make sure to either call ``super().close()``, or to explicitly close
+            all child samplers/composites.
+
+        .. versionadded:: 0.12.19
+            :class:`.Composite` now implements the :class:`~dimod.core.scoped.Scoped`
+            interface. The default :meth:`~.Composite.close` method recursively closes
+            composite's children.
+        """
+
+        for child in self.children:
+            if hasattr(child, 'close') and callable(child.close):
+                child.close()
+        super().close()
 
 
 class ComposedSampler(Sampler, Composite):

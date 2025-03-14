@@ -1,0 +1,9 @@
+---
+features:
+  - |
+    Add ``dimod.Scoped`` abstract base class for components that allocate
+    scope-bound resources.
+  - |
+    Implement ``dimod.Scoped`` interface on ``dimod.Sampler`` and ``dimod.Composite``.
+
+    See `dwave-system#555 <https://github.com/dwavesystems/dwave-system/issues/555>`_.

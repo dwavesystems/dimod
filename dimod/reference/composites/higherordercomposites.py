@@ -24,7 +24,6 @@ Higher-order composites implement three sampling methods (similar to
 * :meth:`.PolySampler.sample_hubo`
 
 """
-import warnings
 
 from collections import defaultdict
 
@@ -32,7 +31,7 @@ import numpy as np
 
 from dimod.core.polysampler import ComposedPolySampler, PolySampler
 from dimod.higherorder.polynomial import BinaryPolynomial
-from dimod.higherorder.utils import make_quadratic, poly_energies
+from dimod.higherorder.utils import make_quadratic
 from dimod.sampleset import SampleSet, append_variables
 
 

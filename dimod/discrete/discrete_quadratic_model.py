@@ -14,14 +14,12 @@
 
 import collections.abc as abc
 import io
-import json
 import warnings
 
 from collections import defaultdict, namedtuple
 from typing import List, Tuple, Union, Generator, Iterator
 
 import numpy as np
-from numpy.core.shape_base import stack
 
 from dimod.discrete.cydiscrete_quadratic_model import cyDiscreteQuadraticModel
 from dimod.sampleset import as_samples

@@ -112,6 +112,7 @@ import typing
 import warnings
 
 from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.core.scoped import Scoped
 from dimod.exceptions import InvalidSampler, SamplerUnknownArgWarning
 from dimod.sampleset import SampleSet
 from dimod.typing import Bias, Variable
@@ -164,7 +165,7 @@ def samplemixinmethod(method):
     return method
 
 
-class Sampler(metaclass=SamplerABCMeta):
+class Sampler(Scoped, metaclass=SamplerABCMeta):
     """Abstract base class for dimod samplers.
 
     Provides all methods :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`,
@@ -172,6 +173,15 @@ class Sampler(metaclass=SamplerABCMeta):
 
     Also includes utility method :meth:`~.Sampler.remove_unknown_kwargs`,
     which may be used in sample methods to handle unknown kwargs.
+
+    :class:`.Sampler` implements the :class:`~dimod.core.scoped.Scoped` interface,
+    but the default implementation of :meth:`~.Sampler.close` does nothing. It
+    should be overridden to release any scope-based sampler resources.
+
+    .. versionchanged:: 0.12.19
+        :class:`.Sampler` now implements the :class:`~dimod.core.scoped.Scoped`
+        interface, meaning all samplers support context manager protocol by
+        default.
     """
 
     @abc.abstractproperty  # for python2 compatibility
@@ -317,3 +327,10 @@ class Sampler(metaclass=SamplerABCMeta):
             kwargs.pop(kw)
 
         return kwargs
+
+    def close(self):
+        """Release allocated resources.
+
+        Override to release sampler-allocated resources.
+        """
+        pass

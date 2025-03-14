@@ -17,8 +17,6 @@ A composite that truncates the returned :obj:`dimod.SampleSet` based on options
 specified by the user.
 """
 
-import numpy as np
-
 from dimod.core.composite import ComposedSampler
 
 __all__ = 'TruncateComposite',

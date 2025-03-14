@@ -30,7 +30,6 @@ variables and :math:`a_{i}, b_{ij}, c` are real values.
 from __future__ import annotations
 
 import collections.abc
-import struct
 import tempfile
 import typing
 

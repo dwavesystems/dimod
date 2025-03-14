@@ -21,7 +21,6 @@ this abstract base class in a sampler.
 """
 import abc
 
-from collections import namedtuple
 from numbers import Integral
 
 import typing

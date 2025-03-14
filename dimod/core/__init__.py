@@ -16,4 +16,5 @@ from dimod.core.composite import Composite, ComposedSampler
 from dimod.core.initialized import Initialized
 from dimod.core.polysampler import PolySampler, ComposedPolySampler
 from dimod.core.sampler import Sampler
+from dimod.core.scoped import Scoped
 from dimod.core.structured import Structured
