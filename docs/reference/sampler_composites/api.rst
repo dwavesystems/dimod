@@ -22,44 +22,51 @@ ABCs.
         - Abstract Properties
         - Abstract Methods
         - Mixin Methods
-    *   - :class:`.Sampler`
+    *   - :class:`.Scoped`
         -
+        -
+        - :meth:`~.Scoped.close`
+        - :meth:`~.Scoped.__enter__`, :meth:`~.Scoped.__exit__`
+    *   - :class:`.Sampler`
+        - :class:`.Scoped`
         - :attr:`~.Sampler.parameters`, :attr:`~.Sampler.properties`
         - at least one of
           :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
-        - :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
+        - :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`,
+          :meth:`~.Sampler.close`
     *   - :class:`.Structured`
         -
         - :attr:`~.Structured.nodelist`, :attr:`~.Structured.edgelist`
         -
         - :attr:`~.Structured.structure`, :attr:`~.Structured.adjacency`, :meth:`~.Structured.to_networkx_graph`
     *   - :class:`.Composite`
-        -
+        - :class:`.Scoped`
         - :attr:`~.Composite.children`
         -
-        - :attr:`~.Composite.child`
+        - :attr:`~.Composite.child`, :meth:`~.Composite.close`
     *   - :class:`.ComposedSampler`
         - :class:`.Sampler`, :class:`.Composite`
         - :attr:`~.Sampler.parameters`, :attr:`~.Sampler.properties`, :attr:`~.Composite.children`
         - at least one of
           :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`
         - :meth:`~.Sampler.sample`, :meth:`~.Sampler.sample_ising`, :meth:`~.Sampler.sample_qubo`,
-          :attr:`~.Composite.child`
+          :attr:`~.Composite.child`, :meth:`~.Composite.close`
     *   - :class:`.Initialized`
         -
         -
         -
         - :attr:`~.Initialized.parse_initial_states`
     *   - :class:`.PolySampler`
-        -
+        - :class:`.Scoped`
         - :attr:`~.PolySampler.parameters`, :attr:`~.PolySampler.properties`
         - :meth:`~.PolySampler.sample_poly`
-        - :meth:`~.PolySampler.sample_hising`, :meth:`~.PolySampler.sample_hubo`
+        - :meth:`~.PolySampler.sample_hising`, :meth:`~.PolySampler.sample_hubo`, :meth:`~.PolySampler.close`
     *   - :class:`.ComposedPolySampler`
         - :class:`.PolySampler`, :class:`.Composite`
         - :attr:`~.PolySampler.parameters`, :attr:`~.PolySampler.properties`, :attr:`~.Composite.children`
         - :meth:`~.Sampler.sample_poly`
-        - :meth:`~.Sampler.sample_hising`, :meth:`~.Sampler.sample_hubo`, :attr:`~.Composite.child`
+        - :meth:`~.Sampler.sample_hising`, :meth:`~.Sampler.sample_hubo`, :attr:`~.Composite.child`,
+          :meth:`~.PolySampler.close`
 
 The table shows, for example, that the :class:`.Sampler` class requires that you implement
 the :attr:`~.Sampler.parameters` and :attr:`~.Sampler.properties` properties and at least

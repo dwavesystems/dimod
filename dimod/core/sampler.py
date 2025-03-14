@@ -174,8 +174,9 @@ class Sampler(Scoped, metaclass=SamplerABCMeta):
     Also includes utility method :meth:`~.Sampler.remove_unknown_kwargs`,
     which may be used in sample methods to handle unknown kwargs.
 
-    Default implementation of :meth:`~.Sampler.close` does nothing, so it should
-    be overridden to release scope-based sampler resources, it any.
+    :class:`.Sampler` implements the :class:`~dimod.core.scoped.Scoped` interface,
+    but the default implementation of :meth:`~.Sampler.close` does nothing. It
+    should be overridden to release any scope-based sampler resources.
 
     .. versionchanged:: 0.12.19
         :class:`.Sampler` now implements the :class:`~dimod.core.scoped.Scoped`

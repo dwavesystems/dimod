@@ -54,17 +54,18 @@ __all__ = ['Composite', 'ComposedSampler']
 
 
 class Composite(Scoped):
-    """Abstract base class for dimod composites over scoped resources.
+    """Abstract base class for dimod composites.
 
     Provides the :attr:`Composite.child` mixin property and defines the :attr:`Composite.children`
     abstract property to be implemented. These define the supported samplers for the composed sampler.
 
-    It also implements default :meth:`.close` operation that closes all child samplers.
+    :class:`.Composite` implements the :class:`~dimod.core.scoped.Scoped` interface, and
+    provides :meth:`.close` method that closes all child samplers or composites.
 
     .. versionchanged:: 0.12.19
-        :class:`.Composite` now implements the :class:`~dimod.core.scoped.Scoped`
-        interface, meaning all composites support context manager protocol and
-        release scope-based resources of sub-samplers/composites by default.
+        Implemented the :class:`~dimod.core.scoped.Scoped` interface. Now all
+        composites support context manager protocol and release scope-based
+        resources of sub-samplers/composites by default.
     """
 
     @abc.abstractproperty
@@ -83,17 +84,16 @@ class Composite(Scoped):
             raise RuntimeError("A Composite must have at least one child Sampler")
 
     def close(self):
-        """Release resources of child samplers/composites, in case they allocated
-        any scope-bound resources.
+        """Release any scope-bound resources of child samplers or composites.
 
         .. note::
             If a :class:`.Composite` subclass doesn't allocate resources that have
-            to be explicitly released, there's not need to override the default
+            to be explicitly released, there's no need to override the default
             :meth:`~.Composite.close` implementation.
 
-            However, if you do implement it on a subclass, make sure to either
-            call ``super().close()``, or to explicitly close all child
-            samplers/composites.
+            However, if you do implement :meth:`~.Composite.close` on a subclass,
+            make sure to either call ``super().close()``, or to explicitly close
+            all child samplers/composites.
 
         .. versionadded:: 0.12.19
             :class:`.Composite` now implements the :class:`~dimod.core.scoped.Scoped`
