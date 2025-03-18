@@ -1,11 +1,8 @@
-.. _utilities_dimod:
+.. _dimod_utilities:
 
 =========
 Utilities
 =========
-
-.. contents::
-    :depth: 3
 
 Converting Between Models
 =========================
@@ -115,7 +112,7 @@ Traversing BQMs as a graph:
 
 
 
-.. _serialization_dimod:
+.. _dimod_serialization:
 
 Serialization
 =============

@@ -5,22 +5,18 @@ Models: BQM, CQM, QM, Others
 ============================
 
 This page describes the `dimod` package's quadratic models: classes,
-attributes, and methods. For an introduction and the data structure, see :ref:`intro_models`.
+attributes, and methods. For an introduction, see the :ref:`concept_models`
+section; for the data structure, see the :ref:`index_dimod` section.
 
-.. contents::
-    :local:
-    :depth: 3
-
-.. _bqm:
+.. _dimod_bqm:
 
 Binary Quadratic Models
 =======================
 
 .. automodule:: dimod.binary.binary_quadratic_model
 
-For examples, see
-`Ocean's Getting Started examples <https://docs.ocean.dwavesys.com/en/stable/getting_started.html#examples>`_
-and the BQM examples in `D-Wave's collection of examples <https://github.com/dwave-examples>`_.
+For examples, see the :ref:`qpu_index_examples_beginner` section and the BQM
+examples in `D-Wave's collection of examples <https://github.com/dwave-examples>`_.
 
 BQM Class
 ---------
@@ -124,16 +120,15 @@ Generic BQM Constructor
 
    as_bqm
 
-.. _cqm:
+.. _dimod_cqm:
 
 Constrained Quadratic Model
 ===========================
 
 .. automodule:: dimod.constrained.constrained
 
-For examples, see
-`Ocean's Getting Started examples <https://docs.ocean.dwavesys.com/en/stable/getting_started.html#examples>`_
-and the CQM examples in `D-Wave's collection of examples <https://github.com/dwave-examples>`_.
+For examples, see the :ref:`opt_index_examples_beginner` section and the CQM
+examples in `D-Wave's collection of examples <https://github.com/dwave-examples>`_.
 
 CQM Class
 ---------
@@ -209,17 +204,12 @@ Sense Class
 
 .. autoclass:: Sense
 
-.. _qm:
+.. _dimod_qm:
 
 Quadratic Models
 ================
 
 .. automodule:: dimod.quadratic.quadratic_model
-
-For examples, see
-`Ocean's Getting Started examples <https://docs.ocean.dwavesys.com/en/stable/getting_started.html#examples>`_
-and the examples in `D-Wave's collection of examples <https://github.com/dwave-examples>`_.
-
 
 QM Class
 --------
@@ -302,13 +292,12 @@ QM Methods
 Additional Models
 =================
 
-.. _dqm:
+.. _dimod_dqm:
 
 Discrete Quadratic Models
 -------------------------
 
-For an introduction to DQMs, see
-:std:doc:`Concepts: Discrete Quadratic Models <oceandocs:concepts/dqm>`.
+For an introduction to DQMs, see the :ref:`concept_models` section.
 
 DQM Class
 ~~~~~~~~~
@@ -382,7 +371,7 @@ CaseLabelDQM Methods
    ~CaseLabelDQM.set_quadratic
    ~CaseLabelDQM.set_quadratic_case
 
-.. _higher_order:
+.. _dimod_higher_order_models:
 
 Higher-Order Models
 -------------------

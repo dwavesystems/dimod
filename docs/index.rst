@@ -1,77 +1,51 @@
-..  -*- coding: utf-8 -*-
+.. _index_dimod:
 
 =====
 dimod
 =====
 
-.. include:: README.rst
-  :start-after: index-start-marker1
-  :end-before: index-end-marker1
+.. toctree::
+    :caption: Reference documentation for dimod:
+    :maxdepth: 1
 
-(For explanations of the terminology, see the
-:std:doc:`Ocean glossary <oceandocs:concepts/index>`.)
+    api_ref
 
-Example Usage
--------------
-
-Find all solutions to a two-variable BQM using dimod's 
-:class:`~dimod.reference.samplers.ExactSolver` reference
-sampler, a brute-force solver useful for testing code on small problems.
+About dimod
+===========
 
 .. include:: README.rst
-  :start-after: index-start-marker2
-  :end-before: index-end-marker2
+  :start-after: start_dimod_about
+  :end-before: end_dimod_about
 
-Documentation
--------------
+For explanations of the terminology, see the
+:ref:`Concepts <index_concepts>` section.
 
-.. only:: html
+Usage Information
+=================
 
-  :Date: |today|
+*   :ref:`index_concepts` for terminology
+*   :ref:`concept_models` for descriptions of the supported models
+*   :ref:`opt_model_construction_qm`
+*   :ref:`concept_samplers` for using and creating samplers
+*   :ref:`concept_samplesets` for samplesets returned from samplers
+*   :ref:`concept_symbolic_math` for using symbolic math to build quadratic
+    models
+*   :ref:`opt_scaling` for building efficient models
 
-.. note:: This documentation is for the latest version of
-   `dimod <https://github.com/dwavesystems/dimod>`_.
-   Documentation for the version currently installed by
-   `dwave-ocean-sdk <https://github.com/dwavesystems/dwave-ocean-sdk>`_
-   is here: :std:doc:`dimod <oceandocs:docs_dimod/sdk_index>`.
+Data Structure
+==============
 
-.. sdk-start-marker
+Quadratic models are implemented with an adjacency structure in which each
+variable tracks its own linear bias and its neighborhood. The figure below shows
+the graph and adjacency representations for an example BQM,
 
-.. toctree::
-  :maxdepth: 1
+.. math::
 
-  intro/index
-  reference/index
-  release_notes
+    E(x) = .5 x_0 - 3 x_1 - x_0 x_1 + x_0 x_2 + 2 x_0 x_3 + x_2 x_3
 
-.. sdk-end-marker
+.. figure:: _images/adj-reference.png
+    :align: center
+    :name: Adjacency Structure
+    :alt: Adjacency Structure
 
-.. toctree::
-  :caption: Code
-  :maxdepth: 1
-
-  Source <https://github.com/dwavesystems/dimod>
-  installation
-  license
-
-.. toctree::
-  :caption: Ocean Software
-  :maxdepth: 1
-
-  Ocean Home <https://ocean.dwavesys.com/>
-  Ocean Documentation <https://docs.ocean.dwavesys.com>
-  Ocean Glossary <https://docs.ocean.dwavesys.com/en/stable/concepts/index.html>
-
-.. toctree::
-  :caption: D-Wave
-  :maxdepth: 1
-
-  D-Wave <https://www.dwavesys.com>
-  Leap <https://cloud.dwavesys.com/leap/>
-  D-Wave System Documentation <https://docs.dwavesys.com/docs/latest/index.html>
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
+    Adjacency structure of a 4-variable binary quadratic model.

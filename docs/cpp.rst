@@ -1,4 +1,4 @@
-.. _cppdocs_dimod:
+.. _dimod_cppdocs:
 
 =======
 C++ API
@@ -6,14 +6,11 @@ C++ API
 
 This page describes the `dimod` package's C++ API.
 
-.. contents::
-    :local:
-    :depth: 3
-
 Models
 ======
 
-For the Python API and descriptions of the various models, see :ref:`dimod_models`.
+For the Python API and descriptions of the various models, see the
+:ref:`dimod_models` section.
 
 Binary Quadratic Model (BQM)
 ----------------------------
