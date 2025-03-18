@@ -43,7 +43,7 @@ dimod
 .. end_dimod_about
 
 For explanations of the terminology, see the
-`Ocean glossary <https://docs.dwavequantum.com/en/latest/concepts/index_concepts.html>`_.
+`Ocean glossary <https://docs.dwavequantum.com/en/latest/concepts/index.html>`_.
 
 See the `documentation <https://docs.dwavequantum.com/en/latest/index.html>`_
 for more examples.
