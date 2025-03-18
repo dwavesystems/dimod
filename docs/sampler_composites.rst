@@ -132,7 +132,7 @@ Methods
 Simulated Annealing Sampler
 ---------------------------
 
-.. tip:: :obj:`neal.sampler.SimulatedAnnealingSampler` is a more performant
+.. tip:: :class:`~dwave.samplers.sa.sampler.SimulatedAnnealingSampler` is a more performant
   implementation of simulated annealing you can use for solving problems.
 
 .. autoclass:: SimulatedAnnealingSampler
