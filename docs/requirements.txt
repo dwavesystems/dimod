@@ -5,5 +5,3 @@ breathe
 notebook==6.4.11
 
 networkx==2.5
-
-reno[sphinx]==3.3.0

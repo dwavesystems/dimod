@@ -9,7 +9,8 @@ This page describes the `dimod` package's C++ API.
 Models
 ======
 
-For the Python API and descriptions of the various models, see :ref:`dimod_models`.
+For the Python API and descriptions of the various models, see the
+:ref:`dimod_models` section.
 
 Binary Quadratic Model (BQM)
 ----------------------------

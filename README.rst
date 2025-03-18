@@ -25,9 +25,6 @@ dimod
 *   `Abstract base classes <https://docs.python.org/3/library/abc.html>`_ for
     constructing new samplers and composed samplers.
 
-Example Usage
--------------
-
 >>> import dimod
 ...
 >>> # Construct a problem
@@ -69,7 +66,7 @@ Contributing
 ============
 
 Ocean's
-`contributing <https://docs.dwavequantum.com/en/latest/ocean/index_ocean_sdk.html>`_
+`contributing <https://docs.dwavequantum.com/en/latest/ocean/contribute.html>`_
 section has guidelines for contributing to Ocean packages.
 
 dimod includes some formatting customization in the

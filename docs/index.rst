@@ -23,8 +23,6 @@ For explanations of the terminology, see the
 Usage Information
 =================
 
-.. todo:: add the intersphinx prefix to enable these links for dimod self builds
-
 *   :ref:`index_concepts` for terminology
 *   :ref:`concept_models` for descriptions of the supported models
 *   :ref:`opt_model_construction_qm`

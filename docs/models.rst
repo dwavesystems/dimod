@@ -15,9 +15,6 @@ Binary Quadratic Models
 
 .. automodule:: dimod.binary.binary_quadratic_model
 
-.. todo:: add the intersphinx prefix to enable these links for dimod self builds
-   and sections below
-
 For examples, see the :ref:`qpu_index_examples_beginner` section and the BQM
 examples in `D-Wave's collection of examples <https://github.com/dwave-examples>`_.
 
