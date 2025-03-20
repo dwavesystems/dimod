@@ -100,3 +100,45 @@ class TestCompositeClass(unittest.TestCase):
         inner_2.resource.close.assert_called_once()
         # closed by subclass
         outer.resource.close.assert_called_once()
+
+
+class TestComposedSamplerInheritance(unittest.TestCase):
+    def test_instantiation_base_class(self):
+        with self.assertRaises(TypeError):
+            dimod.ComposedSampler()
+
+    def test_inheritance(self):
+        class Dummy(dimod.ComposedSampler):
+            def sample(self, bqm):
+                return self.child.sample(bqm)
+
+            @property
+            def parameters(self):
+                return {}
+
+            @property
+            def properties(self):
+                return {}
+
+            @property
+            def children(self):
+                return [self._sampler]
+
+            def __init__(self, sampler):
+                self._sampler = sampler
+
+        sampler = mock.MagicMock()
+        composite = Dummy(sampler)
+
+        with self.subTest("sampler interface"):
+            h = {}
+            J = {'ab': 1}
+            composite.sample_ising(h, J)
+            sampler.sample.assert_called_with(dimod.BQM.from_ising(h, J))
+
+        with self.subTest("composite interface"):
+            self.assertEqual(composite.child, sampler)
+
+        with self.subTest("close inheritance"):
+            composite.close()
+            sampler.close.assert_called_once()
