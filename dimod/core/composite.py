@@ -107,7 +107,7 @@ class Composite(Scoped):
         super().close()
 
 
-class ComposedSampler(Sampler, Composite):
+class ComposedSampler(Composite, Sampler):
     """Abstract base class for dimod composed samplers.
 
     Inherits from :class:`.Sampler` and :class:`.Composite`.

@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix inheritance in ``ComposedSampler`` and ``ComposedPolySampler`` so that
+    composite attributes override sampler attributes.
+
+    See `#1402 <https://github.com/dwavesystems/dimod/issues/1402>`_.
