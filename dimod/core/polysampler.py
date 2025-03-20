@@ -117,7 +117,7 @@ class PolySampler(Scoped):
         pass
 
 
-class ComposedPolySampler(PolySampler, Composite):
+class ComposedPolySampler(Composite, PolySampler):
     """Abstract base class for dimod composed polynomial samplers.
 
     Inherits from :class:`.PolySampler` and :class:`.Composite`."""
