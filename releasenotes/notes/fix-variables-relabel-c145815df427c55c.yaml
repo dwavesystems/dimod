@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix ``Variables._relabel()`` method. Previously when given a superset of
+    labels that happen to correspond to valid indices the wrong relabelling
+    would sometimes be applied.
+    See also `#1408 <https://github.com/dwavesystems/dimod/issues/1408>`_.
