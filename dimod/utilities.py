@@ -366,6 +366,10 @@ def iter_safe_relabels(mapping: collections.abc.Mapping[Variable, Variable],
         A "safe" relabelling.
 
     """
+    # first if the mapping is a superset of existing, we can go ahead and drop
+    # the stuff we don't care about
+    mapping = {old: new for old, new in mapping.items() if old in existing}
+
     # put the new labels into a set for fast lookup, also ensures that the
     # values are valid labels
     # We could use a set, but using a dict makes for nicer error messages later

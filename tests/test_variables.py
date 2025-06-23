@@ -210,6 +210,11 @@ class TestRelabel(unittest.TestCase):
 
         self.assertEqual(variables, Variables('ab'))
 
+    def test_superset(self):
+        variables = Variables([2, 0])
+        variables._relabel({0: "a", 1: "b", 2: "c"})
+        self.assertEqual(variables, ["c", "a"])
+
     def test_swap(self):
         variables = Variables([1, 0, 3, 4, 5])
         variables._relabel({5: 3, 3: 5})
