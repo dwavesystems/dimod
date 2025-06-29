@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Raise an exception when serializing constrained quadratic models with constraint
+    labels containing ``"/"``. Previously they would be serialized but would subsequently
+    break deserialization.
+    See `#1358 <https://github.com/dwavesystems/dimod/issues/1358>`_.
