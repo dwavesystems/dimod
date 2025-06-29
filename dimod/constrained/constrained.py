@@ -2050,10 +2050,13 @@ class CQMToBQMInverter:
             else:
                 raise RuntimeError("unexpected vartype")
 
+        sample_u = None
         for v, bqm in self._integers.items():
             new[v] = 0
             for u in bqm.variables:
-                new[v] += sample[u] * u[1]
+                sample_u = np.uint(sample[u]) if 'msb' in u else sample[u]
+                new[v] += sample_u * u[1]
+            new[v] = np.int64(new[v])
 
         return new
 

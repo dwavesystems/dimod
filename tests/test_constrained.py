@@ -937,6 +937,12 @@ class TestCQMtoBQM(unittest.TestCase):
             int_sample = newinverter(bin_sample)
             self.assertGreaterEqual(int_sample['i'] + int_sample['j'] + int_sample['x'], 5)
 
+    def test_cqm_inverter(self):
+        cqm = dimod.ConstrainedQuadraticModel()
+        cqm.set_objective(dimod.Integer('var', upper_bound=255))
+        bqm, inverter = dimod.cqm_to_bqm(cqm)
+        cqm_sol = inverter(dimod.ExactSolver().sample(bqm).first.sample)
+        self.assertEqual(cqm_sol['var'], 0)
 
 class TestFromDQM(unittest.TestCase):
     def test_case_label(self):
