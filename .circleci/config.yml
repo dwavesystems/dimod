@@ -314,12 +314,11 @@ workflows:
             parameters:
               # test the lowest supported numpy and the latest
               dependencies: [oldest-supported-numpy, numpy]
-              python-version: *python-versions
+              # TODO: Use *python-versions once a non-rc image has been released for 3.14
+              python-version:  [3.9.4, 3.10.0, 3.11.0, 3.12.0, 3.13.0]
             exclude:
               - dependencies: oldest-supported-numpy  # oldest-supported-numpy deprecated after 3.12
                 python-version: 3.13.0
-              - dependencies: oldest-supported-numpy  # oldest-supported-numpy deprecated after 3.12
-                python-version: 3.14.0
       - test-linux-cpp
       - test-osx-cpp
       - test-sdist:
