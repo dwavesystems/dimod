@@ -58,6 +58,7 @@ linkcheck_retries = 2
 linkcheck_anchors = False
 linkcheck_ignore = [r'https://cloud.dwavesys.com/leap',  # redirects, many checks
                     r'https://epubs.siam.org',           # ignores robots since Feb 2023
+                    r'https://paws.princeton.edu/',      # also rejects robots
                     r'.clang-format',
                     r'setup.cfg',
                     ]  # dimod RTD currently not building on boost
