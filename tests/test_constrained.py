@@ -1392,6 +1392,81 @@ class TestSerialization(unittest.TestCase):
             self.assertEqual(new.lower_bound(v), cqm.lower_bound(v))
             self.assertEqual(new.upper_bound(v), cqm.upper_bound(v))
 
+    def test_unusual_constraint_labels(self):
+        import os
+
+        x, y = dimod.Binaries("xy")
+
+        unusual_characters = " .~;,>|😜+-&"  # not exhaustive
+
+        if os.sep == "\\":
+            with self.subTest("\\"):
+                label = "test\\test"
+                cqm = dimod.CQM()
+                cqm.add_constraint(x + y <= 5, label=label)
+                with self.assertRaises(ValueError):
+                    cqm.to_file()
+        else:
+            unusual_characters += "\\"
+
+        for char in unusual_characters:
+            with self.subTest(f"leading {char}"):
+                label = f"{char}test"
+
+                cqm = dimod.CQM()
+                cqm.add_constraint(x + y <= 5, label=label)
+                with cqm.to_file() as f:
+                    new = dimod.CQM.from_file(f)
+
+                # best we can hope for is an equivalent after a json round trip
+                self.assertEqual(list(new.constraints), [label])
+
+            with self.subTest(f"trailing {char}"):
+                label = f"test{char}"
+
+                cqm = dimod.CQM()
+                cqm.add_constraint(x + y <= 5, label=label)
+                with cqm.to_file() as f:
+                    new = dimod.CQM.from_file(f)
+
+                # best we can hope for is an equivalent after a json round trip
+                self.assertEqual(list(new.constraints), [label])
+
+            with self.subTest(f"embedded {char}"):
+                label = f"te{char}st"
+
+                cqm = dimod.CQM()
+                cqm.add_constraint(x + y <= 5, label=label)
+                with cqm.to_file() as f:
+                    new = dimod.CQM.from_file(f)
+
+                # best we can hope for is an equivalent after a json round trip
+                self.assertEqual(list(new.constraints), [label])
+
+        with self.subTest("empty label"):
+            label = f""
+
+            cqm = dimod.CQM()
+            cqm.add_constraint(x + y <= 5, label=label)
+            with cqm.to_file() as f:
+                new = dimod.CQM.from_file(f)
+
+            self.assertEqual(list(new.constraints), [label])
+
+        with self.subTest("/"):
+            label = "test/test"
+            cqm = dimod.CQM()
+            cqm.add_constraint(x + y <= 5, label=label)
+            with self.assertRaises(ValueError):
+                cqm.to_file()
+
+        with self.subTest("NULL"):
+            label = "test\0test"
+            cqm = dimod.CQM()
+            cqm.add_constraint(x + y <= 5, label=label)
+            with self.assertRaises(ValueError):
+                cqm.to_file()
+
 
 class TestSetObjective(unittest.TestCase):
     def test_bqm(self):
