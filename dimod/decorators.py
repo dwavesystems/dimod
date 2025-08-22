@@ -22,6 +22,7 @@ from functools import wraps
 from numbers import Integral
 
 from dimod.exceptions import BinaryQuadraticModelStructureError, WriteableError
+from dimod.future import shape_methods
 from dimod.utilities import new_variable_label
 from dimod.vartypes import as_vartype
 
@@ -421,3 +422,29 @@ def unique_variable_labels(f):
         return qm
 
     return conditional_unique_label
+
+
+class property_or_method:
+    def __init__(self, func):
+        self.func = func
+
+    def __get__(self, obj, objtype=None):
+        func = self.func
+
+        caller = inspect.currentframe().f_back
+        if caller.f_globals.get("shape_methods",  None) is not shape_methods:
+            # warnings.warn(
+            #     f"Accessing '{type(obj).__name__}.{func.__name__}' as a property is deprecated, "
+            #     "use 'from dimod.future import shape_methods' and "
+            #     f"'{type(obj).__name__}.{func.__name__}()' instead.",
+            #     DeprecationWarning, stacklevel=2)
+            return func(obj)
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(obj, *args, **kwargs)
+
+        return wrapper
+
+    def __set__(self, obj, value):
+        raise AttributeError("can't set attribute")  # same error as property
