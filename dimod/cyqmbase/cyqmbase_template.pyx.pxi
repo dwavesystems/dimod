@@ -23,7 +23,7 @@ from dimod.libcpp.vartypes cimport Vartype as cppVartype
 
 from dimod.cyutilities cimport as_numpy_float
 from dimod.sampleset import as_samples
-from dimod.typing cimport Numeric, float64_t, int8_t
+from dimod.typing cimport Numeric, float64_t, int8_t, int64_t
 from dimod.variables import Variables
 from dimod.vartypes import Vartype
 
@@ -405,8 +405,12 @@ cdef class cyQMBase_template:
 
         return v
 
-    def scale(self, bias_type scalar):
-        self.base.scale(scalar)
+    def scale(self, multiplier, divisor=1):
+        dtype = np.result_type(multiplier, divisor)
+        if isinstance(dtype, np.integer):
+            self.base.scale[int64_t](<int64_t?>multiplier, <int64_t?>divisor)
+        else:
+            self.base.scale[double](<double?>multiplier, <double?>divisor)
 
     def upper_bound(self, v):
         cdef Py_ssize_t vi = self.variables.index(v)

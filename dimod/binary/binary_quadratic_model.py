@@ -1797,15 +1797,21 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
                                               and (b, a) not in
                                               ignored_interactions)])
 
-        inv_scalar = max(lin_min / lin_range[0], lin_max / lin_range[1],
-                         quad_min / quad_range[0], quad_max / quad_range[1])
+        # Figure out what multiplier/divisor will get us into range
+        divisor, multiplier = max(
+            [(lin_min, lin_range[0]),
+             (lin_max, lin_range[1]),
+             (quad_min, quad_range[0]),
+             (quad_max, quad_range[1])],
+            key=lambda tpl: tpl[0] / tpl[1],
+        )
 
-        if inv_scalar != 0:
-            self.scale(1 / inv_scalar, ignored_variables=ignored_variables,
+        if divisor != 0:
+            self.scale(multiplier=multiplier, divisor=divisor, ignored_variables=ignored_variables,
                        ignored_interactions=ignored_interactions,
                        ignore_offset=ignore_offset)
 
-            return 1.0 / inv_scalar
+            return multiplier / divisor
         else:
             return 1.0
 
@@ -1992,30 +1998,39 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         """
         return self.data.resize
 
-    def scale(self, scalar, ignored_variables=None, ignored_interactions=None,
-              ignore_offset=False):
-        """Multiply all biases by the specified scalar.
+    def scale(
+        self,
+        multiplier: float,
+        divisor: float = 1,
+        *,
+        ignored_variables: Optional[abc.Iterable[Variable]] = None,
+        ignored_interactions: Optional[abc.Iterable[tuple[Variable, Variable]]] = None,
+        ignore_offset: bool = False,
+    ):
+        """Multiply all biases by the specified values.
 
         Args:
-            scalar (number):
-                Value by which to scale the energy range of the binary
-                quadratic model.
+            multiplier:
+                Value by which to multiply all biases in the model.
 
-            ignored_variables (iterable, optional):
+            divisor:
+                Value by which to divide all biases in the model.
+
+            ignored_variables:
                 Biases associated with these variables are not scaled.
 
-            ignored_interactions (iterable[tuple], optional):
+            ignored_interactions:
                 Biases associated with these interactions, formatted as an
                 iterable of 2-tuples, are not scaled.
 
-            ignore_offset (bool, default=False):
+            ignore_offset:
                 If True, the offset is not scaled.
 
         """
         if ignored_variables is None and ignored_interactions is None \
             and ignore_offset is False:
             try:
-                self.data.scale(scalar)
+                self.data.scale(multiplier, divisor)
                 return
             except AttributeError:
                 pass
@@ -2033,15 +2048,16 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
         for v in self.variables:
             if v in ignored_variables:
                 continue
-            self.set_linear(v, scalar*self.get_linear(v))
+            self.set_linear(v, multiplier * self.get_linear(v) / divisor)
 
         for u, v, bias in self.iter_quadratic():
             if (u, v) in ignored_interactions or (v, u) in ignored_interactions:
                 continue
-            self.set_quadratic(u, v, scalar*self.get_quadratic(u, v))
+            self.set_quadratic(u, v, multiplier * self.get_quadratic(u, v) / divisor)
 
         if not ignore_offset:
-            self.offset *= scalar
+            self.offset *= multiplier
+            self.offset /= divisor
 
     @forwarding_method
     def set_linear(self, v: Variable, bias: Bias):

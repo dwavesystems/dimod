@@ -1875,6 +1875,13 @@ class TestNormalize(unittest.TestCase):
 
         self.assertEqual(bqm.normalize([-1, 1]), .5)
 
+    @parameterized.expand(BQMs.items())
+    def test_numeric(self, name, BQM):
+        # chosen because 187. * (6. / 187.) == 6.000000000000001
+        bqm = dimod.BQM({0: 187}, {}, 0, "SPIN")
+        bqm.normalize(bias_range=[-6, 6])
+        self.assertEqual(bqm.linear[0], 6)
+
 
 class TestObjectDtype(unittest.TestCase):
     def test_dtypes_array_like_ints(self):
@@ -2325,7 +2332,14 @@ class TestScale(unittest.TestCase):
         assert_consistent_bqm(bqm)
 
         with self.assertRaises(TypeError):
-            bqm.scale('a')
+            bqm.scale('hithere')
+
+    @parameterized.expand(BQMs.items())
+    def test_numeric(self, name, BQM):
+        # chosen because 187. * (6. / 187.) == 6.000000000000001
+        bqm = dimod.BQM({0: 187}, {}, 0, "SPIN")
+        bqm.scale(multiplier=6, divisor=187)
+        self.assertEqual(bqm.linear[0], 6)
 
 
 class TestSetLinear(unittest.TestCase):
