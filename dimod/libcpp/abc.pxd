@@ -116,7 +116,8 @@ cdef extern from "dimod/abc.h" namespace "dimod::abc" nogil:
         bias_type quadratic_at(index_type, index_type) except+
         bint remove_interaction(index_type, index_type)
         void remove_variable(index_type)
-        void scale(bias_type)
+        void scale[T](T)
+        void scale[T](T, T)
         void set_linear(index_type, bias_type)
         void set_offset(bias_type)
         void set_quadratic(index_type, index_type, bias_type) except+

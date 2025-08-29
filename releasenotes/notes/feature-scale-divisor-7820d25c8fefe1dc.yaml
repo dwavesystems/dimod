@@ -1,0 +1,5 @@
+---
+features:
+  - Add ``divisor`` argument to ``BinaryQuadraticModel.scale()``.
+upgrade:
+  - Rename ``scalar`` argument of ``BinaryQuadraticModel.scale()`` to ``multiplier``.

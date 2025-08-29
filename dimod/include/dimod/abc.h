@@ -349,7 +349,8 @@ class QuadraticModelBase {
     virtual void remove_variables(const std::vector<index_type>& variables);
 
     /// Multiply all biases by the value of `scalar`.
-    void scale(bias_type scalar);
+    template <typename T>
+    void scale(T multiplier, T divisor = 1);
 
     /// Set the linear bias of variable `v`.
     void set_linear(index_type v, bias_type bias);
@@ -1034,19 +1035,23 @@ void QuadraticModelBase<bias_type, index_type>::resize(index_type n) {
 }
 
 template <class bias_type, class index_type>
-void QuadraticModelBase<bias_type, index_type>::scale(bias_type scalar) {
-    offset_ *= scalar;
+template <typename T>
+void QuadraticModelBase<bias_type, index_type>::scale(T multiplier, T divisor) {
+    offset_ *= multiplier;
+    offset_ /= divisor;
 
     // linear biases
     for (bias_type& bias : linear_biases_) {
-        bias *= scalar;
+        bias *= multiplier;
+        bias /= divisor;
     }
 
     if (has_adj()) {
         // quadratic biases
         for (auto& n : (*adj_ptr_)) {
             for (auto& term : n) {
-                term.bias *= scalar;
+                term.bias *= multiplier;
+                term.bias /= divisor;
             }
         }
     }
