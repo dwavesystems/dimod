@@ -14,8 +14,6 @@
 
 import math
 
-from dwave_networkx.generators.chimera import chimera_coordinates
-
 __all__ = ['canonical_chimera_labeling']
 
 

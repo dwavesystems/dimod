@@ -12,7 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dwave_networkx.utils import binary_quadratic_model_sampler
+from dwave.graphs.utils import binary_quadratic_model_sampler
 
 __all__ = ["structural_imbalance"]
 
@@ -70,7 +70,7 @@ def structural_imbalance(S, sampler=None, **sampler_args):
     >>> S.add_edge('Alice', 'Bob', sign=1)  # Alice and Bob are friendly
     >>> S.add_edge('Alice', 'Eve', sign=-1)  # Alice and Eve are hostile
     >>> S.add_edge('Bob', 'Eve', sign=-1)  # Bob and Eve are hostile
-    >>> frustrated_edges, colors = dnx.structural_imbalance(S, sampler)
+    >>> frustrated_edges, colors = dwave.graphs.structural_imbalance(S, sampler)
     >>> print(frustrated_edges)
     {}
     >>> print(colors)  # doctest: +SKIP
@@ -78,7 +78,7 @@ def structural_imbalance(S, sampler=None, **sampler_args):
     >>> S.add_edge('Ted', 'Bob', sign=1)  # Ted is friendly with all
     >>> S.add_edge('Ted', 'Alice', sign=1)
     >>> S.add_edge('Ted', 'Eve', sign=1)
-    >>> frustrated_edges, colors = dnx.structural_imbalance(S, sampler)
+    >>> frustrated_edges, colors = dwave.graphs.structural_imbalance(S, sampler)
     >>> print(frustrated_edges)  # doctest: +SKIP
     {('Ted', 'Eve'): {'sign': 1}}
     >>> print(colors)  # doctest: +SKIP
@@ -159,7 +159,7 @@ def structural_imbalance_ising(S):
     Examples
     --------
     >>> import dimod
-    >>> from dwave_networkx.algorithms.social import structural_imbalance_ising
+    >>> from dwave.graphs.algorithms.social import structural_imbalance_ising
     ...
     >>> S = nx.Graph()
     >>> S.add_edge('Alice', 'Bob', sign=1)  # Alice and Bob are friendly

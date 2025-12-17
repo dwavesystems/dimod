@@ -13,13 +13,11 @@
 #    limitations under the License.
 
 import itertools
-import numbers
 import warnings
 
 import dimod
-import networkx as nx
 
-from dwave_networkx.utils import binary_quadratic_model_sampler
+from dwave.graphs.utils import binary_quadratic_model_sampler
 
 __all__ = ['is_matching',
            'is_maximal_matching',
@@ -285,8 +283,8 @@ def min_maximal_matching(G, sampler=None, **sampler_args):
 
     >>> import dimod
     >>> sampler = dimod.ExactSolver()
-    >>> G = dnx.chimera_graph(1, 1, 4)
-    >>> matching = dnx.min_maximal_matching(G, sampler)
+    >>> G = dwave.graphs.chimera_graph(1, 1, 4)
+    >>> matching = dwave.graphs.min_maximal_matching(G, sampler)
 
     Notes
     -----
@@ -322,8 +320,8 @@ def is_matching(edges):
     Deprecated in favour of :func:`networkx.is_matching`.
     """
     warnings.warn("This method is deprecated, please use NetworkX's"
-                  "nx.is_matching(G, edges) rather than dwave-networkx's "
-                  "dnx.is_matching(edges)", DeprecationWarning, stacklevel=2)
+                  "nx.is_matching(G, edges) rather than "
+                  "dwave.graphs.is_matching(edges)", DeprecationWarning, stacklevel=2)
     return len(set().union(*edges)) == len(edges) * 2
 
 
@@ -334,7 +332,7 @@ def is_maximal_matching(G, matching):
     """
     warnings.warn("This method is deprecated, please use NetworkX's"
                   "nx.is_maximal_matching(G, edges) rather than "
-                  "dwave-networkx's dnx.is_maximal_matching(G, edges)",
+                  "dwave.graphs.is_maximal_matching(G, edges)",
                   DeprecationWarning, stacklevel=2)
     touched_nodes = set().union(*matching)
 

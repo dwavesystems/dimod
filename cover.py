@@ -12,8 +12,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dwave_networkx.algorithms.independent_set import maximum_weighted_independent_set
-from dwave_networkx.utils import binary_quadratic_model_sampler
+from dwave.graphs.algorithms.independent_set import maximum_weighted_independent_set
+from dwave.graphs.utils import binary_quadratic_model_sampler
 
 __all__ = ['min_weighted_vertex_cover', 'min_vertex_cover', 'is_vertex_cover']
 
@@ -125,12 +125,12 @@ def min_vertex_cover(G, sampler=None, lagrange=2.0, **sampler_args):
     vertical (vertices 4,5,6,7) tiles connect to all 16 edges, so repeated
     executions can return either set.
 
-    >>> import dwave_networkx as dnx
+    >>> import dwave.graphs
     >>> import dimod
     >>> sampler = dimod.ExactSolver()  # small testing sampler
-    >>> G = dnx.chimera_graph(1, 1, 4)
+    >>> G = dwave.graphs.chimera_graph(1, 1, 4)
     >>> G.remove_node(7)  # to give a unique solution
-    >>> dnx.min_vertex_cover(G, sampler, lagrange=2.0)
+    >>> dwave.graphs.min_vertex_cover(G, sampler, lagrange=2.0)
     [4, 5, 6]
 
     Notes
@@ -177,13 +177,13 @@ def is_vertex_cover(G, vertex_cover):
     unit cell. The first uses the set of the four horizontal qubits, which
     do constitute a cover; the second set removes one node.
 
-    >>> import dwave_networkx as dnx
-    >>> G = dnx.chimera_graph(1, 1, 4)
+    >>> from dwave.graphs import chimera_graph, is_vertex_cover
+    >>> G = chimera_graph(1, 1, 4)
     >>> cover = [0, 1, 2, 3]
-    >>> dnx.is_vertex_cover(G,cover)
+    >>> is_vertex_cover(G,cover)
     True
     >>> cover = [0, 1, 2]
-    >>> dnx.is_vertex_cover(G,cover)
+    >>> is_vertex_cover(G,cover)
     False
 
     """

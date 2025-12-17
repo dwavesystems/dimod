@@ -12,7 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dwave_networkx.utils import binary_quadratic_model_sampler
+from dwave.graphs.utils import binary_quadratic_model_sampler
 
 __all__ = ["maximum_weighted_independent_set",
            "maximum_weighted_independent_set_qubo",
@@ -145,8 +145,8 @@ def maximum_independent_set(G, sampler=None, lagrange=2.0, **sampler_args):
 
     >>> import dimod
     >>> sampler = dimod.SimulatedAnnealingSampler()
-    >>> G = dnx.chimera_graph(1, 1, 4)
-    >>> indep_nodes = dnx.maximum_independent_set(G, sampler)
+    >>> G = dwave.graphs.chimera_graph(1, 1, 4)
+    >>> indep_nodes = dwave.graphs.maximum_independent_set(G, sampler)
 
     Notes
     -----
@@ -195,11 +195,11 @@ def is_independent_set(G, indep_nodes):
     the horizontal tile's nodes; the second has nodes from the horizontal and
     verical tiles.
 
-    >>> import dwave_networkx as dnx
-    >>> G = dnx.chimera_graph(1, 1, 4)
-    >>> dnx.is_independent_set(G, [0, 1, 2, 3])
+    >>> from dwave.graphs import chimera_graph, is_independent_set
+    >>> G = chimera_graph(1, 1, 4)
+    >>> is_independent_set(G, [0, 1, 2, 3])
     True
-    >>> dnx.is_independent_set(G, [0, 4])
+    >>> is_independent_set(G, [0, 4])
     False
 
     """
@@ -230,7 +230,7 @@ def maximum_weighted_independent_set_qubo(G, weight=None, lagrange=2.0):
     Examples
     --------
 
-    >>> from dwave_networkx.algorithms.independent_set import maximum_weighted_independent_set_qubo
+    >>> from dwave.graphs.algorithms.independent_set import maximum_weighted_independent_set_qubo
     ...
     >>> G = nx.path_graph(3)
     >>> Q = maximum_weighted_independent_set_qubo(G, weight='weight', lagrange=2.0)

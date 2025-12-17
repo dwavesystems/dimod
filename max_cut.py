@@ -12,8 +12,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dwave_networkx.exceptions import DWaveNetworkXException
-from dwave_networkx.utils import binary_quadratic_model_sampler
+from dwave.graphs.exceptions import DWaveNetworkXException
+from dwave.graphs.utils import binary_quadratic_model_sampler
 
 __all__ = ["maximum_cut", "weighted_maximum_cut"]
 
@@ -62,8 +62,8 @@ def maximum_cut(G, sampler=None, **sampler_args):
     >>> import dimod
     ...
     >>> sampler = dimod.SimulatedAnnealingSampler()
-    >>> G = dnx.chimera_graph(1, 1, 4)
-    >>> cut = dnx.maximum_cut(G, sampler)
+    >>> G = dwave.graphs.chimera_graph(1, 1, 4)
+    >>> cut = dwave.graphs.maximum_cut(G, sampler)
 
     Notes
     -----

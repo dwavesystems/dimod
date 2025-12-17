@@ -63,8 +63,8 @@ def partition(G, num_partitions=2, sampler=None, **sampler_args):
     
     >>> import dimod
     >>> sampler = dimod.ExactCQMSolver()
-    >>> G = dnx.chimera_graph(1, 1, 4)
-    >>> partitions = dnx.partition(G, sampler=sampler)
+    >>> G = dwave.graphs.chimera_graph(1, 1, 4)
+    >>> partitions = dwave.graphs.partition(G, sampler=sampler)
     
     Notes
     -----

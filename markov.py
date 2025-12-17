@@ -14,7 +14,7 @@
 
 import dimod
 
-from dwave_networkx.utils import binary_quadratic_model_sampler
+from dwave.graphs.utils import binary_quadratic_model_sampler
 
 __all__ = ['sample_markov_network', 'markov_network_bqm']
 
@@ -95,9 +95,9 @@ def sample_markov_network(MN, sampler=None, fixed_variables=None,
     ...                            (0, 1): .5,
     ...                            (1, 0): .5,
     ...                            (1, 1): 2}}
-    >>> MN = dnx.markov_network(potentials)
+    >>> MN = dwave.graphs.markov_network(potentials)
     >>> sampler = dimod.ExactSolver()
-    >>> samples = dnx.sample_markov_network(MN, sampler)
+    >>> samples = dwave.graphs.sample_markov_network(MN, sampler)
     >>> samples[0]     # doctest: +SKIP
     {'a': 0, 'b': 0}
 
@@ -107,9 +107,9 @@ def sample_markov_network(MN, sampler=None, fixed_variables=None,
     ...                            (0, 1): .5,
     ...                            (1, 0): .5,
     ...                            (1, 1): 2}}
-    >>> MN = dnx.markov_network(potentials)
+    >>> MN = dwave.graphs.markov_network(potentials)
     >>> sampler = dimod.ExactSolver()
-    >>> samples = dnx.sample_markov_network(MN, sampler, return_sampleset=True)
+    >>> samples = dwave.graphs.sample_markov_network(MN, sampler, return_sampleset=True)
     >>> samples.first       # doctest: +SKIP
     Sample(sample={'a': 0, 'b': 0}, energy=-1.0, num_occurrences=1)
 
@@ -123,9 +123,9 @@ def sample_markov_network(MN, sampler=None, fixed_variables=None,
     ...                            (0, 1): 1.2,
     ...                            (1, 0): 7.2,
     ...                            (1, 1): 5}}
-    >>> MN = dnx.markov_network(potentials)
+    >>> MN = dwave.graphs.markov_network(potentials)
     >>> sampler = dimod.ExactSolver()
-    >>> samples = dnx.sample_markov_network(MN, sampler, fixed_variables={'b': 0})
+    >>> samples = dwave.graphs.sample_markov_network(MN, sampler, fixed_variables={'b': 0})
     >>> samples[0]           # doctest: +SKIP
     {'a': 0, 'c': 0, 'b': 0}
 

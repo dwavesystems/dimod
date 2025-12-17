@@ -16,7 +16,7 @@ import itertools
 
 from collections import defaultdict
 
-from dwave_networkx.utils import binary_quadratic_model_sampler
+from dwave.graphs.utils import binary_quadratic_model_sampler
 
 __all__ = ["traveling_salesperson",
            "traveling_salesperson_qubo",
@@ -80,7 +80,7 @@ def traveling_salesperson(G, sampler=None, lagrange=None, weight='weight',
     >>> G = nx.Graph()
     >>> G.add_weighted_edges_from({(0, 1, .1), (0, 2, .5), (0, 3, .1), (1, 2, .1),
     ...                            (1, 3, .5), (2, 3, .1)})
-    >>> dnx.traveling_salesperson(G, dimod.ExactSolver(), start=0) # doctest: +SKIP
+    >>> dwave.graphs.traveling_salesperson(G, dimod.ExactSolver(), start=0) # doctest: +SKIP
     [0, 1, 2, 3]
 
     Notes

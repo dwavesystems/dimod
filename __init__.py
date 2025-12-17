@@ -12,15 +12,15 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dwave_networkx.algorithms.independent_set import *
-from dwave_networkx.algorithms.canonicalization import *
-from dwave_networkx.algorithms.clique import *
-from dwave_networkx.algorithms.cover import *
-from dwave_networkx.algorithms.matching import *
-from dwave_networkx.algorithms.social import *
-from dwave_networkx.algorithms.elimination_ordering import *
-from dwave_networkx.algorithms.coloring import *
-from dwave_networkx.algorithms.max_cut import *
-from dwave_networkx.algorithms.markov import *
-from dwave_networkx.algorithms.tsp import *
-from dwave_networkx.algorithms.partition import *
+from dwave.graphs.algorithms.independent_set import *
+from dwave.graphs.algorithms.canonicalization import *
+from dwave.graphs.algorithms.clique import *
+from dwave.graphs.algorithms.cover import *
+from dwave.graphs.algorithms.matching import *
+from dwave.graphs.algorithms.social import *
+from dwave.graphs.algorithms.elimination_ordering import *
+from dwave.graphs.algorithms.coloring import *
+from dwave.graphs.algorithms.max_cut import *
+from dwave.graphs.algorithms.markov import *
+from dwave.graphs.algorithms.tsp import *
+from dwave.graphs.algorithms.partition import *

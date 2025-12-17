@@ -14,13 +14,13 @@
 
 import itertools
 
-from random import random, sample
+from random import random
 
 import networkx as nx
 
-from dwave_networkx.generators.pegasus import pegasus_coordinates
-from dwave_networkx.generators.zephyr import zephyr_coordinates
-from dwave_networkx.generators.chimera import chimera_coordinates
+from dwave.graphs.generators.pegasus import pegasus_coordinates
+from dwave.graphs.generators.zephyr import zephyr_coordinates
+from dwave.graphs.generators.chimera import chimera_coordinates
 
 __all__ = ['is_almost_simplicial',
            'is_simplicial',
@@ -57,11 +57,11 @@ def is_simplicial(G, n):
     single Chimera unit cell, which is bipartite, and K_5, the :math:`K_5`
     complete graph.
 
-    >>> G = dnx.chimera_graph(1, 1, 4)
+    >>> G = dwave.graphs.chimera_graph(1, 1, 4)
     >>> K_5 = nx.complete_graph(5)
-    >>> dnx.is_simplicial(G, 0)
+    >>> dwave.graphs.is_simplicial(G, 0)
     False
-    >>> dnx.is_simplicial(K_5, 0)
+    >>> dwave.graphs.is_simplicial(K_5, 0)
     True
 
     """
@@ -90,9 +90,9 @@ def is_almost_simplicial(G, n):
 
     >>> K_5 = nx.complete_graph(5)
     >>> K_5.remove_edge(1,3)
-    >>> dnx.is_simplicial(K_5, 0)
+    >>> dwave.graphs.is_simplicial(K_5, 0)
     False
-    >>> dnx.is_almost_simplicial(K_5, 0)
+    >>> dwave.graphs.is_almost_simplicial(K_5, 0)
     True
 
     """
@@ -121,7 +121,7 @@ def minor_min_width(G):
     complete graph.
 
     >>> K_7 = nx.complete_graph(7)
-    >>> dnx.minor_min_width(K_7)
+    >>> dwave.graphs.minor_min_width(K_7)
     6
 
     References
@@ -192,7 +192,7 @@ def min_fill_heuristic(G):
     complete graph.
 
     >>> K_4 = nx.complete_graph(4)
-    >>> tw, order = dnx.min_fill_heuristic(K_4)
+    >>> tw, order = dwave.graphs.min_fill_heuristic(K_4)
 
     References
     ----------
@@ -262,7 +262,7 @@ def min_width_heuristic(G):
     complete graph.
 
     >>> K_4 = nx.complete_graph(4)
-    >>> tw, order = dnx.min_width_heuristic(K_4)
+    >>> tw, order = dwave.graphs.min_width_heuristic(K_4)
 
     References
     ----------
@@ -322,7 +322,7 @@ def max_cardinality_heuristic(G):
     complete graph.
 
     >>> K_4 = nx.complete_graph(4)
-    >>> tw, order = dnx.max_cardinality_heuristic(K_4)
+    >>> tw, order = dwave.graphs.max_cardinality_heuristic(K_4)
 
     References
     ----------
@@ -423,10 +423,10 @@ def elimination_order_width(G, order):
     heuristic.
 
     >>> K_4 = nx.complete_graph(4)
-    >>> tw, order = dnx.min_width_heuristic(K_4)
+    >>> tw, order = dwave.graphs.min_width_heuristic(K_4)
     >>> print(tw)
     3
-    >>> dnx.elimination_order_width(K_4, order)
+    >>> dwave.graphs.elimination_order_width(K_4, order)
     3
 
 
@@ -492,7 +492,7 @@ def treewidth_branch_and_bound(G, elimination_order=None, treewidth_upperbound=N
     ordering of the nodes, arbitrally chosen).
 
     >>> K_7 = nx.complete_graph(7)
-    >>> dnx.treewidth_branch_and_bound(K_7, [0, 1, 2, 3, 4, 5, 6])
+    >>> dwave.graphs.treewidth_branch_and_bound(K_7, [0, 1, 2, 3, 4, 5, 6])
     (6, [0, 1, 2, 3, 4, 5, 6])
 
     References
@@ -835,7 +835,7 @@ def chimera_elimination_order(m, n=None, t=4, coordinates=False):
     Examples
     --------
 
-    >>> G = dnx.chimera_elimination_order(1, 1, 4)  # a single Chimera tile
+    >>> G = dwave.graphs.chimera_elimination_order(1, 1, 4)  # a single Chimera tile
 
     """
     if n is None:

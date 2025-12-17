@@ -17,7 +17,7 @@ import itertools
 
 import networkx as nx
 
-from dwave_networkx.utils import binary_quadratic_model_sampler
+from dwave.graphs.utils import binary_quadratic_model_sampler
 
 __all__ = ["is_vertex_coloring",
            "is_cycle",
@@ -391,12 +391,12 @@ def is_vertex_coloring(G, coloring):
     and another (1) for the four vertical qubits, in which case there are
     no adjacencies; the second coloring swaps the color of one node.
 
-    >>> G = dnx.chimera_graph(1,1,4)
+    >>> G = dwave.graphs.chimera_graph(1,1,4)
     >>> colors = {0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 1, 6: 1, 7: 1}
-    >>> dnx.is_vertex_coloring(G, colors)
+    >>> dwave.graphs.is_vertex_coloring(G, colors)
     True
     >>> colors[4]=0
-    >>> dnx.is_vertex_coloring(G, colors)
+    >>> dwave.graphs.is_vertex_coloring(G, colors)
     False
 
    """
