@@ -1986,7 +1986,7 @@ def _as_samples_sampleset(samples_like: SampleSet,
         return samples_like.record.sample.astype(dtype, copy=copy), labels
 
 
-def effective_sample_size_estimator(x: np.ndarray, b: int = None) -> float:
+def estimate_effective_sample_size(x: np.ndarray, b: int = None) -> float:
     """Estimates the effective sample size of `x`.
 
     The effective sample size (ESS) is the number of effectively independent samples drawn from a
@@ -2010,7 +2010,7 @@ def effective_sample_size_estimator(x: np.ndarray, b: int = None) -> float:
     # = second equation at the top of page 7
     # = average of "sample variance within series"
 
-    tau_squared = _replicated_lugsail_batch_means_estimator(x, b)
+    tau_squared = _estimate_replicated_lugsail_batch_means(x, b)
     # = equation (5)
     # = nVar(xbar_i.) = total variance of the mean-within-series
 
@@ -2024,10 +2024,10 @@ def effective_sample_size_estimator(x: np.ndarray, b: int = None) -> float:
     return ess.item()
 
 
-def _replicated_batch_means_estimator(x: np.ndarray, b: int):
+def _estimate_replicated_batch_means(x: np.ndarray, b: int):
     """Computes the replicated batch means estimate.
 
-    This estimator (:math:`\hat\tau^2_b`) is defined in the equation above equation (5) of
+    This estimator (:math:`\\hat\\tau^2_b`) is defined in the equation above equation (5) of
     `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
 
     The estimator batches each Markov chain into batches of size ``b``, estimates the mean of each
@@ -2064,10 +2064,10 @@ def _replicated_batch_means_estimator(x: np.ndarray, b: int):
     return res
 
 
-def _replicated_lugsail_batch_means_estimator(x: np.ndarray, b: int=None) -> float:
+def _estimate_replicated_lugsail_batch_means(x: np.ndarray, b: int=None) -> float:
     """Computes the replicated lugsail batch means estimate.
 
-    This estimator :math:`\hat\tau^2_L` is defined in equation (5) of
+    This estimator :math:`\\hat\\tau^2_L` is defined in equation (5) of
     `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
 
     Args:
@@ -2083,7 +2083,7 @@ def _replicated_lugsail_batch_means_estimator(x: np.ndarray, b: int=None) -> flo
                          f"Markov chains, and n indexes time. ``x`` has shape {x.shape}")
     m, n = x.shape
     b = b or round(n**0.5)
-    return 2 * _replicated_batch_means_estimator(x, b) - _replicated_batch_means_estimator(x, b // 3)
+    return 2 * _estimate_replicated_batch_means(x, b) - _estimate_replicated_batch_means(x, b // 3)
 
 
 def estimate_integrated_autocorrelation_time(x: np.ndarray, b: int = None) -> float:
@@ -2101,5 +2101,9 @@ def estimate_integrated_autocorrelation_time(x: np.ndarray, b: int = None) -> fl
         raise ValueError("The input matrix ``x`` should have shape (m, n) where m indexes independent "
                          f"Markov chains, and n indexes time. ``x`` has shape {x.shape}")
     m, n = x.shape
-    ess = effective_sample_size_estimator(x, b)
+    ess = estimate_effective_sample_size(x, b)
     return m * n / ess
+
+print("waaaaaat0")
+print(estimate_effective_sample_size(np.random.uniform(0, 1, (100, 123))))
+print("waaaaaat")
