@@ -66,7 +66,7 @@ def estimate_effective_sample_size(x: np.ndarray, b: int = None) -> float:
 def _estimate_replicated_lugsail_batch_means(x: np.ndarray, b: int = None) -> float:
     """Computes the replicated lugsail batch means estimate.
 
-    This estimator :math:`\\hat\\tau^2_L` is defined in equation (5) of
+    This estimator :math:`\hat{\tau}^2_L` is defined in equation (5) of
     `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
 
     Args:

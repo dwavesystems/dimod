@@ -12,12 +12,11 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-"""Test estimating effective sample size."""
+"""Test effective sample size estimation."""
 import unittest
 from math import isnan
 
 import numpy as np
-from parameterized import parameterized
 
 from dimod.ess import _estimate_replicated_lugsail_batch_means
 from dimod.ess import estimate_effective_sample_size as estimate_ess
