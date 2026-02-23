@@ -298,7 +298,7 @@ def make_quadratic(poly: Union[Polynomial, BinaryPolynomial], strength: float,
             If not provided, a new binary quadratic model is created.
 
     Notes:
-        When reducing higher-order polynomials to degree 2, the resulting model 
+        When reducing higher-order polynomials to degree 2, the resulting model
         will contain three types of variables:
 
         * **Original Variables**: Variables mapped directly from the input 
