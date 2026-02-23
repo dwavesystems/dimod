@@ -301,6 +301,8 @@ def make_quadratic(poly: Union[Polynomial, BinaryPolynomial], strength: float,
 
         >>> poly = {(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}
         >>> bqm = dimod.make_quadratic(poly, 5.0, dimod.SPIN)
+        >>> bqm
+        BinaryQuadraticModel({0: -3.5, 1: -1.5, '0*1': -2.5, 'aux0,1': -5.0, 2: 1.5}, {(1, 0): 1.5, ('0*1', 0): 2.5, ('0*1', 1): 2.5, ('aux0,1', 0): 5.0, ('aux0,1', 1): 5.0, ('aux0,1', '0*1'): 5.0, (2, '0*1'): -2.0}, 10.0, 'SPIN')
 
     """
     from dimod.generators import and_gate
