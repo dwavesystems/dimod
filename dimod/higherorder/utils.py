@@ -272,7 +272,7 @@ def make_quadratic_cqm(poly: Union[Polynomial, BinaryPolynomial],
 def make_quadratic(poly: Union[Polynomial, BinaryPolynomial], strength: float,
                    vartype: Optional[Vartype] = None,
                    bqm: Optional[BinaryQuadraticModel] = None) -> BinaryQuadraticModel:
-"""Create a binary quadratic model from a higher order polynomial.
+    """Create a binary quadratic model from a higher order polynomial.
 
     Args:
         poly:
