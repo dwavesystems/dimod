@@ -272,7 +272,7 @@ def make_quadratic_cqm(poly: Union[Polynomial, BinaryPolynomial],
 def make_quadratic(poly: Union[Polynomial, BinaryPolynomial], strength: float,
                    vartype: Optional[Vartype] = None,
                    bqm: Optional[BinaryQuadraticModel] = None) -> BinaryQuadraticModel:
-    """Create a binary quadratic model from a higher order polynomial.
+"""Create a binary quadratic model from a higher order polynomial.
 
     Args:
         poly:
@@ -296,6 +296,21 @@ def make_quadratic(poly: Union[Polynomial, BinaryPolynomial], strength: float,
         bqm:
             Terms of the reduced polynomial are added to this binary quadratic model.
             If not provided, a new binary quadratic model is created.
+
+    Notes:
+        When reducing higher-order polynomials to degree 2, the resulting model 
+        will contain three types of variables:
+
+        * **Original Variables**: Variables mapped directly from the input 
+          polynomial (e.g., `0`, `1`, `12`).
+        * **Product Variables**: Intermediate variables introduced to reduce 
+          higher-order terms, representing the product of two variables. They 
+          are typically named by joining the original variables (e.g., `'0*1'` 
+          represents the product of `0` and `1`).
+        * **Auxiliary Variables**: Variables introduced to enforce the penalty 
+          constraints that ensure the mathematical relationship of the product 
+          variables holds true at the ground state (e.g., `'aux0,1'` enforces 
+          the constraint for `'0*1'`).
 
     Examples:
 
