@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+from math import floor
+
 import numpy as np
 
 __all__ = ['estimate_effective_sample_size']
@@ -36,20 +38,27 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
     Returns:
         float: An estimate of the effective sample size of ``x``.
     """
-    if isinstance(b, int) and b < 3:
-        raise ValueError(
-            f"Batch size should be at least three. Batch size is {b}."
-        )
     if x.ndim != 2:
         raise ValueError("The input matrix ``x`` should have shape (m, n) where m indexes "
                          f"independent Markov chains and n indexes time. ``x`` has shape {x.shape}")
     m, n = x.shape
+    if b is None:
+        b = int(floor(n**0.5))
+    if b > n or b < 3:
+        raise ValueError(
+            f"Batch size should be at least three but no more than ``n``. Batch size is {b} and "
+            f"``n`` is {n}. If size was not given, it defaults to the floor of square-root of ``n`` "
+            f"(n={n})."
+        )
 
     s_squared = x.var(1, ddof=1).mean()
     # = second equation at the top of page 7
     # = average of "sample variance within series"
 
-    tau_squared = _estimate_replicated_lugsail_batch_means(x, b)
+    # This estimator $\hat{\tau}^2_L$ is defined in equation (5) of
+    # Revisiting the Gelman-Rubin Diagnostic (https://arxiv.org/abs/1812.09384)
+    tau_squared = (2 * _estimate_replicated_batch_means(x, b)
+                   - _estimate_replicated_batch_means(x, b // 3))
     # = equation (5)
     # = nVar(xbar_i.) = total variance of the mean-within-series
 
@@ -61,26 +70,6 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
     # = estimate of the effective sample size
     # = first equation at the top of page 14
     return ess.item()
-
-
-def _estimate_replicated_lugsail_batch_means(x: np.ndarray, b: int | None = None) -> float:
-    """Computes the replicated lugsail batch means estimate.
-
-    This estimator :math:`\hat{\tau}^2_L` is defined in equation (5) of
-    `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
-
-    Args:
-        x: An (m, n) matrix where rows index independent Markov chains and columns index
-            time steps.
-        b: Batch size of the estimator. If ``None``, then ``b`` is set to the floor of the
-            square root of ``n``. Defaults to None.
-
-    Returns:
-        float: Replicated lugsail estimate of the correlated sample's variance.
-    """
-    m, n = x.shape
-    b = b or round(n**0.5)
-    return 2 * _estimate_replicated_batch_means(x, b) - _estimate_replicated_batch_means(x, b // 3)
 
 
 def _estimate_replicated_batch_means(x: np.ndarray, b: int) -> float:
@@ -103,21 +92,17 @@ def _estimate_replicated_batch_means(x: np.ndarray, b: int) -> float:
     Returns:
         float: Replicated batch means estimate.
     """
-    m, n = x.shape
-    if b > n:
-        raise ValueError(
-            f"Batch size should be no more than ``n``. Batch size is {b} and ``n`` is {n}."
-        )
+    n = x.shape[1]
 
     n_batches = n // b
     trimmed_length = b * n_batches
 
     x = x[:, (n - trimmed_length):]
     ybar = np.mean(np.split(x, n_batches, axis=1), axis=2).mT
-    muhat = x.mean()
 
-    res = ((ybar - muhat) ** 2).sum() * b / (n_batches * m - 1)
-    # cleaner approximation: res ~= bs * np.var(ybar, ddof=1)
-    # the approximation is due to muhat being estimated from full
-    # data instead of ybar.
+    res = b*np.var(ybar, ddof=1)
+    # NOTE: this is equivalent to
+    # res = ((ybar - muhat) ** 2).sum() * b / (n_batches * m - 1)
+    # where
+    # muhat = x.mean()
     return res
