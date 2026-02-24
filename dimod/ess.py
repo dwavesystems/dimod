@@ -46,9 +46,9 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
         b = int(floor(n**0.5))
     if b > n or b < 3:
         raise ValueError(
-            f"Batch size should be at least three but no more than ``n``. Batch size is {b} and "
-            f"``n`` is {n}. If size was not given, it defaults to the floor of square-root of ``n`` "
-            f"(n={n})."
+            f"Batch size should be at least three but no more than the chain length of the Markov "
+            f"chain. Batch size is {b} and chain length is {n}. If size was not given, it defaults"
+            f"to the floor of square-root of the chain length."
         )
 
     s_squared = x.var(1, ddof=1).mean()
