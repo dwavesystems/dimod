@@ -27,12 +27,15 @@ class TestEffectiveSampleSize(unittest.TestCase):
     def test_estimate_ess(self):
         with self.subTest("ESS estimate should be undefined for constant input"):
             self.assertTrue(isnan(estimate_ess(np.ones((100, 1000)))))
+
         with self.subTest("Null batch size should raise an error."):
             self.assertRaisesRegex(ValueError, "Batch size should be at least three",
                                    estimate_ess, np.ones((100, 1000)), 0)
+
         with self.subTest("Batch size larger than chain length should raise an error."):
             self.assertRaisesRegex(ValueError, "Batch size should be no more than ``n``",
                                    estimate_ess, np.ones((100, 1000)), 1001)
+
         with self.subTest("Inputs that are not 2D should raise an error."):
             self.assertRaisesRegex(ValueError, "The input matrix ``x`` should have shape",
                                    estimate_ess, np.ones((123, 100, 1000)), 234)

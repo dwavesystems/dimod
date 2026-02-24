@@ -1,4 +1,4 @@
-# Copyright 2026 D-Wave Quantum Inc.
+# Copyright 2026 D-Wave
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import numpy as np
 __all__ = ['estimate_effective_sample_size']
 
 
-def estimate_effective_sample_size(x: np.ndarray, b: int = None) -> float:
-    """Estimates the effective sample size of `x`.
+def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float:
+    """Estimates the effective sample size of ``x``.
 
     The effective sample size (ESS) is the number of effectively independent samples drawn from
     Markov chains' stationary distribution. The univariate estimator implemented here is the
@@ -28,9 +28,9 @@ def estimate_effective_sample_size(x: np.ndarray, b: int = None) -> float:
     `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
 
     Args:
-        x (np.array): An (m, n) matrix where rows index independent Markov chains and columns index
+        x: An (m, n) matrix where rows index independent Markov chains and columns index
             time steps.
-        b (int): Batch size of the estimator. If ``None``, then ``b`` is set to the floor of the
+        b: Batch size of the estimator. If ``None``, then ``b`` is set to the floor of the
             square root of ``n``. Defaults to None.
 
     Returns:
@@ -63,16 +63,16 @@ def estimate_effective_sample_size(x: np.ndarray, b: int = None) -> float:
     return ess.item()
 
 
-def _estimate_replicated_lugsail_batch_means(x: np.ndarray, b: int = None) -> float:
+def _estimate_replicated_lugsail_batch_means(x: np.ndarray, b: int | None = None) -> float:
     """Computes the replicated lugsail batch means estimate.
 
     This estimator :math:`\hat{\tau}^2_L` is defined in equation (5) of
     `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
 
     Args:
-        x (np.array): An (m, n) matrix where rows index independent Markov chains and columns index
+        x: An (m, n) matrix where rows index independent Markov chains and columns index
             time steps.
-        b (int): Batch size of the estimator. If ``None``, then ``b`` is set to the floor of the
+        b: Batch size of the estimator. If ``None``, then ``b`` is set to the floor of the
             square root of ``n``. Defaults to None.
 
     Returns:
@@ -96,9 +96,9 @@ def _estimate_replicated_batch_means(x: np.ndarray, b: int) -> float:
     requirement that the length of the Markov chain is divisible by the batch size.
 
     Args:
-        x (np.array): An (m, n) matrix where rows index independent Markov chains and columns index
+        x: An (m, n) matrix where rows index independent Markov chains and columns index
             time steps.
-        b (int): Batch size of the estimator.
+        b: Batch size of the estimator.
 
     Returns:
         float: Replicated batch means estimate.
@@ -109,14 +109,14 @@ def _estimate_replicated_batch_means(x: np.ndarray, b: int) -> float:
             f"Batch size should be no more than ``n``. Batch size is {b} and ``n`` is {n}."
         )
 
-    trimmed_length = b * (n // b)
-    n_batches = trimmed_length / b
+    n_batches = n // b
+    trimmed_length = b * n_batches
 
     x = x[:, (n - trimmed_length):]
     ybar = np.mean(np.split(x, n_batches, axis=1), axis=2).mT
     muhat = x.mean()
 
-    res = ((ybar - muhat)**2).sum()*b/(n_batches*m-1)
+    res = ((ybar - muhat) ** 2).sum() * b / (n_batches * m - 1)
     # cleaner approximation: res ~= bs * np.var(ybar, ddof=1)
     # the approximation is due to muhat being estimated from full
     # data instead of ybar.
