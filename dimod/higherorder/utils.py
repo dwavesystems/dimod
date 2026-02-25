@@ -297,9 +297,9 @@ def make_quadratic(poly: Union[Polynomial, BinaryPolynomial], strength: float,
             Terms of the reduced polynomial are added to this binary quadratic model.
             If not provided, a new binary quadratic model is created.
 
-    Notes:
-        When reducing higher-order polynomials to degree 2, the resulting model
-        will contain three types of variables:
+    Returns:
+        :class:`~dimod.binary.BinaryQuadraticModel`: A binary quadratic model
+        with three types of variables:
 
         * **Original Variables**: Variables mapped directly from the input 
           polynomial (e.g., `0`, `1`, `12`).
