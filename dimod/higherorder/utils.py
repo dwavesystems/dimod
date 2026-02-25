@@ -301,16 +301,16 @@ def make_quadratic(poly: Union[Polynomial, BinaryPolynomial], strength: float,
         :class:`~dimod.binary.BinaryQuadraticModel`: A binary quadratic model
         with three types of variables:
 
-        * **Original Variables**: Variables mapped directly from the input 
-          polynomial (e.g., `0`, `1`, `12`).
-        * **Product Variables**: Intermediate variables introduced to reduce 
-          higher-order terms, representing the product of two variables. They 
-          are typically named by joining the original variables (e.g., `'0*1'` 
-          represents the product of `0` and `1`).
-        * **Auxiliary Variables**: Variables introduced to enforce the penalty 
-          constraints that ensure the mathematical relationship of the product 
-          variables holds true at the ground state (e.g., `'aux0,1'` enforces 
-          the constraint for `'0*1'`).
+        *   Original variables: Variables mapped directly from the input
+            polynomial (e.g., ``0``, ``1``, ``12``).
+        *   Product variables: Intermediate variables introduced to reduce
+            higher-order terms, representing the product of two variables. These
+            are typically named by joining the original variables (e.g., ``0*1``
+            represents the product of ``0`` and ``1``).
+        *   Auxiliary variables: Variables introduced to enforce the penalty
+            constraints that ensure the mathematical relationship of the product
+            variables holds true at the ground state (e.g., ``aux0,1`` enforces
+            the constraint for ``0*1``).
 
     Examples:
 
