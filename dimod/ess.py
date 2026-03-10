@@ -73,7 +73,7 @@ def estimate_effective_sample_size_sampleset(
         >>>     return ss.record.sample.mean(1)
         >>> sample_set = qpu.sample(bqm, num_reads=markov_chain_length, answer_mode="raw")
         >>> print("Effective sample size (QPU):",
-        >>>     estimate_effective_sample_size_sampleset(sample_set, test_fn))
+        >>>       estimate_effective_sample_size_sampleset(sample_set, test_fn))
         Effective sample size per chain (QPU): 69.69037448554732
 
 
@@ -187,7 +187,6 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
         >>> neal = SimulatedAnnealingSampler()
         >>> markov_chains = []
         >>> markov_chain_length = 100
-        >>> betas = np.linspace(0, 1, markov_chain_length).tolist()
         >>> num_vars = 100
         >>> num_chains = 10
         >>> bqm = power_r(512, num_vars)
@@ -195,9 +194,9 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
         >>> initial_state = None
         >>> for chain_idx in range(num_chains):
         >>>     chain = []
-        >>>     for beta in betas:
+        >>>     for time_idx in range(markov_chain_length):
         >>>         sample_set = neal.sample(
-        >>>             bqm, beta_schedule=[beta],
+        >>>             bqm, beta_schedule=[1.0],
         >>>             beta_schedule_type="custom", initial_state=initial_state)
         >>>         chain.append(sample_set.record.energy.item())
         >>>         initial_state = (sample_set.record.sample, sample_set.variables)
@@ -205,7 +204,7 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
         >>> mc_energy = np.array(markov_chains)
         >>> print("Effective sample size per chain (MH):",
         >>>       estimate_effective_sample_size(mc_energy)/num_chains)
-        Effective sample size per chain (MH): 7.953744977149826
+        Effective sample size per chain (MH): 93.01501492132955
 
 
         Nonsenical Example (3): Independent Realizations
