@@ -17,12 +17,50 @@ import unittest
 from math import isnan
 
 import numpy as np
+from dwave.samplers import RandomSampler
 
 from dimod.ess import _estimate_replicated_batch_means
 from dimod.ess import estimate_effective_sample_size as estimate_ess
+from dimod.ess import estimate_effective_sample_size_sampleset as estimate_ess_ss
+from dimod.generators import power_r
 
 
 class TestEffectiveSampleSize(unittest.TestCase):
+
+    def test_estimate_ess_sample_set(self):
+        bqm = power_r(512, 64)
+        num_reads = 100
+        sampler = RandomSampler()
+        sample_set = sampler.sample(bqm, num_reads=num_reads)
+
+        with self.subTest("Invalid test function output (wrong signature) should raise an error."):
+            self.assertRaisesRegex(
+                ValueError,
+                "Test function is invalid. Does the test function have a correct signature?",
+                estimate_ess_ss, sample_set, lambda: 1
+            )
+
+        with self.subTest("Invalid test function output (output too short) should raise an error."):
+            self.assertRaisesRegex(
+                ValueError,
+                "floats of length equal to the sample size of the sample set. The sample",
+                estimate_ess_ss, sample_set, lambda ss: [1])
+
+        with self.subTest("Invalid test function output (matrix output) should raise an error."):
+            self.assertRaisesRegex(
+                ValueError,
+                "The test function should consume a sample set and return an iterable of",
+                estimate_ess_ss, sample_set, lambda ss: [[1]])
+
+        with self.subTest("ESS value should be the same as manually invoking the array version."):
+            self.assertEqual(estimate_ess_ss(sample_set, b=5),
+                             estimate_ess(sample_set.record.energy.reshape(1, -1), b=5))
+
+        with self.subTest("ESS value should be the same as manually invoking the array version (with custom test function)."):
+            self.assertEqual(
+                estimate_ess_ss(sample_set, lambda ss: ss.record.energy ** 2, b=5),
+                estimate_ess(sample_set.record.energy.reshape(1, -1) ** 2, b=5)
+            )
 
     def test_estimate_ess(self):
         with self.subTest("ESS estimate should be undefined for constant input"):
@@ -64,3 +102,7 @@ class TestEffectiveSampleSize(unittest.TestCase):
             sigma_squared = 6/7*s_squared + tau_squared/7
             answer = 2*7*sigma_squared/tau_squared
             self.assertAlmostEqual(answer, estimate_ess(x, 3))
+
+
+if __name__ == "__main__":
+    unittest.main()

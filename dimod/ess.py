@@ -101,7 +101,12 @@ def estimate_effective_sample_size_sampleset(
     if test_function is None:
         def test_function(ss: dimod.SampleSet):
             return ss.record.energy
-    stat = list(test_function(sample_set))
+    try:
+        stat = list(test_function(sample_set))
+    except Exception as e:
+        raise ValueError("Test function is invalid. Does the test function have a correct signature? "
+                         "The test function should consume a ``dimod.SampleSet`` and return an "
+                         f"iterable of floats of length equal to the sample size. The exception is {e}")
     X = np.array(stat)
     if X.ndim != 1:
         raise ValueError("The test function should consume a sample set and return an iterable of "
@@ -110,7 +115,7 @@ def estimate_effective_sample_size_sampleset(
         raise ValueError("The test function should consume a sample set and return an iterable of "
                          "floats of length equal to the sample size of the sample set. The sample "
                          f"size of the sample set is {len(sample_set)} and the length of the test "
-                         f"function output is {X.shape[1]}.")
+                         f"function output has shape {X.shape}.")
 
     return estimate_effective_sample_size(X.reshape(1, -1), b)
 
