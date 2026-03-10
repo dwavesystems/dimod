@@ -29,6 +29,85 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
     (multivariate) estimator defined in the first equation at the top of page 14 in
     `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
 
+    Examples:
+        The first two examples demonstrate typical use cases of the estimator. These examples
+        measure the QPU and a Metropolis-Hastings sampler's effective sample size based on an energy
+        statistic. The third example demonstrates a valid but nonsensical use case of the estimator.
+        It is nonsensical in the sense that the samples consist of independent random variables (no
+        Markov chains), so the effective sample size is exactly the sample size (not to be mistakened
+        with the estimate, which may not be exactly the sample size).
+
+
+        Example (1): QPU
+        >>> import numpy as np
+        >>> from dimod.ess import estimate_effective_sample_size
+        >>> from dimod.generators import power_r
+        >>> from dwave.system import DWaveCliqueSampler
+        >>> markov_chain_length = 100
+        >>> num_vars = 100
+        >>> num_chains = 10
+        >>> bqm = power_r(512, num_vars)
+        >>> bqm.normalize()
+        >>> qpu = DWaveCliqueSampler()
+        >>> qpu_energy = np.array(
+                [qpu.sample(bqm, num_reads=markov_chain_length, answer_mode="raw").record.energy
+                for _ in range(num_chains)]
+            )
+        >>> print("Effective sample size per chain (QPU):",
+                  estimate_effective_sample_size(qpu_energy)/num_chains)
+        Effective sample size per chain (QPU): 71.87414368659094
+
+
+        Example (2): Metropolis-Hastings
+        >>> import numpy as np
+        >>> from dwave.samplers import SimulatedAnnealingSampler
+        >>> from dimod.ess import estimate_effective_sample_size
+        >>> from dimod.generators import power_r
+        >>> neal = SimulatedAnnealingSampler()
+        >>> markov_chains = []
+        >>> markov_chain_length = 100
+        >>> betas = np.linspace(0, 1, markov_chain_length).tolist()
+        >>> num_vars = 100
+        >>> num_chains = 10
+        >>> bqm = power_r(512, num_vars)
+        >>> bqm.normalize()
+        >>> initial_state = None
+        >>> for chain_idx in range(num_chains):
+        >>>     chain = []
+        >>>     for beta in betas:
+        >>>         sample_set = neal.sample(
+        >>>             bqm, beta_schedule=[beta],
+        >>>             beta_schedule_type="custom", initial_state=initial_state)
+        >>>         chain.append(sample_set.record.energy.item())
+        >>>         initial_state = (sample_set.record.sample, sample_set.variables)
+        >>>     markov_chains.append(chain)
+        >>> mc_energy = np.array(markov_chains)
+        >>> print("Effective sample size per chain (MH):",
+        >>>       estimate_effective_sample_size(mc_energy)/num_chains)
+        Effective sample size per chain (MH): 7.953744977149826
+
+
+        Nonsenical Example (3): Independent Realizations
+        >>> from dwave.samplers import SimulatedAnnealingSampler
+        >>> from dimod.generators import power_r
+        >>> from dimod.ess import estimate_effective_sample_size
+        >>> import numpy as np
+        >>> markov_chain_length = 100
+        >>> num_vars = 100
+        >>> num_chains = 10
+        >>> bqm = power_r(512, num_vars)
+        >>> bqm.normalize()
+        >>> neal = SimulatedAnnealingSampler()
+        >>> neal_energy = np.array(
+                [neal.sample(bqm, num_reads=markov_chain_length).record.energy
+                for _ in range(num_chains)]
+            )
+        >>> print("Effective sample size per chain (misuse):",
+        >>>       estimate_effective_sample_size(neal_energy)/num_chains)
+        Effective sample size per chain (misuse): 96.87182851780548
+
+
+
     Args:
         x: An (m, n) matrix where rows index independent Markov chains and columns index
             time steps.
