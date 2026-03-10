@@ -33,10 +33,21 @@ def estimate_effective_sample_size_sampleset(
 ):
     """Estimates the effective sample size of ``sample_set``.
 
-    The effective sample size (ESS) is the number of effectively independent samples drawn from
-    Markov chains' stationary distribution. The univariate estimator implemented here is the
+    The effective sample size (ESS; a formally defined statistic) quantifies the number of,
+    effectively, independent samples drawn from an autocorrelated sampler. For example, samples from
+    a Markov chain sampler such as Metropolis-Hastings. For another example, samples from an annealing
+    quantum computer (due to high-frequency noise). The quantification of this notion of independence
+    hinges on defining a test function mapping binary strings to real numbers. Two such examples of
+    test functions are magnetization and energy.
+
+    The univariate estimator implemented here is the
     (multivariate) estimator defined in the first equation at the top of page 14 in
     `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
+
+    For an introduction to effective sample size, see
+    `<Stan Manual https://mc-stan.org/docs/2_21/reference-manual/effective-sample-size-section.html>`_
+    or this
+    `<blog post https://andrewcharlesjones.github.io/journal/21-effective-sample-size.html>_.
 
     Examples:
         The first example demonstrates a typical use case of the estimator. This example measures
@@ -123,10 +134,21 @@ def estimate_effective_sample_size_sampleset(
 def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float:
     """Estimates the effective sample size of ``x``.
 
-    The effective sample size (ESS) is the number of effectively independent samples drawn from
-    Markov chains' stationary distribution. The univariate estimator implemented here is the
+    The effective sample size (ESS; a formally defined statistic) quantifies the number of,
+    effectively, independent samples drawn from an autocorrelated sampler. For example, samples from
+    a Markov chain sampler such as Metropolis-Hastings. For another example, samples from an annealing
+    quantum computer (due to high-frequency noise). The quantification of this notion of independence
+    hinges on defining a test function mapping binary strings to real numbers. Two such examples of
+    test functions are magnetization and energy.
+
+    The univariate estimator implemented here is the
     (multivariate) estimator defined in the first equation at the top of page 14 in
     `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
+
+    For an introduction to effective sample size, see
+    `<Stan Manual https://mc-stan.org/docs/2_21/reference-manual/effective-sample-size-section.html>`_
+    or this
+    `<blog post https://andrewcharlesjones.github.io/journal/21-effective-sample-size.html>_.
 
     Examples:
         The first two examples demonstrate typical use cases of the estimator. These examples
