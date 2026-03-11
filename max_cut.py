@@ -12,7 +12,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dwave.graphs.exceptions import DWaveNetworkXException
 from dwave.graphs.utils import binary_quadratic_model_sampler
 
 __all__ = ["maximum_cut", "weighted_maximum_cut"]
@@ -134,7 +133,7 @@ def weighted_maximum_cut(G, sampler=None, **sampler_args):
     try:
         J = {(u, v): G[u][v]['weight'] for u, v in G.edges}
     except KeyError:
-        raise DWaveNetworkXException("edges must have 'weight' attribute")
+        raise ValueError("edges must have 'weight' attribute")
 
     # draw the lowest energy sample from the sampler
     response = sampler.sample_ising(h, J, **sampler_args)
