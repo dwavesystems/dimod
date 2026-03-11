@@ -54,12 +54,8 @@ def estimate_effective_sample_size_sampleset(
     `<blog post https://andrewcharlesjones.github.io/journal/21-effective-sample-size.html>_.
 
     Examples:
-        The first example demonstrates a typical use case of the estimator. This example measures
-        the QPU's effective sample size based on the magnetization of the system. The second example
-        demonstrates a valid but an unnecessary use of the estimator. It is unnecessary because the
-        exact ESS is known when the sample consists of independent random variables (e.g., no
-        Markov chains). The ESS is exactly the sample size (not to be mistakened with the estimate);
-        estimation is unnecessary.
+        This example demonstrates a typical use case of the estimator, measuring a QPU sample's
+        ESS based on the magnetization of the system.
 
 
         Example (1): QPU
@@ -79,24 +75,6 @@ def estimate_effective_sample_size_sampleset(
         >>> print("Effective sample size (QPU):",
         >>>       estimate_effective_sample_size_sampleset(sample_set, test_fn))
         Effective sample size per chain (QPU): 69.69037448554732
-
-
-        Example (2): Independent realizations (no need to use this estimator)
-        >>> from dwave.samplers import SimulatedAnnealingSampler
-        >>> from dimod.generators import power_r
-        >>> from dimod.ess import estimate_effective_sample_size
-        >>> import numpy as np
-        >>> num_reads = 100
-        >>> num_vars = 33
-        >>> bqm = power_r(512, num_vars)
-        >>> bqm.normalize()
-        >>> def test_fn(ss):
-        >>>     return ss.record.sample.mean(1)
-        >>> neal = SimulatedAnnealingSampler()
-        >>> sample_set = neal.sample(bqm, num_reads=num_reads)
-        >>> print("Effective sample size per chain (misuse):",
-        >>> estimate_effective_sample_size_sampleset(sample_set, test_fn))
-        Effective sample size per chain (misuse): 103.09371831245586
 
 
     Args:
@@ -159,13 +137,9 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
     `<blog post https://andrewcharlesjones.github.io/journal/21-effective-sample-size.html>_.
 
     Examples:
-        The first two examples demonstrate typical use cases of the estimator. These examples
-        measure the QPU and a Metropolis-Hastings sampler's ESS based on an energy statistic.
-        The third example demonstrates a valid but an unnecessary use of the estimator. It is unnecessary
-        because the exact ESS is known when the sample consists of independent random variables
-        (e.g., no Markov chains). The ESS is exactly the sample size (not to be mistakened with the
-        estimate); estimation is unnecessary.
-
+        These two examples demonstrate typical use cases of the estimator based on an energy statistic.
+        The first example measures the QPU's ESS. The second example measures the ESS of two
+        Metropolis-Hastings samplers (one with one sweep, another with ten sweeps).
 
         Example (1): QPU
         >>> import numpy as np
@@ -218,27 +192,6 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
         Use a larger number of sweeps to achieve larger ESS
         >>> num_sweeps = 10
         Effective sample size per chain (MH): 64.44999653861495
-
-
-        Nonsenical Example (3): Independent Realizations
-        >>> from dwave.samplers import SimulatedAnnealingSampler
-        >>> from dimod.generators import power_r
-        >>> from dimod.ess import estimate_effective_sample_size
-        >>> import numpy as np
-        >>> markov_chain_length = 100
-        >>> num_vars = 100
-        >>> num_chains = 10
-        >>> bqm = power_r(512, num_vars)
-        >>> bqm.normalize()
-        >>> neal = SimulatedAnnealingSampler()
-        >>> neal_energy = np.array(
-                [neal.sample(bqm, num_reads=markov_chain_length).record.energy
-                for _ in range(num_chains)]
-            )
-        >>> print("Effective sample size per chain (misuse):",
-        >>>       estimate_effective_sample_size(neal_energy)/num_chains)
-        Effective sample size per chain (misuse): 96.87182851780548
-
 
 
     Args:
