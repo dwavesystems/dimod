@@ -19,11 +19,12 @@ from typing import TYPE_CHECKING, Callable, Iterable
 if TYPE_CHECKING:
     import dimod
 
-from math import floor
+from math import floor, isnan
+from warnings import warn
 
 import numpy as np
 
-__all__ = ['estimate_effective_sample_size']
+__all__ = ['estimate_effective_sample_size', 'estimate_effective_sample_size_sampleset']
 
 
 def estimate_effective_sample_size_sampleset(
@@ -33,6 +34,9 @@ def estimate_effective_sample_size_sampleset(
 ):
     """Estimates the effective sample size of ``sample_set``.
 
+    NOTE: The estimate can be nan or negative for extreme cases (e.g., constants). This can occur
+    by definition of the estimator and is not a bug.
+
     The effective sample size (ESS; a formally defined statistic) quantifies the number of,
     effectively, independent samples drawn from an autocorrelated sampler. For example, samples from
     a Markov chain sampler such as Metropolis-Hastings. For another example, samples from an annealing
@@ -40,8 +44,8 @@ def estimate_effective_sample_size_sampleset(
     hinges on defining a test function mapping binary strings to real numbers. Two such examples of
     test functions are magnetization and energy.
 
-    The univariate estimator implemented here is the
-    (multivariate) estimator defined in the first equation at the top of page 14 in
+    The univariate estimator implemented here is the (multivariate) estimator defined in the first
+    equation at the top of page 14 in
     `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
 
     For an introduction to effective sample size, see
@@ -52,10 +56,10 @@ def estimate_effective_sample_size_sampleset(
     Examples:
         The first example demonstrates a typical use case of the estimator. This example measures
         the QPU's effective sample size based on the magnetization of the system. The second example
-        demonstrates a valid but nonsensical use case of the estimator. It is nonsensical in the
-        sense that the samples consist of independent random variables (no Markov chains), so the
-        effective sample size is exactly the sample size (not to be mistakened with the estimate,
-        which may not be exactly the sample size).
+        demonstrates a valid but an unnecessary use of the estimator. It is unnecessary because the
+        exact ESS is known when the sample consists of independent random variables (e.g., no
+        Markov chains). The ESS is exactly the sample size (not to be mistakened with the estimate);
+        estimation is unnecessary.
 
 
         Example (1): QPU
@@ -64,7 +68,7 @@ def estimate_effective_sample_size_sampleset(
         >>> from dimod.ess import estimate_effective_sample_size
         >>> from dimod.generators import power_r
         >>> markov_chain_length = 100
-        >>> num_vars = 100
+        >>> num_vars = 33
         >>> bqm = power_r(512, num_vars)
         >>> bqm.normalize()
         >>> qpu = DWaveCliqueSampler()
@@ -77,14 +81,13 @@ def estimate_effective_sample_size_sampleset(
         Effective sample size per chain (QPU): 69.69037448554732
 
 
-        Nonsenical Example (2): Independent Realizations
+        Example (2): Independent realizations (no need to use this estimator)
         >>> from dwave.samplers import SimulatedAnnealingSampler
         >>> from dimod.generators import power_r
         >>> from dimod.ess import estimate_effective_sample_size
         >>> import numpy as np
         >>> num_reads = 100
-        >>> num_vars = 100
-        >>> num_chains = 10
+        >>> num_vars = 33
         >>> bqm = power_r(512, num_vars)
         >>> bqm.normalize()
         >>> def test_fn(ss):
@@ -92,8 +95,8 @@ def estimate_effective_sample_size_sampleset(
         >>> neal = SimulatedAnnealingSampler()
         >>> sample_set = neal.sample(bqm, num_reads=num_reads)
         >>> print("Effective sample size per chain (misuse):",
-        >>>       estimate_effective_sample_size_sampleset(sample_set, test_fn))
-        Effective sample size per chain (misuse): 58.061778108529666
+        >>> estimate_effective_sample_size_sampleset(sample_set, test_fn))
+        Effective sample size per chain (misuse): 103.09371831245586
 
 
     Args:
@@ -107,7 +110,9 @@ def estimate_effective_sample_size_sampleset(
             square root of ``n``. Defaults to None.
 
     Returns:
-        float: An estimate of the effective sample size of ``sample_set``.
+        float: An estimate of the effective sample size of ``sample_set``. The estimate can be NaN or
+        even negative when the input chain is nearly constant. This can occur by definition of the
+        estimator and is not a bug.
     """
     if test_function is None:
         def test_function(ss: dimod.SampleSet):
@@ -134,6 +139,9 @@ def estimate_effective_sample_size_sampleset(
 def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float:
     """Estimates the effective sample size of ``x``.
 
+    NOTE: The estimate can be nan or negative for extreme cases (e.g., constants). This can occur
+    by definition of the estimator and is not a bug.
+
     The effective sample size (ESS; a formally defined statistic) quantifies the number of,
     effectively, independent samples drawn from an autocorrelated sampler. For example, samples from
     a Markov chain sampler such as Metropolis-Hastings. For another example, samples from an annealing
@@ -141,8 +149,8 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
     hinges on defining a test function mapping binary strings to real numbers. Two such examples of
     test functions are magnetization and energy.
 
-    The univariate estimator implemented here is the
-    (multivariate) estimator defined in the first equation at the top of page 14 in
+    The univariate estimator implemented here is the (multivariate) estimator defined in the first
+    equation at the top of page 14 in
     `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
 
     For an introduction to effective sample size, see
@@ -152,11 +160,11 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
 
     Examples:
         The first two examples demonstrate typical use cases of the estimator. These examples
-        measure the QPU and a Metropolis-Hastings sampler's effective sample size based on an energy
-        statistic. The third example demonstrates a valid but nonsensical use case of the estimator.
-        It is nonsensical in the sense that the samples consist of independent random variables (no
-        Markov chains), so the effective sample size is exactly the sample size (not to be mistakened
-        with the estimate, which may not be exactly the sample size).
+        measure the QPU and a Metropolis-Hastings sampler's ESS based on an energy statistic.
+        The third example demonstrates a valid but an unnecessary use of the estimator. It is unnecessary
+        because the exact ESS is known when the sample consists of independent random variables
+        (e.g., no Markov chains). The ESS is exactly the sample size (not to be mistakened with the
+        estimate); estimation is unnecessary.
 
 
         Example (1): QPU
@@ -189,6 +197,7 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
         >>> markov_chain_length = 100
         >>> num_vars = 100
         >>> num_chains = 10
+        >>> num_sweeps = 1  # Increase number of sweeps to increase ESS
         >>> bqm = power_r(512, num_vars)
         >>> bqm.normalize()
         >>> initial_state = None
@@ -197,14 +206,18 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
         >>>     for time_idx in range(markov_chain_length):
         >>>         sample_set = neal.sample(
         >>>             bqm, beta_schedule=[1.0],
-        >>>             beta_schedule_type="custom", initial_state=initial_state)
+        >>>             beta_schedule_type="custom", initial_states=initial_state)
         >>>         chain.append(sample_set.record.energy.item())
         >>>         initial_state = (sample_set.record.sample, sample_set.variables)
         >>>     markov_chains.append(chain)
         >>> mc_energy = np.array(markov_chains)
         >>> print("Effective sample size per chain (MH):",
         >>>       estimate_effective_sample_size(mc_energy)/num_chains)
-        Effective sample size per chain (MH): 93.01501492132955
+        Effective sample size per chain (MH): 12.496482970401358
+
+        Use a larger number of sweeps to achieve larger ESS
+        >>> num_sweeps = 10
+        Effective sample size per chain (MH): 64.44999653861495
 
 
         Nonsenical Example (3): Independent Realizations
@@ -235,7 +248,9 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
             square root of ``n``. Defaults to None.
 
     Returns:
-        float: An estimate of the effective sample size of ``x``.
+        float: An estimate of the effective sample size of ``x``. The estimate can be NaN or
+        even negative when the input chain is nearly constant. This can occur by definition of the
+        estimator and is not a bug.
     """
     if x.ndim != 2:
         raise ValueError("The input matrix ``x`` should have shape (m, n) where m indexes "
@@ -265,10 +280,13 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
     # = first equation at the top of page 10
     # = estimate of the distribution's variance
 
-    ess = m * n * sigma_squared / tau_squared
+    ess = (m * n * sigma_squared / tau_squared).item()
     # = estimate of the effective sample size
     # = first equation at the top of page 14
-    return ess.item()
+    if isnan(ess) or ess < 0:
+        warn("The estimated effective sample size is NaN or negative. This can occur by definition "
+             "of the estimator and is not a bug.")
+    return ess
 
 
 def _estimate_replicated_batch_means(x: np.ndarray, b: int) -> float:
