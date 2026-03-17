@@ -40,7 +40,7 @@ def estimate_effective_sample_size_sampleset(
     The effective sample size (ESS; a formally defined statistic) quantifies the number of,
     effectively, independent samples drawn from an autocorrelated sampler. For example, samples from
     a Markov chain sampler such as Metropolis-Hastings. For another example, samples from an annealing
-    quantum computer (due to high-frequency noise). The quantification of this notion of independence
+    quantum computer (due to low-frequency noise). The quantification of this notion of independence
     hinges on defining a test function mapping binary strings to real numbers. Two such examples of
     test functions are magnetization and energy.
 
@@ -123,7 +123,7 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
     The effective sample size (ESS; a formally defined statistic) quantifies the number of,
     effectively, independent samples drawn from an autocorrelated sampler. For example, samples from
     a Markov chain sampler such as Metropolis-Hastings. For another example, samples from an annealing
-    quantum computer (due to high-frequency noise). The quantification of this notion of independence
+    quantum computer (due to low-frequency noise). The quantification of this notion of independence
     hinges on defining a test function mapping binary strings to real numbers. Two such examples of
     test functions are magnetization and energy.
 

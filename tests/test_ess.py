@@ -19,19 +19,19 @@ from math import isnan
 import numpy as np
 from dwave.samplers import RandomSampler
 
+from dimod import BinaryQuadraticModel as BQM
 from dimod.ess import _estimate_replicated_batch_means
 from dimod.ess import estimate_effective_sample_size as estimate_ess
 from dimod.ess import estimate_effective_sample_size_sampleset as estimate_ess_ss
-from dimod.generators import power_r
 
 
 class TestEffectiveSampleSize(unittest.TestCase):
 
     def test_estimate_ess_sample_set(self):
-        bqm = power_r(512, 64)
+        bqm = BQM('SPIN').from_ising({i: i % 2-i for i in range(64)}, {})
         num_reads = 100
         sampler = RandomSampler()
-        sample_set = sampler.sample(bqm, num_reads=num_reads)
+        sample_set = sampler.sample(bqm, num_reads=num_reads, seed=1231241)
 
         with self.subTest("Invalid test function output (wrong signature) should raise an error."):
             self.assertRaisesRegex(
