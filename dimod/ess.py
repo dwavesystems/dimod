@@ -179,7 +179,7 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
         >>>     chain = []
         >>>     for time_idx in range(markov_chain_length):
         >>>         sample_set = neal.sample(
-        >>>             bqm, beta_schedule=[1.0],
+        >>>             bqm, beta_schedule=[1.0]*num_sweeps,
         >>>             beta_schedule_type="custom", initial_states=initial_state)
         >>>         chain.append(sample_set.record.energy.item())
         >>>         initial_state = (sample_set.record.sample, sample_set.variables)
