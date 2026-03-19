@@ -1,2 +1,2 @@
-asv==0.5.1
-virtualenv==16.7.12
+asv==0.6.5
+virtualenv==21.2.0
