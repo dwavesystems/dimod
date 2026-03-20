@@ -17,8 +17,6 @@ import itertools
 
 import networkx as nx
 
-from dwave.graphs.utils import binary_quadratic_model_sampler
-
 __all__ = ["is_vertex_coloring",
            "is_cycle",
            "min_vertex_color",
@@ -82,7 +80,6 @@ def vertex_color_qubo(G, colors):
     return Q
 
 
-@binary_quadratic_model_sampler(2)
 def vertex_color(G, colors, sampler, **sampler_args):
     """Returns an approximate vertex coloring.
 
@@ -245,7 +242,6 @@ def min_vertex_color_qubo(G, chromatic_lb=None, chromatic_ub=None):
     return Q
 
 
-@binary_quadratic_model_sampler(1)
 def min_vertex_color(G, sampler, chromatic_lb=None, chromatic_ub=None, **sampler_args):
     """Returns an approximate minimum vertex coloring.
 

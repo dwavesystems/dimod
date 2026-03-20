@@ -13,10 +13,7 @@
 #    limitations under the License.
 
 import itertools
-
 from collections import defaultdict
-
-from dwave.graphs.utils import binary_quadratic_model_sampler
 
 __all__ = ["traveling_salesperson",
            "traveling_salesperson_qubo",
@@ -26,7 +23,6 @@ __all__ = ["traveling_salesperson",
            ]
 
 
-@binary_quadratic_model_sampler(1)
 def traveling_salesperson(G, sampler, lagrange=None, weight='weight',
                           start=None, **sampler_args):
     """Returns an approximate minimum traveling salesperson route.

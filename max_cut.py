@@ -12,12 +12,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dwave.graphs.utils import binary_quadratic_model_sampler
-
 __all__ = ["maximum_cut", "weighted_maximum_cut"]
 
 
-@binary_quadratic_model_sampler(1)
 def maximum_cut(G, sampler, **sampler_args):
     """Returns an approximate maximum cut.
 
@@ -77,7 +74,6 @@ def maximum_cut(G, sampler, **sampler_args):
     return set(v for v in G if sample[v] >= 0)
 
 
-@binary_quadratic_model_sampler(1)
 def weighted_maximum_cut(G, sampler, **sampler_args):
     """Returns an approximate weighted maximum cut.
 

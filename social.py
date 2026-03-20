@@ -12,12 +12,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dwave.graphs.utils import binary_quadratic_model_sampler
-
 __all__ = ["structural_imbalance"]
 
 
-@binary_quadratic_model_sampler(1)
 def structural_imbalance(S, sampler, **sampler_args):
     """Returns an approximate set of frustrated edges and a bicoloring.
 

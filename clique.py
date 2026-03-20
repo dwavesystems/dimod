@@ -15,12 +15,10 @@
 import networkx as nx
 
 from dwave.graphs.algorithms import maximum_independent_set
-from dwave.graphs.utils import binary_quadratic_model_sampler
 
 __all__ = ["maximum_clique", "clique_number", "is_clique"]
 
 
-@binary_quadratic_model_sampler(1)
 def maximum_clique(G, sampler, lagrange=2.0, **sampler_args):
     r"""Returns an approximate maximum clique.
 
@@ -84,7 +82,6 @@ def maximum_clique(G, sampler, lagrange=2.0, **sampler_args):
     return maximum_independent_set(complement_G, sampler, lagrange, **sampler_args)
 
 
-@binary_quadratic_model_sampler(1)
 def clique_number(G, sampler, lagrange=2.0, **sampler_args):
     r"""Returns the number of vertices in the maximum clique of a graph.
 

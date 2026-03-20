@@ -14,8 +14,6 @@
 
 import dimod
 
-from dwave.graphs.utils import binary_quadratic_model_sampler
-
 __all__ = ['sample_markov_network', 'markov_network_bqm']
 
 
@@ -51,7 +49,6 @@ __all__ = ['sample_markov_network', 'markov_network_bqm']
 #
 
 
-@binary_quadratic_model_sampler(1)
 def sample_markov_network(MN, sampler, fixed_variables=None,
                           return_sampleset=False,
                           **sampler_args):

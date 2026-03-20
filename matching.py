@@ -17,8 +17,6 @@ import warnings
 
 import dimod
 
-from dwave.graphs.utils import binary_quadratic_model_sampler
-
 __all__ = ['is_matching',
            'is_maximal_matching',
            'matching_bqm',
@@ -176,7 +174,6 @@ def min_maximal_matching_bqm(G, maximal_lagrange=2, matching_lagrange=None):
     return bqm
 
 
-@binary_quadratic_model_sampler(1)
 def maximal_matching(G, sampler, **sampler_args):
     """Finds an approximate maximal matching.
 
@@ -233,7 +230,6 @@ def maximal_matching(G, sampler, **sampler_args):
     return set(tuple(edge) for edge, val in sample.items() if val > 0)
 
 
-@binary_quadratic_model_sampler(1)
 def min_maximal_matching(G, sampler, **sampler_args):
     """Returns an approximate minimum maximal matching.
 

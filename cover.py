@@ -13,12 +13,10 @@
 #    limitations under the License.
 
 from dwave.graphs.algorithms.independent_set import maximum_weighted_independent_set
-from dwave.graphs.utils import binary_quadratic_model_sampler
 
 __all__ = ['min_weighted_vertex_cover', 'min_vertex_cover', 'is_vertex_cover']
 
 
-@binary_quadratic_model_sampler(2)
 def min_weighted_vertex_cover(G, sampler, weight=None, lagrange=2.0, **sampler_args):
     """Returns an approximate minimum weighted vertex cover.
 
@@ -72,7 +70,6 @@ def min_weighted_vertex_cover(G, sampler, weight=None, lagrange=2.0, **sampler_a
     return [v for v in G if v not in indep_nodes]
 
 
-@binary_quadratic_model_sampler(1)
 def min_vertex_cover(G, sampler, lagrange=2.0, **sampler_args):
     """Returns an approximate minimum vertex cover.
 

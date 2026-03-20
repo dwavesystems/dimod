@@ -12,8 +12,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dwave.graphs.utils import binary_quadratic_model_sampler
-
 __all__ = ["maximum_weighted_independent_set",
            "maximum_weighted_independent_set_qubo",
            "maximum_independent_set",
@@ -21,7 +19,6 @@ __all__ = ["maximum_weighted_independent_set",
            ]
 
 
-@binary_quadratic_model_sampler(2)
 def maximum_weighted_independent_set(G, sampler, weight=None, lagrange=2.0, **sampler_args):
     """Returns an approximate maximum weighted independent set.
 
@@ -89,7 +86,6 @@ def maximum_weighted_independent_set(G, sampler, weight=None, lagrange=2.0, **sa
     return [node for node in sample if sample[node] > 0]
 
 
-@binary_quadratic_model_sampler(1)
 def maximum_independent_set(G, sampler, lagrange=2.0, **sampler_args):
     """Returns an approximate maximum independent set.
 
