@@ -297,10 +297,27 @@ def make_quadratic(poly: Union[Polynomial, BinaryPolynomial], strength: float,
             Terms of the reduced polynomial are added to this binary quadratic model.
             If not provided, a new binary quadratic model is created.
 
+    Returns:
+        :class:`~dimod.binary.BinaryQuadraticModel`: A binary quadratic model
+        with three types of variables:
+
+        *   Original variables: Variables mapped directly from the input
+            polynomial (e.g., ``0``, ``1``, ``12``).
+        *   Product variables: Intermediate variables introduced to reduce
+            higher-order terms, representing the product of two variables. These
+            are typically named by joining the original variables (e.g., ``0*1``
+            represents the product of ``0`` and ``1``).
+        *   Auxiliary variables: Variables introduced to enforce the penalty
+            constraints that ensure the mathematical relationship of the product
+            variables holds true at the ground state (e.g., ``aux0,1`` enforces
+            the constraint for ``0*1``).
+
     Examples:
 
         >>> poly = {(0,): -1, (1,): 1, (2,): 1.5, (0, 1): -1, (0, 1, 2): -2}
         >>> bqm = dimod.make_quadratic(poly, 5.0, dimod.SPIN)
+        >>> list(bqm.variables)
+        [0, 1, '0*1', 'aux0,1', 2]
 
     """
     from dimod.generators import and_gate
