@@ -18,7 +18,7 @@ __all__ = ["structural_imbalance"]
 
 
 @binary_quadratic_model_sampler(1)
-def structural_imbalance(S, sampler=None, **sampler_args):
+def structural_imbalance(S, sampler, **sampler_args):
     """Returns an approximate set of frustrated edges and a bicoloring.
 
     A signed social network graph is a graph whose signed edges
@@ -35,15 +35,8 @@ def structural_imbalance(S, sampler=None, **sampler_args):
         A social graph on which each edge has a 'sign'
         attribute with a numeric value.
 
-    sampler
-        A binary quadratic model sampler. A sampler is a process that
-        samples from low energy states in models defined by an Ising
-        equation or a Quadratic Unconstrainted Binary Optimization
-        Problem (QUBO). A sampler is expected to have a 'sample_qubo'
-        and 'sample_ising' method. A sampler is expected to return an
-        iterable of samples, in order of increasing energy. If no
-        sampler is provided, one must be provided using the
-        `set_default_sampler` function.
+    sampler : :class:`dimod.Sampler`
+        A dimod sampler.
 
     sampler_args
         Additional keyword parameters are passed to the sampler.

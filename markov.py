@@ -52,7 +52,7 @@ __all__ = ['sample_markov_network', 'markov_network_bqm']
 
 
 @binary_quadratic_model_sampler(1)
-def sample_markov_network(MN, sampler=None, fixed_variables=None,
+def sample_markov_network(MN, sampler, fixed_variables=None,
                           return_sampleset=False,
                           **sampler_args):
     """Samples from a markov network using the provided sampler.
@@ -62,15 +62,8 @@ def sample_markov_network(MN, sampler=None, fixed_variables=None,
     G : NetworkX graph
         A Markov Network as returned by :func:`.markov_network`
 
-    sampler
-        A binary quadratic model sampler. A sampler is a process that
-        samples from low energy states in models defined by an Ising
-        equation or a Quadratic Unconstrained Binary Optimization
-        Problem (QUBO). A sampler is expected to have a 'sample_qubo'
-        and 'sample_ising' method. A sampler is expected to return an
-        iterable of samples, in order of increasing energy. If no
-        sampler is provided, one must be provided using the
-        `set_default_sampler` function.
+    sampler : :class:`dimod.Sampler`
+        A dimod sampler.
 
     fixed_variables : dict
         A dictionary of variable assignments to be fixed in the markov network.
@@ -158,7 +151,6 @@ def sample_markov_network(MN, sampler=None, fixed_variables=None,
 def markov_network_bqm(MN):
     """Construct a binary quadratic model for a markov network.
 
-
     Parameters
     ----------
     G : NetworkX graph
@@ -166,7 +158,7 @@ def markov_network_bqm(MN):
 
     Returns
     -------
-    bqm : :obj:`dimod.BinaryQuadraticModel`
+    bqm : :class:`dimod.BinaryQuadraticModel`
         A binary quadratic model.
 
     """

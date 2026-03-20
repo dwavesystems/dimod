@@ -27,7 +27,7 @@ __all__ = ["traveling_salesperson",
 
 
 @binary_quadratic_model_sampler(1)
-def traveling_salesperson(G, sampler=None, lagrange=None, weight='weight',
+def traveling_salesperson(G, sampler, lagrange=None, weight='weight',
                           start=None, **sampler_args):
     """Returns an approximate minimum traveling salesperson route.
 
@@ -44,15 +44,8 @@ def traveling_salesperson(G, sampler=None, lagrange=None, weight='weight',
         The graph on which to find a minimum traveling salesperson route.
         This should be a complete graph with non-zero weights on every edge.
 
-    sampler :
-        A binary quadratic model sampler. A sampler is a process that
-        samples from low energy states in models defined by an Ising
-        equation or a Quadratic Unconstrained Binary Optimization
-        Problem (QUBO). A sampler is expected to have a 'sample_qubo'
-        and 'sample_ising' method. A sampler is expected to return an
-        iterable of samples, in order of increasing energy. If no
-        sampler is provided, one must be provided using the
-        `set_default_sampler` function.
+    sampler : :class:`dimod.Sampler`
+        A dimod sampler.
 
     lagrange : number, optional (default None)
         Lagrange parameter to weight constraints (visit every city once)

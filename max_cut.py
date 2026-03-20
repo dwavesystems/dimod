@@ -18,7 +18,7 @@ __all__ = ["maximum_cut", "weighted_maximum_cut"]
 
 
 @binary_quadratic_model_sampler(1)
-def maximum_cut(G, sampler=None, **sampler_args):
+def maximum_cut(G, sampler, **sampler_args):
     """Returns an approximate maximum cut.
 
     Defines an Ising problem with ground states corresponding to
@@ -33,15 +33,8 @@ def maximum_cut(G, sampler=None, **sampler_args):
     G : NetworkX graph
         The graph on which to find a maximum cut.
 
-    sampler
-        A binary quadratic model sampler. A sampler is a process that
-        samples from low energy states in models defined by an Ising
-        equation or a Quadratic Unconstrained Binary Optimization
-        Problem (QUBO). A sampler is expected to have a 'sample_qubo'
-        and 'sample_ising' method. A sampler is expected to return an
-        iterable of samples, in order of increasing energy. If no
-        sampler is provided, one must be provided using the
-        `set_default_sampler` function.
+    sampler : :class:`dimod.Sampler`
+        A dimod sampler.
 
     sampler_args
         Additional keyword parameters are passed to the sampler.
@@ -85,7 +78,7 @@ def maximum_cut(G, sampler=None, **sampler_args):
 
 
 @binary_quadratic_model_sampler(1)
-def weighted_maximum_cut(G, sampler=None, **sampler_args):
+def weighted_maximum_cut(G, sampler, **sampler_args):
     """Returns an approximate weighted maximum cut.
 
     Defines an Ising problem with ground states corresponding to
@@ -101,15 +94,8 @@ def weighted_maximum_cut(G, sampler=None, **sampler_args):
         The graph on which to find a weighted maximum cut. Each edge in G should
         have a numeric `weight` attribute.
 
-    sampler
-        A binary quadratic model sampler. A sampler is a process that
-        samples from low energy states in models defined by an Ising
-        equation or a Quadratic Unconstrained Binary Optimization
-        Problem (QUBO). A sampler is expected to have a 'sample_qubo'
-        and 'sample_ising' method. A sampler is expected to return an
-        iterable of samples, in order of increasing energy. If no
-        sampler is provided, one must be provided using the
-        `set_default_sampler` function.
+    sampler : :class:`dimod.Sampler`
+        A dimod sampler.
 
     sampler_args
         Additional keyword parameters are passed to the sampler.

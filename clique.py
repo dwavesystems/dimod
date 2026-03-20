@@ -21,7 +21,7 @@ __all__ = ["maximum_clique", "clique_number", "is_clique"]
 
 
 @binary_quadratic_model_sampler(1)
-def maximum_clique(G, sampler=None, lagrange=2.0, **sampler_args):
+def maximum_clique(G, sampler, lagrange=2.0, **sampler_args):
     r"""Returns an approximate maximum clique.
 
     A clique in an undirected graph, G = (V, E), is a subset of the vertex set
@@ -41,15 +41,8 @@ def maximum_clique(G, sampler=None, lagrange=2.0, **sampler_args):
     G : NetworkX graph
         The graph on which to find a maximum clique.
 
-    sampler
-        A binary quadratic model sampler. A sampler is a process that
-        samples from low energy states in models defined by an Ising
-        equation or a Quadratic Unconstrained Binary Optimization
-        Problem (QUBO). A sampler is expected to have a 'sample_qubo'
-        and 'sample_ising' method. A sampler is expected to return an
-        iterable of samples, in order of increasing energy. If no
-        sampler is provided, one must be provided using the
-        `set_default_sampler` function.
+    sampler : :class:`dimod.Sampler`
+        A dimod sampler.
 
     lagrange : optional (default 2)
         Lagrange parameter to weight constraints (no edges within set)
@@ -92,7 +85,7 @@ def maximum_clique(G, sampler=None, lagrange=2.0, **sampler_args):
 
 
 @binary_quadratic_model_sampler(1)
-def clique_number(G, sampler=None, lagrange=2.0, **sampler_args):
+def clique_number(G, sampler, lagrange=2.0, **sampler_args):
     r"""Returns the number of vertices in the maximum clique of a graph.
 
     A maximum clique is a clique of the largest possible size in a given graph.
@@ -110,15 +103,8 @@ def clique_number(G, sampler=None, lagrange=2.0, **sampler_args):
     G : NetworkX graph
         The graph on which to find a maximum clique.
 
-    sampler
-        A binary quadratic model sampler. A sampler is a process that
-        samples from low energy states in models defined by an Ising
-        equation or a Quadratic Unconstrained Binary Optimization
-        Problem (QUBO). A sampler is expected to have a 'sample_qubo'
-        and 'sample_ising' method. A sampler is expected to return an
-        iterable of samples, in order of increasing energy. If no
-        sampler is provided, one must be provided using the
-        `set_default_sampler` function.
+    sampler : :class:`dimod.Sampler`
+        A dimod sampler.
 
     lagrange : optional (default 2)
         Lagrange parameter to weight constraints (no edges within set)

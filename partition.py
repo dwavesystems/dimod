@@ -22,7 +22,7 @@ __all__ = ["partition",
            ]
 
 
-def partition(G, num_partitions=2, sampler=None, **sampler_args):
+def partition(G, sampler, num_partitions=2, **sampler_args):
     """Returns an approximate k-partition of G.
     
     Defines an CQM with ground states corresponding to a
@@ -37,14 +37,10 @@ def partition(G, num_partitions=2, sampler=None, **sampler_args):
     ----------
     G : NetworkX graph
         The graph to partition.
+    sampler : :class:`dimod.Sampler`
+        A dimod sampler.
     num_partitions : int, optional (default 2)
         The number of subsets in the desired partition.
-    sampler : 
-        A constrained quadratic model sampler. A sampler is a process that
-        samples from low energy states in models defined by an Ising
-        equation or a Quadratic Model, with or without constraints. The sampler 
-        is expected to have a 'sample_cqm' method. A sampler is expected to
-        return an iterable of samples, in order of increasing energy.
     sampler_args
         Additional keyword parameters are passed to the sampler.
     

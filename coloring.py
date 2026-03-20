@@ -83,7 +83,7 @@ def vertex_color_qubo(G, colors):
 
 
 @binary_quadratic_model_sampler(2)
-def vertex_color(G, colors, sampler=None, **sampler_args):
+def vertex_color(G, colors, sampler, **sampler_args):
     """Returns an approximate vertex coloring.
 
     Vertex coloring is the problem of assigning a color to the
@@ -102,15 +102,8 @@ def vertex_color(G, colors, sampler=None, **sampler_args):
         The colors. If an int, the colors are labelled `[0, n)`. The number of
         colors must be greater or equal to the chromatic number of the graph.
 
-    sampler
-        A binary quadratic model sampler. A sampler is a process that
-        samples from low energy states in models defined by an Ising
-        equation or a Quadratic Unconstrained Binary Optimization
-        Problem (QUBO). A sampler is expected to have a 'sample_qubo'
-        and 'sample_ising' method. A sampler is expected to return an
-        iterable of samples, in order of increasing energy. If no
-        sampler is provided, one must be provided using the
-        `set_default_sampler` function.
+    sampler : :class:`dimod.Sampler`
+        A dimod sampler.
 
     sampler_args
         Additional keyword parameters are passed to the sampler.
@@ -211,9 +204,6 @@ def min_vertex_color_qubo(G, chromatic_lb=None, chromatic_ub=None):
         An upper bound on the chromatic number. If one is not provided, a bound
         is calculated.
 
-    sampler_args
-        Additional keyword parameters are passed to the sampler.
-
     Returns
     -------
     QUBO : dict
@@ -256,8 +246,7 @@ def min_vertex_color_qubo(G, chromatic_lb=None, chromatic_ub=None):
 
 
 @binary_quadratic_model_sampler(1)
-def min_vertex_color(G, sampler=None, chromatic_lb=None, chromatic_ub=None,
-                     **sampler_args):
+def min_vertex_color(G, sampler, chromatic_lb=None, chromatic_ub=None, **sampler_args):
     """Returns an approximate minimum vertex coloring.
 
     Vertex coloring is the problem of assigning a color to the
@@ -273,19 +262,12 @@ def min_vertex_color(G, sampler=None, chromatic_lb=None, chromatic_ub=None,
     G : NetworkX graph
         The graph on which to find a minimum vertex coloring.
 
-    sampler
-        A binary quadratic model sampler. A sampler is a process that
-        samples from low energy states in models defined by an Ising
-        equation or a Quadratic Unconstrained Binary Optimization
-        Problem (QUBO). A sampler is expected to have a 'sample_qubo'
-        and 'sample_ising' method. A sampler is expected to return an
-        iterable of samples, in order of increasing energy. If no
-        sampler is provided, one must be provided using the
-        `set_default_sampler` function.
+    sampler : :class:`dimod.Sampler`
+        A dimod sampler.
 
     chromatic_lb : int, optional
          A lower bound on the chromatic number. If one is not provided, a
-         bound is calulcated.
+         bound is calculated.
 
     chromatic_ub : int, optional
         An upper bound on the chromatic number. If one is not provided, a bound
