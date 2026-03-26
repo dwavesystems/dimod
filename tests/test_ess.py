@@ -53,13 +53,13 @@ class TestEffectiveSampleSize(unittest.TestCase):
                 estimate_ess_ss, sample_set, lambda ss: [[1]])
 
         with self.subTest("ESS value should be the same as manually invoking the array version."):
-            self.assertEqual(estimate_ess_ss(sample_set, b=5),
-                             estimate_ess(sample_set.record.energy.reshape(1, -1), b=5))
+            self.assertEqual(estimate_ess_ss(sample_set, batch_size=5),
+                             estimate_ess(sample_set.record.energy.reshape(1, -1), batch_size=5))
 
         with self.subTest("ESS value should be the same as manually invoking the array version (with custom test function)."):
             self.assertEqual(
-                estimate_ess_ss(sample_set, lambda ss: ss.record.energy ** 2, b=5),
-                estimate_ess(sample_set.record.energy.reshape(1, -1) ** 2, b=5)
+                estimate_ess_ss(sample_set, lambda ss: ss.record.energy ** 2, batch_size=5),
+                estimate_ess(sample_set.record.energy.reshape(1, -1) ** 2, batch_size=5)
             )
 
     def test_estimate_ess(self):

@@ -30,7 +30,7 @@ __all__ = ['estimate_effective_sample_size', 'estimate_effective_sample_size_sam
 def estimate_effective_sample_size_sampleset(
     sample_set: SampleSet,
     test_function: Callable[[SampleSet], Iterable[float]] | None = None,
-    b: int | None = None
+    batch_size: int | None = None
 ):
     """Estimates the effective sample size of ``sample_set``.
 
@@ -84,8 +84,8 @@ def estimate_effective_sample_size_sampleset(
         test_function: A function mapping ``sample_set`` to an iterable of floats of length m (the
             sample size of the sample set). If ``None``, then the default test function is the energy
             of the model as reported by the sample set. Defaults to None.
-        b: Batch size of the estimator. If ``None``, then ``b`` is set to the floor of the
-            square root of ``n``. Defaults to None.
+        batch_size: Batch size of the estimator. If ``None``, then ``batch_size`` is set to the floor
+            of the square root of ``n``. Defaults to None.
 
     Returns:
         float: An estimate of the effective sample size of ``sample_set``. The estimate can be NaN or
@@ -111,10 +111,10 @@ def estimate_effective_sample_size_sampleset(
                          f"size of the sample set is {len(sample_set)} and the length of the test "
                          f"function output has shape {X.shape}.")
 
-    return estimate_effective_sample_size(X.reshape(1, -1), b)
+    return estimate_effective_sample_size(X.reshape(1, -1), batch_size)
 
 
-def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float:
+def estimate_effective_sample_size(x: np.ndarray, batch_size: int | None = None) -> float:
     """Estimates the effective sample size of ``x``.
 
     NOTE: The estimate can be nan or negative for extreme cases (e.g., constants). This can occur
@@ -197,8 +197,8 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
     Args:
         x: An (m, n) matrix where rows index independent Markov chains and columns index
             time steps.
-        b: Batch size of the estimator. If ``None``, then ``b`` is set to the floor of the
-            square root of ``n``. Defaults to None.
+        batch_size: Batch size of the estimator. If ``None``, then ``batch_size`` is set to the floor
+            of the square root of ``n``. Defaults to None.
 
     Returns:
         float: An estimate of the effective sample size of ``x``. The estimate can be NaN or
@@ -209,12 +209,12 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
         raise ValueError("The input matrix ``x`` should have shape (m, n) where m indexes "
                          f"independent Markov chains and n indexes time. ``x`` has shape {x.shape}")
     m, n = x.shape
-    if b is None:
-        b = int(floor(n**0.5))
-    if b > n or b < 3:
+    if batch_size is None:
+        batch_size = floor(n**0.5)
+    if batch_size > n or batch_size < 3:
         raise ValueError(
             f"Batch size should be at least three but no more than the chain length of the Markov "
-            f"chain. Batch size is {b} and chain length is {n}. If size was not given, it defaults"
+            f"chain. Batch size is {batch_size} and chain length is {n}. If size was not given, it defaults"
             f"to the floor of square-root of the chain length."
         )
 
@@ -224,8 +224,8 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
 
     # This estimator $\hat{\tau}^2_L$ is defined in equation (5) of
     # Revisiting the Gelman-Rubin Diagnostic (https://arxiv.org/abs/1812.09384)
-    tau_squared = (2 * _estimate_replicated_batch_means(x, b)
-                   - _estimate_replicated_batch_means(x, b // 3))
+    tau_squared = (2 * _estimate_replicated_batch_means(x, batch_size)
+                   - _estimate_replicated_batch_means(x, batch_size // 3))
     # = equation (5)
     # = nVar(xbar_i.) = total variance of the mean-within-series
 
@@ -242,14 +242,14 @@ def estimate_effective_sample_size(x: np.ndarray, b: int | None = None) -> float
     return ess
 
 
-def _estimate_replicated_batch_means(x: np.ndarray, b: int) -> float:
+def _estimate_replicated_batch_means(x: np.ndarray, batch_size: int) -> float:
     """Computes the replicated batch means estimate.
 
     This estimator (:math:`\\hat\\tau^2_b`) is defined in the equation above equation (5) of
     `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
 
-    The estimator batches each Markov chain into batches of size ``b``, estimates the mean of each
-    batch, and computes the sample variance of these batched means.
+    The estimator batches each Markov chain into batches of size ``batch_size``, estimates the mean
+    of each batch, and computes the sample variance of these batched means.
 
     The first few columns of ``x`` may be dropped in the estimation process in order to satisfy the
     requirement that the length of the Markov chain is divisible by the batch size.
@@ -257,20 +257,20 @@ def _estimate_replicated_batch_means(x: np.ndarray, b: int) -> float:
     Args:
         x: An (m, n) matrix where rows index independent Markov chains and columns index
             time steps.
-        b: Batch size of the estimator.
+        batch_size: Batch size of the estimator.
 
     Returns:
         float: Replicated batch means estimate.
     """
     n = x.shape[1]
 
-    n_batches = n // b
-    trimmed_length = b * n_batches
+    n_batches = n // batch_size
+    trimmed_length = batch_size * n_batches
 
     x = x[:, (n - trimmed_length):]
     ybar = np.mean(np.split(x, n_batches, axis=1), axis=2).mT
 
-    res = b*np.var(ybar, ddof=1)
+    res = batch_size * np.var(ybar, ddof=1)
     # NOTE: this is equivalent to
     # res = ((ybar - muhat) ** 2).sum() * b / (n_batches * m - 1)
     # where
