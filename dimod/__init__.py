@@ -65,5 +65,8 @@ import dimod.utilities
 
 from dimod.vartypes import *
 
+import dimod.ess
+from dimod.ess import estimate_effective_sample_size
+
 # flags for some global features
 REAL_INTERACTIONS = False
