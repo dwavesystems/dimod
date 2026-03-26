@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Callable, Iterable
 
 if TYPE_CHECKING:
     from dimod import SampleSet
+    from dimod.typing import SamplesLike, SampleLike
 
 from math import floor, isnan
 from warnings import warn
@@ -59,22 +60,23 @@ def estimate_effective_sample_size_sampleset(
 
 
         Example (1): QPU
-        >>> import numpy as np
-        >>> from dwave.system import DWaveCliqueSampler
-        >>> from dimod.ess import estimate_effective_sample_size
-        >>> from dimod.generators import power_r
-        >>> markov_chain_length = 100
-        >>> num_vars = 33
-        >>> bqm = power_r(512, num_vars)
-        >>> bqm.normalize()
-        >>> qpu = DWaveCliqueSampler()
+        .. code-block::python
+            import numpy as np
+            from dwave.system import DWaveCliqueSampler
+            from dimod.ess import estimate_effective_sample_size
+            from dimod.generators import power_r
+            markov_chain_length = 100
+            num_vars = 33
+            bqm = power_r(512, num_vars)
+            bqm.normalize()
+            qpu = DWaveCliqueSampler()
 
-        >>> def test_fn(ss):
-        >>>     return ss.record.sample.mean(1)
-        >>> sample_set = qpu.sample(bqm, num_reads=markov_chain_length, answer_mode="raw")
-        >>> print("Effective sample size (QPU):",
-        >>>       estimate_effective_sample_size_sampleset(sample_set, test_fn))
-        Effective sample size per chain (QPU): 69.69037448554732
+            def test_fn(ss):
+                return ss.record.sample.mean(1)
+            sample_set = qpu.sample(bqm, num_reads=markov_chain_length, answer_mode="raw")
+            print("Effective sample size (QPU):",
+                  estimate_effective_sample_size_sampleset(sample_set, test_fn))
+            # Effective sample size per chain (QPU): 69.69037448554732
 
 
     Args:
@@ -95,19 +97,40 @@ def estimate_effective_sample_size_sampleset(
     if test_function is None:
         def test_function(ss: SampleSet):
             return ss.record.energy
+
     try:
-        stat = list(test_function(sample_set))
+        stat = test_function(sample_set)
     except Exception as e:
-        raise ValueError("Test function is invalid. Does the test function have a correct signature? "
-                         "The test function should consume a ``dimod.SampleSet`` and return an "
-                         f"iterable of floats of length equal to the sample size. The exception is {e}")
+        raise RuntimeError(
+            "Test function raised an error. Does the test function have the correct signature? "
+            "The test function should consume a ``dimod.SampleSet`` and return an iterable of"
+            "floats with length equal to the sample size."
+        ) from e
+
+    if not isinstance(stat, Iterable):
+        raise ValueError(
+            "The test function should return an *iterable* of floats with length equal to the "
+            f"sample size. The test function returned {stat}."
+        )
+
+    stat = list(stat)
     X = np.array(stat)
+
+    if not np.issubdtype(X.dtype, np.floating):
+        raise ValueError(
+            "The test function should return an iterable of *floats* with length equal to the "
+            f"sample size. The test function returned {stat}."
+        )
+
     if X.ndim != 1:
-        raise ValueError("The test function should consume a sample set and return an iterable of "
-                         f"floats. The output of `list(test_function(sample_set))` is {stat}.")
+        raise ValueError(
+            "The test function should consume a sample set and return a *flat* iterable of "
+            f"floats. The output of `list(test_function(sample_set))` is {stat}."
+        )
+
     if X.shape[0] != len(sample_set):
         raise ValueError("The test function should consume a sample set and return an iterable of "
-                         "floats of length equal to the sample size of the sample set. The sample "
+                         "floats of *length* equal to the sample size of the sample set. The sample "
                          f"size of the sample set is {len(sample_set)} and the length of the test "
                          f"function output has shape {X.shape}.")
 
@@ -142,52 +165,54 @@ def estimate_effective_sample_size(x: np.ndarray, batch_size: int | None = None)
         Metropolis-Hastings samplers (one with one sweep, another with ten sweeps).
 
         Example (1): QPU
-        >>> import numpy as np
-        >>> from dimod.ess import estimate_effective_sample_size
-        >>> from dimod.generators import power_r
-        >>> from dwave.system import DWaveCliqueSampler
-        >>> markov_chain_length = 100
-        >>> num_vars = 100
-        >>> num_chains = 10
-        >>> bqm = power_r(512, num_vars)
-        >>> bqm.normalize()
-        >>> qpu = DWaveCliqueSampler()
-        >>> qpu_energy = np.array(
+        .. code-block::python
+            import numpy as np
+            from dimod.ess import estimate_effective_sample_size
+            from dimod.generators import power_r
+            from dwave.system import DWaveCliqueSampler
+            markov_chain_length = 100
+            num_vars = 100
+            num_chains = 10
+            bqm = power_r(512, num_vars)
+            bqm.normalize()
+            qpu = DWaveCliqueSampler()
+            qpu_energy = np.array(
                 [qpu.sample(bqm, num_reads=markov_chain_length, answer_mode="raw").record.energy
                 for _ in range(num_chains)]
             )
-        >>> print("Effective sample size per chain (QPU):",
+            print("Effective sample size per chain (QPU):",
                   estimate_effective_sample_size(qpu_energy)/num_chains)
-        Effective sample size per chain (QPU): 71.87414368659094
+            # Effective sample size per chain (QPU): 71.87414368659094
 
 
         Example (2): Metropolis-Hastings
-        >>> import numpy as np
-        >>> from dwave.samplers import SimulatedAnnealingSampler
-        >>> from dimod.ess import estimate_effective_sample_size
-        >>> from dimod.generators import power_r
-        >>> neal = SimulatedAnnealingSampler()
-        >>> markov_chains = []
-        >>> markov_chain_length = 100
-        >>> num_vars = 100
-        >>> num_chains = 10
-        >>> num_sweeps = 1  # Increase number of sweeps to increase ESS
-        >>> bqm = power_r(512, num_vars)
-        >>> bqm.normalize()
-        >>> initial_state = None
-        >>> for chain_idx in range(num_chains):
-        >>>     chain = []
-        >>>     for time_idx in range(markov_chain_length):
-        >>>         sample_set = neal.sample(
-        >>>             bqm, beta_schedule=[1.0]*num_sweeps,
-        >>>             beta_schedule_type="custom", initial_states=initial_state)
-        >>>         chain.append(sample_set.record.energy.item())
-        >>>         initial_state = (sample_set.record.sample, sample_set.variables)
-        >>>     markov_chains.append(chain)
-        >>> mc_energy = np.array(markov_chains)
-        >>> print("Effective sample size per chain (MH):",
-        >>>       estimate_effective_sample_size(mc_energy)/num_chains)
-        Effective sample size per chain (MH): 12.496482970401358
+        .. code-block::python
+            import numpy as np
+            from dwave.samplers import SimulatedAnnealingSampler
+            from dimod.ess import estimate_effective_sample_size
+            from dimod.generators import power_r
+            neal = SimulatedAnnealingSampler()
+            markov_chains = []
+            markov_chain_length = 100
+            num_vars = 100
+            num_chains = 10
+            num_sweeps = 1  # Increase number of sweeps to increase ESS
+            bqm = power_r(512, num_vars)
+            bqm.normalize()
+            initial_state = None
+            for chain_idx in range(num_chains):
+                chain = []
+                for time_idx in range(markov_chain_length):
+                    sample_set = neal.sample(
+                        bqm, beta_schedule=[1.0]*num_sweeps,
+                        beta_schedule_type="custom", initial_states=initial_state)
+                    chain.append(sample_set.record.energy.item())
+                    initial_state = (sample_set.record.sample, sample_set.variables)
+                markov_chains.append(chain)
+            mc_energy = np.array(markov_chains)
+            print("Effective sample size per chain (MH):",
+                  estimate_effective_sample_size(mc_energy)/num_chains)
+            # Effective sample size per chain (MH): 12.496482970401358
 
         Use a larger number of sweeps to achieve larger ESS
         >>> num_sweeps = 10

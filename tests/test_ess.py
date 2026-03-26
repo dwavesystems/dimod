@@ -35,22 +35,43 @@ class TestEffectiveSampleSize(unittest.TestCase):
 
         with self.subTest("Invalid test function output (wrong signature) should raise an error."):
             self.assertRaisesRegex(
-                ValueError,
-                "Test function is invalid. Does the test function have a correct signature?",
+                RuntimeError,
+                "Test function raised an error. Does the test function have the correct signature?",
                 estimate_ess_ss, sample_set, lambda: 1
+            )
+
+        with self.subTest("Invalid test function (runtime error) should raise an error."):
+            def dummy(ss):
+                raise NotImplementedError()
+            self.assertRaisesRegex(
+                RuntimeError,
+                "Test function raised an error. Does the test function have the correct signature?",
+                estimate_ess_ss, sample_set, dummy
             )
 
         with self.subTest("Invalid test function output (output too short) should raise an error."):
             self.assertRaisesRegex(
                 ValueError,
-                "floats of length equal to the sample size of the sample set. The sample",
-                estimate_ess_ss, sample_set, lambda ss: [1])
+                "floats of \*length\* equal to the sample size of the sample set. The sample",
+                estimate_ess_ss, sample_set, lambda ss: [1.0])
+
+        with self.subTest("Invalid test function output (nonfloat output) should raise an error."):
+            self.assertRaisesRegex(
+                ValueError,
+                "The test function should return an iterable of \*floats\* with length equal to the",
+                estimate_ess_ss, sample_set, lambda ss: [None, "hey"])
+
+        with self.subTest("Invalid test function output (noniterable output) should raise an error."):
+            self.assertRaisesRegex(
+                ValueError,
+                "The test function should return an \*iterable\* of floats with length equal to the",
+                estimate_ess_ss, sample_set, lambda ss: None)
 
         with self.subTest("Invalid test function output (matrix output) should raise an error."):
             self.assertRaisesRegex(
                 ValueError,
-                "The test function should consume a sample set and return an iterable of",
-                estimate_ess_ss, sample_set, lambda ss: [[1]])
+                "The test function should consume a sample set and return a \*flat\* iterable of",
+                estimate_ess_ss, sample_set, lambda ss: [[1.0]])
 
         with self.subTest("ESS value should be the same as manually invoking the array version."):
             self.assertEqual(estimate_ess_ss(sample_set, batch_size=5),
