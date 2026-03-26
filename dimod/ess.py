@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Iterable
 
 if TYPE_CHECKING:
-    import dimod
+    from dimod import SampleSet
 
 from math import floor, isnan
 from warnings import warn
@@ -28,8 +28,8 @@ __all__ = ['estimate_effective_sample_size', 'estimate_effective_sample_size_sam
 
 
 def estimate_effective_sample_size_sampleset(
-    sample_set: dimod.SampleSet,
-    test_function: Callable[[dimod.SampleSet], Iterable[float]] | None = None,
+    sample_set: SampleSet,
+    test_function: Callable[[SampleSet], Iterable[float]] | None = None,
     b: int | None = None
 ):
     """Estimates the effective sample size of ``sample_set``.
@@ -93,7 +93,7 @@ def estimate_effective_sample_size_sampleset(
         estimator and is not a bug.
     """
     if test_function is None:
-        def test_function(ss: dimod.SampleSet):
+        def test_function(ss: SampleSet):
             return ss.record.energy
     try:
         stat = list(test_function(sample_set))
