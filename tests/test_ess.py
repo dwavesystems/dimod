@@ -17,9 +17,9 @@ import unittest
 from math import isnan
 
 import numpy as np
-from dwave.samplers import RandomSampler
 
 from dimod import BinaryQuadraticModel as BQM
+from dimod import SampleSet
 from dimod.ess import _estimate_replicated_batch_means
 from dimod.ess import compute_ess as compute_ess
 from dimod.ess import compute_ess_sampleset as estimate_ess_ss
@@ -28,10 +28,11 @@ from dimod.ess import compute_ess_sampleset as estimate_ess_ss
 class TestEffectiveSampleSize(unittest.TestCase):
 
     def test_estimate_ess_sample_set(self):
-        bqm = BQM('SPIN').from_ising({i: i % 2-i for i in range(64)}, {})
+        num_vars = 64
+        bqm = BQM('SPIN').from_ising({i: i % 2-i for i in range(num_vars)}, {})
         num_reads = 100
-        sampler = RandomSampler()
-        sample_set = sampler.sample(bqm, num_reads=num_reads, seed=1231241)
+        rng = np.random.default_rng(123)
+        sample_set = SampleSet.from_samples_bqm(rng.binomial(1, 0.5, (num_reads, 64))*2-1, bqm)
 
         with self.subTest("Invalid test function output (wrong signature) should raise an error."):
             self.assertRaisesRegex(
