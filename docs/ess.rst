@@ -13,12 +13,12 @@ Two such examples of test functions are magnetization and energy.
 
 The univariate estimator implemented here is the (multivariate) estimator defined in the first
 equation at the top of page 14 in
-`<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
+`Revisiting the Gelman-Rubin Diagnostic <https://arxiv.org/abs/1812.09384>`_.
 
 For an introduction to effective sample size, see the
-`<Stan Manual https://mc-stan.org/docs/2_21/reference-manual/effective-sample-size-section.html>`_
+`Stan Manual <https://mc-stan.org/docs/2_21/reference-manual/effective-sample-size-section.html>`_
 or this
-`<blog post https://andrewcharlesjones.github.io/journal/21-effective-sample-size.html>_.
+`blog post <https://andrewcharlesjones.github.io/journal/21-effective-sample-size.html>_.
 
 .. currentmodule:: dimod.ess
 

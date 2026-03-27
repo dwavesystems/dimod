@@ -18,3 +18,4 @@ API Reference
     exceptions
     typing
     cpp
+    ess
