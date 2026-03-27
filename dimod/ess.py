@@ -18,146 +18,20 @@ from typing import TYPE_CHECKING, Callable, Iterable
 
 if TYPE_CHECKING:
     from dimod import SampleSet
-    from dimod.typing import SamplesLike, SampleLike
 
 from math import floor, isnan
 from warnings import warn
 
 import numpy as np
 
-__all__ = ['estimate_effective_sample_size', 'estimate_effective_sample_size_sampleset']
+__all__ = ['compute_ess', 'compute_ess_sampleset']
 
 
-def estimate_effective_sample_size_sampleset(
-    sample_set: SampleSet,
-    test_function: Callable[[SampleSet], Iterable[float]] | None = None,
-    batch_size: int | None = None
-):
-    """Estimates the effective sample size of ``sample_set``.
-
-    NOTE: The estimate can be nan or negative for extreme cases (e.g., constants). This can occur
-    by definition of the estimator and is not a bug.
-
-    The effective sample size (ESS; a formally defined statistic) quantifies the number of,
-    effectively, independent samples drawn from an autocorrelated sampler. For example, samples from
-    a Markov chain sampler such as Metropolis-Hastings. For another example, samples from an annealing
-    quantum computer (due to low-frequency noise). The quantification of this notion of independence
-    hinges on defining a test function mapping binary strings to real numbers. Two such examples of
-    test functions are magnetization and energy.
-
-    The univariate estimator implemented here is the (multivariate) estimator defined in the first
-    equation at the top of page 14 in
-    `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
-
-    For an introduction to effective sample size, see
-    `<Stan Manual https://mc-stan.org/docs/2_21/reference-manual/effective-sample-size-section.html>`_
-    or this
-    `<blog post https://andrewcharlesjones.github.io/journal/21-effective-sample-size.html>_.
-
-    Examples:
-        This example demonstrates a typical use case of the estimator, measuring a QPU sample's
-        ESS based on the magnetization of the system.
-
-
-        Example (1): QPU
-        .. code-block::python
-            import numpy as np
-            from dwave.system import DWaveCliqueSampler
-            from dimod.ess import estimate_effective_sample_size
-            from dimod.generators import power_r
-            markov_chain_length = 100
-            num_vars = 33
-            bqm = power_r(512, num_vars)
-            bqm.normalize()
-            qpu = DWaveCliqueSampler()
-
-            def test_fn(ss):
-                return ss.record.sample.mean(1)
-            sample_set = qpu.sample(bqm, num_reads=markov_chain_length, answer_mode="raw")
-            print("Effective sample size (QPU):",
-                  estimate_effective_sample_size_sampleset(sample_set, test_fn))
-            # Effective sample size per chain (QPU): 69.69037448554732
-
-
-    Args:
-        sample_set: A sample set with m ordered reads and n variables. In a typical use case with
-            QPU samples, the sample set should have been attained with the sampling parameter
-            ``answer_mode`` set to "raw".
-        test_function: A function mapping ``sample_set`` to an iterable of floats of length m (the
-            sample size of the sample set). If ``None``, then the default test function is the energy
-            of the model as reported by the sample set. Defaults to None.
-        batch_size: Batch size of the estimator. If ``None``, then ``batch_size`` is set to the floor
-            of the square root of ``n``. Defaults to None.
-
-    Returns:
-        float: An estimate of the effective sample size of ``sample_set``. The estimate can be NaN or
-        even negative when the input chain is nearly constant. This can occur by definition of the
-        estimator and is not a bug.
-    """
-    if test_function is None:
-        def test_function(ss: SampleSet):
-            return ss.record.energy
-
-    try:
-        stat = test_function(sample_set)
-    except Exception as e:
-        raise RuntimeError(
-            "Test function raised an error. Does the test function have the correct signature? "
-            "The test function should consume a ``dimod.SampleSet`` and return an iterable of"
-            "floats with length equal to the sample size."
-        ) from e
-
-    if not isinstance(stat, Iterable):
-        raise ValueError(
-            "The test function should return an *iterable* of floats with length equal to the "
-            f"sample size. The test function returned {stat}."
-        )
-
-    stat = list(stat)
-    X = np.array(stat)
-
-    if not np.issubdtype(X.dtype, np.floating):
-        raise ValueError(
-            "The test function should return an iterable of *floats* with length equal to the "
-            f"sample size. The test function returned {stat}."
-        )
-
-    if X.ndim != 1:
-        raise ValueError(
-            "The test function should consume a sample set and return a *flat* iterable of "
-            f"floats. The output of `list(test_function(sample_set))` is {stat}."
-        )
-
-    if X.shape[0] != len(sample_set):
-        raise ValueError("The test function should consume a sample set and return an iterable of "
-                         "floats of *length* equal to the sample size of the sample set. The sample "
-                         f"size of the sample set is {len(sample_set)} and the length of the test "
-                         f"function output has shape {X.shape}.")
-
-    return estimate_effective_sample_size(X.reshape(1, -1), batch_size)
-
-
-def estimate_effective_sample_size(x: np.ndarray, batch_size: int | None = None) -> float:
+def compute_ess(x: np.ndarray, batch_size: int | None = None) -> float:
     """Estimates the effective sample size of ``x``.
 
     NOTE: The estimate can be nan or negative for extreme cases (e.g., constants). This can occur
     by definition of the estimator and is not a bug.
-
-    The effective sample size (ESS; a formally defined statistic) quantifies the number of,
-    effectively, independent samples drawn from an autocorrelated sampler. For example, samples from
-    a Markov chain sampler such as Metropolis-Hastings. For another example, samples from an annealing
-    quantum computer (due to low-frequency noise). The quantification of this notion of independence
-    hinges on defining a test function mapping binary strings to real numbers. Two such examples of
-    test functions are magnetization and energy.
-
-    The univariate estimator implemented here is the (multivariate) estimator defined in the first
-    equation at the top of page 14 in
-    `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
-
-    For an introduction to effective sample size, see
-    `<Stan Manual https://mc-stan.org/docs/2_21/reference-manual/effective-sample-size-section.html>`_
-    or this
-    `<blog post https://andrewcharlesjones.github.io/journal/21-effective-sample-size.html>_.
 
     Examples:
         These two examples demonstrate typical use cases of the estimator based on an energy statistic.
@@ -265,6 +139,104 @@ def estimate_effective_sample_size(x: np.ndarray, batch_size: int | None = None)
         warn("The estimated effective sample size is NaN or negative. This can occur by definition "
              "of the estimator and is not a bug.")
     return ess
+
+
+def compute_ess_sampleset(
+    sample_set: SampleSet,
+    test_function: Callable[[SampleSet], Iterable[float]] | None = None,
+    batch_size: int | None = None
+):
+    """Estimates the effective sample size of ``sample_set``.
+
+    NOTE: The estimate can be nan or negative for extreme cases (e.g., constants). This can occur
+    by definition of the estimator and is not a bug.
+
+    This function differs from ``compute_ess`` in that it assumes its input, ``sample_set``, consists
+    of states from a single Markov chain. By default, when no test
+    function is supplied, the effective sample size is estimated based on the sample set's energies.
+
+
+    Examples:
+        This example demonstrates a typical use case of the estimator, measuring a QPU sample's
+        ESS based on the magnetization of the system.
+
+
+        Example (1): QPU
+        .. code-block::python
+            import numpy as np
+            from dwave.system import DWaveCliqueSampler
+            from dimod.ess import estimate_effective_sample_size
+            from dimod.generators import power_r
+            markov_chain_length = 100
+            num_vars = 33
+            bqm = power_r(512, num_vars)
+            bqm.normalize()
+            qpu = DWaveCliqueSampler()
+
+            def test_fn(ss):
+                return ss.record.sample.mean(1)
+            sample_set = qpu.sample(bqm, num_reads=markov_chain_length, answer_mode="raw")
+            print("Effective sample size (QPU):",
+                  estimate_effective_sample_size_sampleset(sample_set, test_fn))
+            # Effective sample size per chain (QPU): 69.69037448554732
+
+
+    Args:
+        sample_set: A sample set with m ordered reads and n variables. In a typical use case with
+            QPU samples, the sample set should have been attained with the sampling parameter
+            ``answer_mode`` set to "raw".
+        test_function: A function mapping ``sample_set`` to an iterable of floats of length m (the
+            sample size of the sample set). If ``None``, then the default test function is the energy
+            of the model as reported by the sample set. Defaults to None.
+        batch_size: Batch size of the estimator. If ``None``, then ``batch_size`` is set to the floor
+            of the square root of ``n``. Defaults to None.
+
+    Returns:
+        float: An estimate of the effective sample size of ``sample_set``. The estimate can be NaN or
+        even negative when the input chain is nearly constant. This can occur by definition of the
+        estimator and is not a bug.
+    """
+    if test_function is None:
+        def test_function(ss: SampleSet):
+            return ss.record.energy
+
+    try:
+        stat = test_function(sample_set)
+    except Exception as e:
+        raise RuntimeError(
+            "Test function raised an error. Does the test function have the correct signature? "
+            "The test function should consume a ``dimod.SampleSet`` and return an iterable of"
+            "floats with length equal to the sample size."
+        ) from e
+
+    if not isinstance(stat, Iterable):
+        raise ValueError(
+            "The test function should return an *iterable* of floats with length equal to the "
+            f"sample size. The test function returned {stat}."
+        )
+
+    stat = list(stat)
+    X = np.array(stat)
+
+    if not np.issubdtype(X.dtype, np.floating):
+        raise ValueError(
+            "The test function should return an iterable of *floats* with length equal to the "
+            f"sample size. The test function returned {stat}."
+        )
+
+    if X.ndim != 1:
+        raise ValueError(
+            "The test function should consume a sample set and return a *flat* iterable of "
+            f"floats. The output of `list(test_function(sample_set))` is {stat}."
+        )
+
+    if X.shape[0] != len(sample_set):
+        raise ValueError("The test function should consume a sample set and return an iterable of "
+                         "floats of *length* equal to the sample size of the sample set. The sample "
+                         f"size of the sample set is {len(sample_set)} and the length of the test "
+                         f"function output has shape {X.shape}.")
+
+    return compute_ess(X.reshape(1, -1), batch_size)
 
 
 def _estimate_replicated_batch_means(x: np.ndarray, batch_size: int) -> float:

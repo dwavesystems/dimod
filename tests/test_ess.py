@@ -21,8 +21,8 @@ from dwave.samplers import RandomSampler
 
 from dimod import BinaryQuadraticModel as BQM
 from dimod.ess import _estimate_replicated_batch_means
-from dimod.ess import estimate_effective_sample_size as estimate_ess
-from dimod.ess import estimate_effective_sample_size_sampleset as estimate_ess_ss
+from dimod.ess import compute_ess as compute_ess
+from dimod.ess import compute_ess_sampleset as estimate_ess_ss
 
 
 class TestEffectiveSampleSize(unittest.TestCase):
@@ -75,33 +75,33 @@ class TestEffectiveSampleSize(unittest.TestCase):
 
         with self.subTest("ESS value should be the same as manually invoking the array version."):
             self.assertEqual(estimate_ess_ss(sample_set, batch_size=5),
-                             estimate_ess(sample_set.record.energy.reshape(1, -1), batch_size=5))
+                             compute_ess(sample_set.record.energy.reshape(1, -1), batch_size=5))
 
         with self.subTest("ESS value should be the same as manually invoking the array version (with custom test function)."):
             self.assertEqual(
                 estimate_ess_ss(sample_set, lambda ss: ss.record.energy ** 2, batch_size=5),
-                estimate_ess(sample_set.record.energy.reshape(1, -1) ** 2, batch_size=5)
+                compute_ess(sample_set.record.energy.reshape(1, -1) ** 2, batch_size=5)
             )
 
     def test_estimate_ess(self):
         with self.subTest("ESS estimate should be undefined for constant input"):
-            self.assertTrue(isnan(estimate_ess(np.ones((100, 1000)))))
+            self.assertTrue(isnan(compute_ess(np.ones((100, 1000)))))
 
         with self.subTest("Null batch size should raise an error."):
             self.assertRaisesRegex(ValueError, "Batch size should be at least three",
-                                   estimate_ess, np.ones((100, 8)))
+                                   compute_ess, np.ones((100, 8)))
 
         with self.subTest("Null batch size should raise an error."):
             self.assertRaisesRegex(ValueError, "Batch size should be at least three",
-                                   estimate_ess, np.ones((100, 1000)), 0)
+                                   compute_ess, np.ones((100, 1000)), 0)
 
         with self.subTest("Batch size larger than chain length should raise an error."):
             self.assertRaisesRegex(ValueError, "Batch size should be at least three",
-                                   estimate_ess, np.ones((100, 1000)), 1001)
+                                   compute_ess, np.ones((100, 1000)), 1001)
 
         with self.subTest("Inputs that are not 2D should raise an error."):
             self.assertRaisesRegex(ValueError, "The input matrix ``x`` should have shape",
-                                   estimate_ess, np.ones((123, 100, 1000)), 234)
+                                   compute_ess, np.ones((123, 100, 1000)), 234)
 
         with self.subTest("Single-batch estimates are incorrect."):
             x = np.array([[0, 1, 2],
@@ -111,7 +111,7 @@ class TestEffectiveSampleSize(unittest.TestCase):
                            - _estimate_replicated_batch_means(x, 1))
             sigma_squared = 2/3*s_squared + tau_squared/3
             answer = 2*3*sigma_squared/tau_squared
-            self.assertAlmostEqual(answer, estimate_ess(x, 3))
+            self.assertAlmostEqual(answer, compute_ess(x, 3))
 
         with self.subTest("Two-batch estimatse are incorrect."):
             x = np.array([[999, 0, 1, 2, 3, 6, 7],
@@ -122,7 +122,7 @@ class TestEffectiveSampleSize(unittest.TestCase):
                            - _estimate_replicated_batch_means(x, 1))
             sigma_squared = 6/7*s_squared + tau_squared/7
             answer = 2*7*sigma_squared/tau_squared
-            self.assertAlmostEqual(answer, estimate_ess(x, 3))
+            self.assertAlmostEqual(answer, compute_ess(x, 3))
 
 
 if __name__ == "__main__":
