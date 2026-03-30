@@ -39,11 +39,13 @@ def compute_ess(x: np.ndarray, batch_size: int | None = None) -> float:
         Metropolis-Hastings samplers (one with one sweep, another with ten sweeps).
 
         Example (1): QPU
-        .. code-block::python
+        .. code-block:: python
+
             import numpy as np
             from dimod.ess import estimate_effective_sample_size
             from dimod.generators import power_r
             from dwave.system import DWaveCliqueSampler
+
             markov_chain_length = 100
             num_vars = 100
             num_chains = 10
