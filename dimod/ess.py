@@ -62,11 +62,14 @@ def compute_ess(x: np.ndarray, batch_size: int | None = None) -> float:
 
 
         Example (2): Metropolis-Hastings
-        .. code-block::python
+
+        .. code-block:: python
+
             import numpy as np
             from dwave.samplers import SimulatedAnnealingSampler
             from dimod.ess import estimate_effective_sample_size
             from dimod.generators import power_r
+
             neal = SimulatedAnnealingSampler()
             markov_chains = []
             markov_chain_length = 100
@@ -93,7 +96,6 @@ def compute_ess(x: np.ndarray, batch_size: int | None = None) -> float:
         Use a larger number of sweeps to achieve larger ESS
         >>> num_sweeps = 10
         Effective sample size per chain (MH): 64.44999653861495
-
 
     Args:
         x: An (m, n) matrix where rows index independent Markov chains and columns index
@@ -157,18 +159,20 @@ def compute_ess_sampleset(
     of states from a single Markov chain. By default, when no test
     function is supplied, the effective sample size is estimated based on the sample set's energies.
 
-
     Examples:
         This example demonstrates a typical use case of the estimator, measuring a QPU sample's
         ESS based on the magnetization of the system.
 
 
         Example (1): QPU
-        .. code-block::python
+
+        .. code-block:: python
+
             import numpy as np
             from dwave.system import DWaveCliqueSampler
             from dimod.ess import estimate_effective_sample_size
             from dimod.generators import power_r
+
             markov_chain_length = 100
             num_vars = 33
             bqm = power_r(512, num_vars)
@@ -177,11 +181,11 @@ def compute_ess_sampleset(
 
             def test_fn(ss):
                 return ss.record.sample.mean(1)
+
             sample_set = qpu.sample(bqm, num_reads=markov_chain_length, answer_mode="raw")
             print("Effective sample size (QPU):",
                   estimate_effective_sample_size_sampleset(sample_set, test_fn))
             # Effective sample size per chain (QPU): 69.69037448554732
-
 
     Args:
         sample_set: A sample set with m ordered reads and n variables. In a typical use case with
