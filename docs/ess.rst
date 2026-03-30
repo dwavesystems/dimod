@@ -1,8 +1,8 @@
 .. _dimod_ess:
 
-=========
+=====================
 Effective Sample Size
-=========
+=====================
 
 The effective sample size (ESS; a formally defined statistic) quantifies the number of
 effectively independent samples drawn from an autocorrelated sampler. For example, samples from
