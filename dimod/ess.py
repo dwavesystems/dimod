@@ -265,7 +265,7 @@ def _estimate_replicated_batch_means(x: np.ndarray, batch_size: int) -> float:
     trimmed_length = batch_size * n_batches
 
     x = x[:, (n - trimmed_length):]
-    ybar = np.mean(np.split(x, n_batches, axis=1), axis=2).mT
+    ybar = np.mean(np.split(x, n_batches, axis=1), axis=2).T
 
     res = batch_size * np.var(ybar, ddof=1)
     # NOTE: this is equivalent to
