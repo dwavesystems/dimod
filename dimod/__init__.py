@@ -65,5 +65,8 @@ import dimod.utilities
 
 from dimod.vartypes import *
 
+import dimod.ess
+from dimod.ess import compute_ess, compute_ess_sampleset
+
 # flags for some global features
 REAL_INTERACTIONS = False

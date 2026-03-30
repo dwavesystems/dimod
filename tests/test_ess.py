@@ -1,0 +1,130 @@
+# Copyright 2026 D-Wave
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+
+"""Test effective sample size estimation."""
+import unittest
+from math import isnan
+
+import numpy as np
+
+from dimod import BinaryQuadraticModel as BQM
+from dimod import SampleSet
+from dimod.ess import _estimate_replicated_batch_means
+from dimod.ess import compute_ess as compute_ess
+from dimod.ess import compute_ess_sampleset as estimate_ess_ss
+
+
+class TestEffectiveSampleSize(unittest.TestCase):
+
+    def test_estimate_ess_sample_set(self):
+        num_vars = 64
+        bqm = BQM('SPIN').from_ising({i: i % 2-i for i in range(num_vars)}, {})
+        num_reads = 100
+        rng = np.random.default_rng(123)
+        sample_set = SampleSet.from_samples_bqm(rng.binomial(1, 0.5, (num_reads, 64))*2-1, bqm)
+
+        with self.subTest("Invalid test function output (wrong signature) should raise an error."):
+            self.assertRaisesRegex(
+                RuntimeError,
+                "Test function raised an error. Does the test function have the correct signature?",
+                estimate_ess_ss, sample_set, lambda: 1
+            )
+
+        with self.subTest("Invalid test function (runtime error) should raise an error."):
+            def dummy(ss):
+                raise NotImplementedError()
+            self.assertRaisesRegex(
+                RuntimeError,
+                "Test function raised an error. Does the test function have the correct signature?",
+                estimate_ess_ss, sample_set, dummy
+            )
+
+        with self.subTest("Invalid test function output (output too short) should raise an error."):
+            self.assertRaisesRegex(
+                ValueError,
+                "floats of \*length\* equal to the sample size of the sample set. The sample",
+                estimate_ess_ss, sample_set, lambda ss: [1.0])
+
+        with self.subTest("Invalid test function output (nonfloat output) should raise an error."):
+            self.assertRaisesRegex(
+                ValueError,
+                "The test function should return an iterable of \*floats\* with length equal to the",
+                estimate_ess_ss, sample_set, lambda ss: [None, "hey"])
+
+        with self.subTest("Invalid test function output (noniterable output) should raise an error."):
+            self.assertRaisesRegex(
+                ValueError,
+                "The test function should return an \*iterable\* of floats with length equal to the",
+                estimate_ess_ss, sample_set, lambda ss: None)
+
+        with self.subTest("Invalid test function output (matrix output) should raise an error."):
+            self.assertRaisesRegex(
+                ValueError,
+                "The test function should consume a sample set and return a \*flat\* iterable of",
+                estimate_ess_ss, sample_set, lambda ss: [[1.0]])
+
+        with self.subTest("ESS value should be the same as manually invoking the array version."):
+            self.assertEqual(estimate_ess_ss(sample_set, batch_size=5),
+                             compute_ess(sample_set.record.energy.reshape(1, -1), batch_size=5))
+
+        with self.subTest("ESS value should be the same as manually invoking the array version (with custom test function)."):
+            self.assertEqual(
+                estimate_ess_ss(sample_set, lambda ss: ss.record.energy ** 2, batch_size=5),
+                compute_ess(sample_set.record.energy.reshape(1, -1) ** 2, batch_size=5)
+            )
+
+    def test_estimate_ess(self):
+        with self.subTest("ESS estimate should be undefined for constant input"):
+            self.assertTrue(isnan(compute_ess(np.ones((100, 1000)))))
+
+        with self.subTest("Null batch size should raise an error."):
+            self.assertRaisesRegex(ValueError, "Batch size should be at least three",
+                                   compute_ess, np.ones((100, 8)))
+
+        with self.subTest("Null batch size should raise an error."):
+            self.assertRaisesRegex(ValueError, "Batch size should be at least three",
+                                   compute_ess, np.ones((100, 1000)), 0)
+
+        with self.subTest("Batch size larger than chain length should raise an error."):
+            self.assertRaisesRegex(ValueError, "Batch size should be at least three",
+                                   compute_ess, np.ones((100, 1000)), 1001)
+
+        with self.subTest("Inputs that are not 2D should raise an error."):
+            self.assertRaisesRegex(ValueError, "The input matrix ``x`` should have shape",
+                                   compute_ess, np.ones((123, 100, 1000)), 234)
+
+        with self.subTest("Single-batch estimates are incorrect."):
+            x = np.array([[0, 1, 2],
+                          [0, 2, 4]])
+            s_squared = (np.var([0, 1, 2], ddof=1) + np.var([0, 2, 4], ddof=1))/2
+            tau_squared = (2 * _estimate_replicated_batch_means(x, 3)
+                           - _estimate_replicated_batch_means(x, 1))
+            sigma_squared = 2/3*s_squared + tau_squared/3
+            answer = 2*3*sigma_squared/tau_squared
+            self.assertAlmostEqual(answer, compute_ess(x, 3))
+
+        with self.subTest("Two-batch estimatse are incorrect."):
+            x = np.array([[999, 0, 1, 2, 3, 6, 7],
+                          [999, 0, 2, 4, 4, 6, 7]])
+            s_squared = (np.var([999, 0, 1, 2, 3, 6, 7], ddof=1)
+                         + np.var([999, 0, 2, 4, 4, 6, 7], ddof=1))/2
+            tau_squared = (2 * _estimate_replicated_batch_means(x, 3)
+                           - _estimate_replicated_batch_means(x, 1))
+            sigma_squared = 6/7*s_squared + tau_squared/7
+            answer = 2*7*sigma_squared/tau_squared
+            self.assertAlmostEqual(answer, compute_ess(x, 3))
+
+
+if __name__ == "__main__":
+    unittest.main()

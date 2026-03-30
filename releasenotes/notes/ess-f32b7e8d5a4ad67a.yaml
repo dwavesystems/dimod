@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add estimator for effective sample size based on
+    `<Revisiting the Gelman-Rubin Diagnostic https://arxiv.org/abs/1812.09384>`_.
