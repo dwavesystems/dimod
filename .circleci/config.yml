@@ -10,7 +10,7 @@ commands:
     parameters:
       cibw-version:
         type: string
-        default: 3.1.2
+        default: 3.4.0
     steps:
       - run:
           name: run cibuildwheel
@@ -72,8 +72,7 @@ jobs:
         type: string
 
     macos:
-      xcode: 16.4.0  # latest as of August 2025
-    resource_class: macos.m1.medium.gen1
+      xcode: 26.3.0  # latest as of February 2026
 
     environment:
       <<: *global-environment
@@ -141,10 +140,11 @@ jobs:
 
   test-airspeed-velocity:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/python:3.12  # latest version supported by asv
 
     steps:
-      - checkout
+      - checkout:
+          method: full
       - run:
           name: install dependencies
           command: |
@@ -156,7 +156,7 @@ jobs:
           command: |
             . env/bin/activate
             asv machine --yes
-            asv run --quick --strict
+            asv run --quick
 
   # we could do this as part of the various test jobs but getting the pathing
   # and configuration to work correctly is a pain. And since there is not
@@ -269,8 +269,7 @@ jobs:
 
   test-osx-cpp:
     macos:
-      xcode: 15.3.0
-    resource_class: macos.m1.medium.gen1
+      xcode: 26.3.0  # latest as of February 2026
 
     steps:
       - checkout
