@@ -13,13 +13,10 @@
 #    limitations under the License.
 
 import itertools
-import warnings
 
 import dimod
 
-__all__ = ['is_matching',
-           'is_maximal_matching',
-           'matching_bqm',
+__all__ = ['matching_bqm',
            'maximal_matching_bqm',
            'min_maximal_matching',
            'min_maximal_matching_bqm',
@@ -294,38 +291,3 @@ def min_maximal_matching(G, sampler, **sampler_args):
 
     # the matching are the edges that are 1 in the sample
     return set(tuple(edge) for edge, val in sample.items() if val > 0)
-
-
-def is_matching(edges):
-    """Determine whether the given set of edges is a matching.
-
-    Deprecated in favour of :func:`networkx.is_matching`.
-    """
-    warnings.warn("This method is deprecated, please use NetworkX's"
-                  "nx.is_matching(G, edges) rather than "
-                  "dwave.graphs.is_matching(edges)", DeprecationWarning, stacklevel=2)
-    return len(set().union(*edges)) == len(edges) * 2
-
-
-def is_maximal_matching(G, matching):
-    """Determine whether the given set of edges is a maximal matching.
-
-    Deprecated in favour of :func:`networkx.is_matching`.
-    """
-    warnings.warn("This method is deprecated, please use NetworkX's"
-                  "nx.is_maximal_matching(G, edges) rather than "
-                  "dwave.graphs.is_maximal_matching(G, edges)",
-                  DeprecationWarning, stacklevel=2)
-    touched_nodes = set().union(*matching)
-
-    # first check if a matching
-    if len(touched_nodes) != len(matching) * 2:
-        return False
-
-    # now for each edge, check that at least one of its variables is
-    # already in the matching
-    for (u, v) in G.edges:
-        if u not in touched_nodes and v not in touched_nodes:
-            return False
-
-    return True
