@@ -17,14 +17,7 @@ import itertools
 
 import networkx as nx
 
-from dwave_networkx.utils import binary_quadratic_model_sampler
-
-__all__ = ["is_vertex_coloring",
-           "is_cycle",
-           "min_vertex_color",
-           "min_vertex_coloring",  # alias for min_vertex_color
-           "min_vertex_color_qubo",
-           "vertex_color",
+__all__ = ["min_vertex_color_qubo",
            "vertex_color_qubo",
            ]
 
@@ -80,60 +73,6 @@ def vertex_color_qubo(G, colors):
             Q[(u, c), (v, c)] = 1
 
     return Q
-
-
-@binary_quadratic_model_sampler(2)
-def vertex_color(G, colors, sampler=None, **sampler_args):
-    """Returns an approximate vertex coloring.
-
-    Vertex coloring is the problem of assigning a color to the
-    vertices of a graph in a way that no adjacent vertices have the
-    same color.
-
-    Defines a QUBO [Dah2013]_ with ground states corresponding to valid
-    vertex colorings and uses the sampler to sample from it.
-
-    Parameters
-    ----------
-    G : NetworkX graph
-        The graph on which to find a minimum vertex coloring.
-
-    colors : int/sequence
-        The colors. If an int, the colors are labelled `[0, n)`. The number of
-        colors must be greater or equal to the chromatic number of the graph.
-
-    sampler
-        A binary quadratic model sampler. A sampler is a process that
-        samples from low energy states in models defined by an Ising
-        equation or a Quadratic Unconstrained Binary Optimization
-        Problem (QUBO). A sampler is expected to have a 'sample_qubo'
-        and 'sample_ising' method. A sampler is expected to return an
-        iterable of samples, in order of increasing energy. If no
-        sampler is provided, one must be provided using the
-        `set_default_sampler` function.
-
-    sampler_args
-        Additional keyword parameters are passed to the sampler.
-
-    Returns
-    -------
-    coloring : dict
-        A coloring for each vertex in G such that no adjacent nodes
-        share the same color. A dict of the form {node: color, ...}
-
-    Notes
-    -----
-    Samplers by their nature may not return the optimal solution. This
-    function does not attempt to confirm the quality of the returned
-    sample.
-
-    """
-    Q = vertex_color_qubo(G, colors)
-
-    # get the lowest energy sample
-    sample = sampler.sample_qubo(Q, **sampler_args).first.sample
-
-    return {v: c for (v, c), val in sample.items() if val}
 
 
 def _chromatic_number_upper_bound(G):
@@ -255,72 +194,6 @@ def min_vertex_color_qubo(G, chromatic_lb=None, chromatic_ub=None):
     return Q
 
 
-@binary_quadratic_model_sampler(1)
-def min_vertex_color(G, sampler=None, chromatic_lb=None, chromatic_ub=None,
-                     **sampler_args):
-    """Returns an approximate minimum vertex coloring.
-
-    Vertex coloring is the problem of assigning a color to the
-    vertices of a graph in a way that no adjacent vertices have the
-    same color. A minimum vertex coloring is the problem of solving
-    the vertex coloring problem using the smallest number of colors.
-
-    Defines a QUBO [Dah2013]_ with ground states corresponding to minimum
-    vertex colorings and uses the sampler to sample from it.
-
-    Parameters
-    ----------
-    G : NetworkX graph
-        The graph on which to find a minimum vertex coloring.
-
-    sampler
-        A binary quadratic model sampler. A sampler is a process that
-        samples from low energy states in models defined by an Ising
-        equation or a Quadratic Unconstrained Binary Optimization
-        Problem (QUBO). A sampler is expected to have a 'sample_qubo'
-        and 'sample_ising' method. A sampler is expected to return an
-        iterable of samples, in order of increasing energy. If no
-        sampler is provided, one must be provided using the
-        `set_default_sampler` function.
-
-    chromatic_lb : int, optional
-         A lower bound on the chromatic number. If one is not provided, a
-         bound is calulcated.
-
-    chromatic_ub : int, optional
-        An upper bound on the chromatic number. If one is not provided, a bound
-        is calculated.
-
-    sampler_args
-        Additional keyword parameters are passed to the sampler.
-
-    Returns
-    -------
-    coloring : dict
-        A coloring for each vertex in G such that no adjacent nodes
-        share the same color. A dict of the form {node: color, ...}
-
-    Notes
-    -----
-    Samplers by their nature may not return the optimal solution. This
-    function does not attempt to confirm the quality of the returned
-    sample.
-
-    """
-
-    Q = min_vertex_color_qubo(G, chromatic_lb=chromatic_lb,
-                              chromatic_ub=chromatic_ub)
-
-    # get the lowest energy sample
-    sample = sampler.sample_qubo(Q, **sampler_args).first.sample
-
-    return {v: c for (v, c), val in sample.items() if val}
-
-
-# legacy name, alias
-min_vertex_coloring = min_vertex_color
-
-
 def is_cycle(G):
     """Determines whether the given graph is a cycle or circle graph.
 
@@ -364,40 +237,3 @@ def is_cycle(G):
 
     # if we haven't visited all of the nodes, then it is not a connected cycle
     return n_visited == len(G)
-
-
-def is_vertex_coloring(G, coloring):
-    """Determines whether the given coloring is a vertex coloring of graph G.
-
-    Parameters
-    ----------
-    G : NetworkX graph
-        The graph on which the vertex coloring is applied.
-
-    coloring : dict
-        A coloring of the nodes of G. Should be a dict of the form
-        {node: color, ...}.
-
-    Returns
-    -------
-    is_vertex_coloring : bool
-        True if the given coloring defines a vertex coloring; that is, no
-        two adjacent vertices share a color.
-
-    Example
-    -------
-    This example colors checks two colorings for a graph, G, of a single Chimera
-    unit cell. The first uses one color (0) for the four horizontal qubits
-    and another (1) for the four vertical qubits, in which case there are
-    no adjacencies; the second coloring swaps the color of one node.
-
-    >>> G = dnx.chimera_graph(1,1,4)
-    >>> colors = {0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 1, 6: 1, 7: 1}
-    >>> dnx.is_vertex_coloring(G, colors)
-    True
-    >>> colors[4]=0
-    >>> dnx.is_vertex_coloring(G, colors)
-    False
-
-   """
-    return all(coloring[u] != coloring[v] for u, v in G.edges)
