@@ -16,6 +16,7 @@ from dimod.generators.anti_crossing import *
 from dimod.generators.binpacking import *
 from dimod.generators.bpsp import *
 from dimod.generators.chimera import *
+from dimod.generators.coloring import *
 from dimod.generators.constraints import *
 from dimod.generators.fcl import *
 from dimod.generators.gates import *
@@ -23,8 +24,13 @@ from dimod.generators.graph import *
 from dimod.generators.integer import *
 from dimod.generators.knapsack import *
 from dimod.generators.magic_square import *
+from dimod.generators.markov import *
+from dimod.generators.matching import *
 from dimod.generators.multi_knapsack import *
 from dimod.generators.quadratic_assignment import *
+from dimod.generators.partition import *
 from dimod.generators.random import *
 from dimod.generators.satisfiability import *
+from dimod.generators.social import *
+from dimod.generators.tsp import *
 from dimod.generators.wireless import *
