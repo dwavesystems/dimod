@@ -28,6 +28,15 @@ except ImportError:
 else:
     _networkx = True
 
+# TODO: update to dwave-graphs once released
+try:
+    import dwave_networkx as dnx
+except ImportError:
+    _dnx = False
+else:
+    _dnx = True
+
+
 class TestRandomGNMRandomBQM(unittest.TestCase):
     def test_bias_generator(self):
         def gen(n):
@@ -1883,9 +1892,10 @@ class TestMinVertexColorQubo(unittest.TestCase):
         G = nx.cycle_graph('abcd')
 
         # when the chromatic number is fixed this is exactly vertex_color
-        self.assertEqual(dnx.min_vertex_color_qubo(G, chromatic_lb=2,
-                                                   chromatic_ub=2),
-                         dnx.vertex_color_qubo(G, 2))
+        self.assertEqual(
+            dimod.generators.coloring.min_vertex_color_qubo(G, chromatic_lb=2, chromatic_ub=2),
+            dimod.generators.coloring.vertex_color_qubo(G, 2)
+        )
 
 
 class TestVertexColorQUBO(unittest.TestCase):
@@ -1894,14 +1904,14 @@ class TestVertexColorQUBO(unittest.TestCase):
         G.add_node('a')
 
         # a single color
-        Q = dnx.vertex_color_qubo(G, ['red'])
+        Q = dimod.generators.coloring.vertex_color_qubo(G, ['red'])
 
         self.assertEqual(Q, {(('a', 'red'), ('a', 'red')): -1})
 
     def test_4cycle(self):
         G = nx.cycle_graph('abcd')
 
-        Q = dnx.vertex_color_qubo(G, 2)
+        Q = dimod.generators.coloring.vertex_color_qubo(G, 2)
 
         sampleset = dimod.ExactSolver().sample_qubo(Q)
 
@@ -1918,7 +1928,8 @@ class TestVertexColorQUBO(unittest.TestCase):
                 if val:
                     coloring[v] = c
 
-            self.assertTrue(dnx.is_vertex_coloring(G, coloring))
+            is_vertex_coloring = all(coloring[u] != coloring[v] for u, v in G.edges)
+            self.assertTrue(is_vertex_coloring)
 
             colorings.append(coloring)
 
@@ -1931,13 +1942,13 @@ class TestVertexColorQUBO(unittest.TestCase):
         G = nx.Graph()
         G.add_nodes_from(range(15))
 
-        Q = dnx.vertex_color_qubo(G, 7)
+        Q = dimod.generators.coloring.vertex_color_qubo(G, 7)
         bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
         self.assertEqual(len(bqm.quadratic), len(G)*7*(7-1)/2)
 
         # add one edge
         G.add_edge(0, 1)
-        Q = dnx.vertex_color_qubo(G, 7)
+        Q = dimod.generators.coloring.vertex_color_qubo(G, 7)
         bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
         self.assertEqual(len(bqm.quadratic), len(G)*7*(7-1)/2 + 7)
 
@@ -1947,7 +1958,7 @@ class TestVertexColorQUBO(unittest.TestCase):
 
         colors = range(10)
 
-        Q = dnx.vertex_color_qubo(G, colors)
+        Q = dimod.generators.coloring.vertex_color_qubo(G, colors)
 
         bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
 
@@ -1956,11 +1967,12 @@ class TestVertexColorQUBO(unittest.TestCase):
                          + len(G.edges)*len(colors))
 
 
+@unittest.skipUnless(_dnx, "no dwave-graphs installed")
 class Test_sample_markov_network_bqm(unittest.TestCase):
     def test_one_node(self):
         potentials = {'a': {(0,): 1.2, (1,): .4}}
 
-        bqm = dnx.markov_network_bqm(dnx.markov_network(potentials))
+        bqm = dimod.generators.markov.markov_network_bqm(dnx.markov_network(potentials))
 
         for edge, potential in potentials.items():
             for config, energy in potential.items():
@@ -1971,7 +1983,7 @@ class Test_sample_markov_network_bqm(unittest.TestCase):
         potentials = {'ab': {(0, 0): 1.2, (1, 0): .4,
                              (0, 1): 1.3, (1, 1): -4}}
 
-        bqm = dnx.markov_network_bqm(dnx.markov_network(potentials))
+        bqm = dimod.generators.markov.markov_network_bqm(dnx.markov_network(potentials))
 
         for edge, potential in potentials.items():
             for config, energy in potential.items():
@@ -1986,7 +1998,7 @@ class Test_sample_markov_network_bqm(unittest.TestCase):
                              (0, 1): -1, (1, 1): -4},
                       'd': {(0,): -.5, (1,): 1.6}}
 
-        bqm = dnx.markov_network_bqm(dnx.markov_network(potentials))
+        bqm = dimod.generators.markov.markov_network_bqm(dnx.markov_network(potentials))
 
         samples = dimod.ExactSolver().sample(bqm)
 
@@ -2008,14 +2020,12 @@ class Test_sample_markov_network_bqm(unittest.TestCase):
      [nx.Graph([(0, 1), (0, 2), (1, 2), (1, 3), (2, 4), (3, 4), (3, 5)])],
      [nx.Graph([(0, 1), (0, 2), (1, 2), (1, 3), (1, 4), (1, 5)])],
      [nx.Graph([(0, 1), (0, 2), (1, 2), (1, 3), (2, 4), (3, 4)])],
-     [nx.Graph({0: [], 1: [6], 2: [5], 3: [4], 4: [3], 2: [5], 6: [1]})]
-     # [nx.Graph([(0, 3), (0, 5), (0, 6), (1, 2), (1, 3), (1, 4), (1, 7),
-     #            (2, 4), (2, 6), (3, 6), (3, 7), (4, 7), (6, 7)])],  # slow
+     [nx.Graph({0: [], 1: [6], 2: [5], 3: [4], 4: [3], 2: [5], 6: [1]})],
      ]
     )
 class TestMatching(unittest.TestCase):
     def test_matching_bqm(self):
-        bqm = dnx.matching_bqm(self.graph)
+        bqm = dimod.generators.matching.matching_bqm(self.graph)
 
         # the ground states should be exactly the matchings of G
         sampleset = dimod.ExactSolver().sample(bqm)
@@ -2025,13 +2035,8 @@ class TestMatching(unittest.TestCase):
             self.assertEqual(nx.is_matching(self.graph, edges), energy == 0)
             self.assertTrue(energy == 0 or energy >= 1)
 
-    def test_maximal_matching(self):
-        matching = dnx.algorithms.matching.maximal_matching(
-            self.graph, dimod.ExactSolver())
-        self.assertTrue(nx.is_maximal_matching(self.graph, matching))
-
     def test_maximal_matching_bqm(self):
-        bqm = dnx.maximal_matching_bqm(self.graph)
+        bqm = dimod.generators.matching.maximal_matching_bqm(self.graph)
 
         # the ground states should be exactly the maximal matchings of G
         sampleset = dimod.ExactSolver().sample(bqm)
@@ -2042,12 +2047,8 @@ class TestMatching(unittest.TestCase):
                              energy == 0)
             self.assertGreaterEqual(energy, 0)
 
-    def test_min_maximal_matching(self):
-        matching = dnx.min_maximal_matching(self.graph, dimod.ExactSolver())
-        self.assertTrue(nx.is_maximal_matching(self.graph, matching))
-
     def test_min_maximal_matching_bqm(self):
-        bqm = dnx.min_maximal_matching_bqm(self.graph)
+        bqm = dimod.generators.matching.min_maximal_matching_bqm(self.graph)
 
         if len(self.graph) == 0:
             self.assertEqual(len(bqm.linear), 0)
@@ -2082,7 +2083,7 @@ class TestMatching(unittest.TestCase):
 
 class TestTSPQUBO(unittest.TestCase):
     def test_empty(self):
-        Q = dnx.traveling_salesperson_qubo(nx.Graph())
+        Q = dimod.generators.tsp.traveling_salesperson_qubo(nx.Graph())
         self.assertEqual(Q, {})
 
     def test_k3(self):
@@ -2092,7 +2093,7 @@ class TestTSPQUBO(unittest.TestCase):
                                    ('b', 'c', 1.0),
                                    ('a', 'c', 2.0)])
 
-        Q = dnx.traveling_salesperson_qubo(G, lagrange=10)
+        Q = dimod.generators.tsp.traveling_salesperson_qubo(G, lagrange=10)
         bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
 
         # all routes are min weight
@@ -2127,7 +2128,7 @@ class TestTSPQUBO(unittest.TestCase):
                                    ('a', 'c', 2.0),
                                    ('c', 'a', 2.0)])
 
-        Q = dnx.traveling_salesperson_qubo(G, lagrange=10)
+        Q = dimod.generators.tsp.traveling_salesperson_qubo(G, lagrange=10)
         bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
 
         # all routes are min weight
@@ -2160,7 +2161,7 @@ class TestTSPQUBO(unittest.TestCase):
             ('b', 'c', 1.0),
             ('a', 'c', 2.0),
         ])
-        Q1 = dnx.traveling_salesperson_qubo(G1, lagrange=10)
+        Q1 = dimod.generators.tsp.traveling_salesperson_qubo(G1, lagrange=10)
 
         G2 = nx.Graph()
         G2.add_weighted_edges_from([
@@ -2168,7 +2169,7 @@ class TestTSPQUBO(unittest.TestCase):
             ('a', 'c', 2.0),
         ])
         # make sure that missing_edge_weight gets applied correctly
-        Q2 = dnx.traveling_salesperson_qubo(G2, lagrange=10, missing_edge_weight=1.0)
+        Q2 = dimod.generators.tsp.traveling_salesperson_qubo(G2, lagrange=10, missing_edge_weight=1.0)
 
         self.assertDictEqual(Q1, Q2)
 
@@ -2182,7 +2183,7 @@ class TestTSPQUBO(unittest.TestCase):
             ('a', 'c', 2.0),
             ('c', 'a', 2.0),
         ])
-        Q1 = dnx.traveling_salesperson_qubo(G1, lagrange=10)
+        Q1 = dimod.generators.tsp.traveling_salesperson_qubo(G1, lagrange=10)
 
         G2 = nx.DiGraph()
         G2.add_weighted_edges_from([
@@ -2194,7 +2195,7 @@ class TestTSPQUBO(unittest.TestCase):
         ])
 
         # make sure that missing_edge_weight gets applied correctly
-        Q2 = dnx.traveling_salesperson_qubo(G2, lagrange=10, missing_edge_weight=1.0)
+        Q2 = dimod.generators.tsp.traveling_salesperson_qubo(G2, lagrange=10, missing_edge_weight=1.0)
 
         self.assertDictEqual(Q1, Q2)
 
@@ -2204,7 +2205,7 @@ class TestTSPQUBO(unittest.TestCase):
         G.add_weighted_edges_from((u, v, .5)
                                   for u, v in itertools.combinations(range(4), 2))
 
-        Q = dnx.traveling_salesperson_qubo(G, lagrange=10)
+        Q = dimod.generators.tsp.traveling_salesperson_qubo(G, lagrange=10)
         bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
 
         # all routes are min weight
@@ -2240,7 +2241,7 @@ class TestTSPQUBO(unittest.TestCase):
                                    (0, 2, 2),
                                    (1, 3, 2)])
 
-        Q = dnx.traveling_salesperson_qubo(G, lagrange=10)
+        Q = dimod.generators.tsp.traveling_salesperson_qubo(G, lagrange=10)
         bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
 
         # good routes won't have 0<->2 or 1<->3
@@ -2281,7 +2282,7 @@ class TestTSPQUBO(unittest.TestCase):
 
         lagrange = 5.0
 
-        Q = dnx.traveling_salesperson_qubo(G, lagrange, 'weight')
+        Q = dimod.generators.tsp.traveling_salesperson_qubo(G, lagrange, 'weight')
 
         N = G.number_of_nodes()
         correct_sum = G.size('weight')*2*N-2*N*N*lagrange+2*N*N*(N-1)*lagrange
@@ -2293,7 +2294,7 @@ class TestTSPQUBO(unittest.TestCase):
     def test_exceptions(self):
         G = nx.Graph([(0, 1)])
         with self.assertRaises(ValueError):
-            dnx.traveling_salesperson_qubo(G)
+            dimod.generators.tsp.traveling_salesperson_qubo(G)
 
     def test_docstring_size(self):
         # in the docstring we state the size of the resulting BQM, this checks
@@ -2303,7 +2304,7 @@ class TestTSPQUBO(unittest.TestCase):
             G.add_weighted_edges_from((u, v, .5)
                                       for u, v
                                       in itertools.combinations(range(n), 2))
-            Q = dnx.traveling_salesperson_qubo(G)
+            Q = dimod.generators.tsp.traveling_salesperson_qubo(G)
             bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
 
             self.assertEqual(len(bqm), n**2)
