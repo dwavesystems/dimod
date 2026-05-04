@@ -19,6 +19,7 @@ import dimod
 import itertools
 
 import numpy as np
+import parameterized
 
 try:
     import networkx as nx
@@ -1875,3 +1876,435 @@ class TestQuadraticAssignment(unittest.TestCase):
             x = {f'x_{i}_{j}': 1 if i==j else 0 for i in range(num_locations)}
             lhs = cqm.constraints[f'facility_constraint_{j}'].lhs.energy(x)
             self.assertEqual(lhs, 0)
+
+
+class TestMinVertexColorQubo(unittest.TestCase):
+    def test_chromatic_number(self):
+        G = nx.cycle_graph('abcd')
+
+        # when the chromatic number is fixed this is exactly vertex_color
+        self.assertEqual(dnx.min_vertex_color_qubo(G, chromatic_lb=2,
+                                                   chromatic_ub=2),
+                         dnx.vertex_color_qubo(G, 2))
+
+
+class TestVertexColorQUBO(unittest.TestCase):
+    def test_single_node(self):
+        G = nx.Graph()
+        G.add_node('a')
+
+        # a single color
+        Q = dnx.vertex_color_qubo(G, ['red'])
+
+        self.assertEqual(Q, {(('a', 'red'), ('a', 'red')): -1})
+
+    def test_4cycle(self):
+        G = nx.cycle_graph('abcd')
+
+        Q = dnx.vertex_color_qubo(G, 2)
+
+        sampleset = dimod.ExactSolver().sample_qubo(Q)
+
+        # check that the ground state is a valid coloring
+        ground_energy = sampleset.first.energy
+
+        colorings = []
+        for sample, en in sampleset.data(['sample', 'energy']):
+            if en > ground_energy:
+                break
+
+            coloring = {}
+            for (v, c), val in sample.items():
+                if val:
+                    coloring[v] = c
+
+            self.assertTrue(dnx.is_vertex_coloring(G, coloring))
+
+            colorings.append(coloring)
+
+        # there are two valid colorings
+        self.assertEqual(len(colorings), 2)
+
+        self.assertEqual(ground_energy, -len(G))
+
+    def test_num_variables(self):
+        G = nx.Graph()
+        G.add_nodes_from(range(15))
+
+        Q = dnx.vertex_color_qubo(G, 7)
+        bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+        self.assertEqual(len(bqm.quadratic), len(G)*7*(7-1)/2)
+
+        # add one edge
+        G.add_edge(0, 1)
+        Q = dnx.vertex_color_qubo(G, 7)
+        bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+        self.assertEqual(len(bqm.quadratic), len(G)*7*(7-1)/2 + 7)
+
+    def test_docstring_stats(self):
+        # get a complex-ish graph
+        G = nx.karate_club_graph()
+
+        colors = range(10)
+
+        Q = dnx.vertex_color_qubo(G, colors)
+
+        bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+
+        self.assertEqual(len(bqm), len(G)*len(colors))
+        self.assertEqual(len(bqm.quadratic), len(G)*len(colors)*(len(colors)-1)/2
+                         + len(G.edges)*len(colors))
+
+
+class Test_sample_markov_network_bqm(unittest.TestCase):
+    def test_one_node(self):
+        potentials = {'a': {(0,): 1.2, (1,): .4}}
+
+        bqm = dnx.markov_network_bqm(dnx.markov_network(potentials))
+
+        for edge, potential in potentials.items():
+            for config, energy in potential.items():
+                sample = dict(zip(edge, config))
+                self.assertAlmostEqual(bqm.energy(sample), energy)
+
+    def test_one_edge(self):
+        potentials = {'ab': {(0, 0): 1.2, (1, 0): .4,
+                             (0, 1): 1.3, (1, 1): -4}}
+
+        bqm = dnx.markov_network_bqm(dnx.markov_network(potentials))
+
+        for edge, potential in potentials.items():
+            for config, energy in potential.items():
+                sample = dict(zip(edge, config))
+                self.assertAlmostEqual(bqm.energy(sample), energy)
+
+    def test_typical(self):
+        potentials = {'a': {(0,): 1.5, (1,): -.5},
+                      'ab': {(0, 0): 1.2, (1, 0): .4,
+                             (0, 1): 1.3, (1, 1): -4},
+                      'bc': {(0, 0): 1.7, (1, 0): .4,
+                             (0, 1): -1, (1, 1): -4},
+                      'd': {(0,): -.5, (1,): 1.6}}
+
+        bqm = dnx.markov_network_bqm(dnx.markov_network(potentials))
+
+        samples = dimod.ExactSolver().sample(bqm)
+
+        for sample, energy in samples.data(['sample', 'energy']):
+
+            en = 0
+            for interaction, potential in potentials.items():
+                config = tuple(sample[v] for v in interaction)
+                en += potential[config]
+
+            self.assertAlmostEqual(en, energy)
+
+
+@parameterized.parameterized_class(
+    'graph',
+    [[nx.Graph()],
+     [nx.path_graph(10)],
+     [nx.complete_graph(4)],
+     [nx.Graph([(0, 1), (0, 2), (1, 2), (1, 3), (2, 4), (3, 4), (3, 5)])],
+     [nx.Graph([(0, 1), (0, 2), (1, 2), (1, 3), (1, 4), (1, 5)])],
+     [nx.Graph([(0, 1), (0, 2), (1, 2), (1, 3), (2, 4), (3, 4)])],
+     [nx.Graph({0: [], 1: [6], 2: [5], 3: [4], 4: [3], 2: [5], 6: [1]})]
+     # [nx.Graph([(0, 3), (0, 5), (0, 6), (1, 2), (1, 3), (1, 4), (1, 7),
+     #            (2, 4), (2, 6), (3, 6), (3, 7), (4, 7), (6, 7)])],  # slow
+     ]
+    )
+class TestMatching(unittest.TestCase):
+    def test_matching_bqm(self):
+        bqm = dnx.matching_bqm(self.graph)
+
+        # the ground states should be exactly the matchings of G
+        sampleset = dimod.ExactSolver().sample(bqm)
+
+        for sample, energy in sampleset.data(['sample', 'energy']):
+            edges = [v for v, val in sample.items() if val > 0]
+            self.assertEqual(nx.is_matching(self.graph, edges), energy == 0)
+            self.assertTrue(energy == 0 or energy >= 1)
+
+    def test_maximal_matching(self):
+        matching = dnx.algorithms.matching.maximal_matching(
+            self.graph, dimod.ExactSolver())
+        self.assertTrue(nx.is_maximal_matching(self.graph, matching))
+
+    def test_maximal_matching_bqm(self):
+        bqm = dnx.maximal_matching_bqm(self.graph)
+
+        # the ground states should be exactly the maximal matchings of G
+        sampleset = dimod.ExactSolver().sample(bqm)
+
+        for sample, energy in sampleset.data(['sample', 'energy']):
+            edges = set(v for v, val in sample.items() if val > 0)
+            self.assertEqual(nx.is_maximal_matching(self.graph, edges),
+                             energy == 0)
+            self.assertGreaterEqual(energy, 0)
+
+    def test_min_maximal_matching(self):
+        matching = dnx.min_maximal_matching(self.graph, dimod.ExactSolver())
+        self.assertTrue(nx.is_maximal_matching(self.graph, matching))
+
+    def test_min_maximal_matching_bqm(self):
+        bqm = dnx.min_maximal_matching_bqm(self.graph)
+
+        if len(self.graph) == 0:
+            self.assertEqual(len(bqm.linear), 0)
+            return
+
+        # the ground states should be exactly the minimum maximal matchings of
+        # G
+        sampleset = dimod.ExactSolver().sample(bqm)
+
+        # we'd like to use sampleset.lowest() but it didn't exist in dimod
+        # 0.8.0
+        ground_energy = sampleset.first.energy
+        cardinalities = set()
+        for sample, energy in sampleset.data(['sample', 'energy']):
+            if energy > ground_energy:
+                continue
+            edges = set(v for v, val in sample.items() if val > 0)
+            self.assertTrue(nx.is_maximal_matching(self.graph, edges))
+            cardinalities.add(len(edges))
+
+        # all ground have the same cardinality (or it's empty)
+        self.assertEqual(len(cardinalities), 1)
+        cardinality, = cardinalities
+
+        # everything that's not ground has a higher energy
+        for sample, energy in sampleset.data(['sample', 'energy']):
+            edges = set(v for v, val in sample.items() if val > 0)
+            if energy != sampleset.first.energy:
+                if nx.is_maximal_matching(self.graph, edges):
+                    self.assertGreater(len(edges), cardinality)
+
+
+class TestTSPQUBO(unittest.TestCase):
+    def test_empty(self):
+        Q = dnx.traveling_salesperson_qubo(nx.Graph())
+        self.assertEqual(Q, {})
+
+    def test_k3(self):
+        # 3cycle so all paths are equally good
+        G = nx.Graph()
+        G.add_weighted_edges_from([('a', 'b', 0.5),
+                                   ('b', 'c', 1.0),
+                                   ('a', 'c', 2.0)])
+
+        Q = dnx.traveling_salesperson_qubo(G, lagrange=10)
+        bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+
+        # all routes are min weight
+        min_routes = list(itertools.permutations(G.nodes))
+
+        # get the min energy of the qubo
+        sampleset = dimod.ExactSolver().sample(bqm)
+        ground_energy = sampleset.first.energy
+
+        # all possible routes are equally good
+        for route in min_routes:
+            sample = {v: 0 for v in bqm.variables}
+            for idx, city in enumerate(route):
+                sample[(city, idx)] = 1
+            self.assertAlmostEqual(bqm.energy(sample), ground_energy)
+
+        # all min-energy solutions are valid routes
+        ground_count = 0
+        for sample, energy in sampleset.data(['sample', 'energy']):
+            if abs(energy - ground_energy) > .001:
+                break
+            ground_count += 1
+
+        self.assertEqual(ground_count, len(min_routes))
+
+    def test_k3_bidirectional(self):
+        G = nx.DiGraph()
+        G.add_weighted_edges_from([('a', 'b', 0.5),
+                                   ('b', 'a', 0.5),
+                                   ('b', 'c', 1.0),
+                                   ('c', 'b', 1.0),
+                                   ('a', 'c', 2.0),
+                                   ('c', 'a', 2.0)])
+
+        Q = dnx.traveling_salesperson_qubo(G, lagrange=10)
+        bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+
+        # all routes are min weight
+        min_routes = list(itertools.permutations(G.nodes))
+
+        # get the min energy of the qubo
+        sampleset = dimod.ExactSolver().sample(bqm)
+        ground_energy = sampleset.first.energy
+
+        # all possible routes are equally good
+        for route in min_routes:
+            sample = {v: 0 for v in bqm.variables}
+            for idx, city in enumerate(route):
+                sample[(city, idx)] = 1
+            self.assertAlmostEqual(bqm.energy(sample), ground_energy)
+
+        # all min-energy solutions are valid routes
+        ground_count = 0
+        for sample, energy in sampleset.data(['sample', 'energy']):
+            if abs(energy - ground_energy) > .001:
+                break
+            ground_count += 1
+
+        self.assertEqual(ground_count, len(min_routes))
+
+    def test_graph_missing_edges(self):
+        G1 = nx.Graph()
+        G1.add_weighted_edges_from([
+            ('a', 'b', 0.5),
+            ('b', 'c', 1.0),
+            ('a', 'c', 2.0),
+        ])
+        Q1 = dnx.traveling_salesperson_qubo(G1, lagrange=10)
+
+        G2 = nx.Graph()
+        G2.add_weighted_edges_from([
+            ('a', 'b', 0.5),
+            ('a', 'c', 2.0),
+        ])
+        # make sure that missing_edge_weight gets applied correctly
+        Q2 = dnx.traveling_salesperson_qubo(G2, lagrange=10, missing_edge_weight=1.0)
+
+        self.assertDictEqual(Q1, Q2)
+
+    def test_digraph_missing_edges(self):
+        G1 = nx.DiGraph()
+        G1.add_weighted_edges_from([
+            ('a', 'b', 0.5),
+            ('b', 'a', 0.8),
+            ('b', 'c', 1.0),
+            ('c', 'b', 0.7),
+            ('a', 'c', 2.0),
+            ('c', 'a', 2.0),
+        ])
+        Q1 = dnx.traveling_salesperson_qubo(G1, lagrange=10)
+
+        G2 = nx.DiGraph()
+        G2.add_weighted_edges_from([
+            ('a', 'b', 0.5),
+            ('b', 'a', 0.8),
+            ('c', 'b', 0.7),
+            ('a', 'c', 2.0),
+            ('c', 'a', 2.0),
+        ])
+
+        # make sure that missing_edge_weight gets applied correctly
+        Q2 = dnx.traveling_salesperson_qubo(G2, lagrange=10, missing_edge_weight=1.0)
+
+        self.assertDictEqual(Q1, Q2)
+
+    def test_k4_equal_weights(self):
+        # k5 with all equal weights so all paths are equally good
+        G = nx.Graph()
+        G.add_weighted_edges_from((u, v, .5)
+                                  for u, v in itertools.combinations(range(4), 2))
+
+        Q = dnx.traveling_salesperson_qubo(G, lagrange=10)
+        bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+
+        # all routes are min weight
+        min_routes = list(itertools.permutations(G.nodes))
+
+        # get the min energy of the qubo
+        sampleset = dimod.ExactSolver().sample(bqm)
+        ground_energy = sampleset.first.energy
+
+        # all possible routes are equally good
+        for route in min_routes:
+            sample = {v: 0 for v in bqm.variables}
+            for idx, city in enumerate(route):
+                sample[(city, idx)] = 1
+            self.assertAlmostEqual(bqm.energy(sample), ground_energy)
+
+        # all min-energy solutions are valid routes
+        ground_count = 0
+        for sample, energy in sampleset.data(['sample', 'energy']):
+            if abs(energy - ground_energy) > .001:
+                break
+            ground_count += 1
+
+        self.assertEqual(ground_count, len(min_routes))
+
+    def test_k4(self):
+        # good routes are 0,1,2,3 or 3,2,1,0 (and their rotations)
+        G = nx.Graph()
+        G.add_weighted_edges_from([(0, 1, 1),
+                                   (1, 2, 1),
+                                   (2, 3, 1),
+                                   (3, 0, 1),
+                                   (0, 2, 2),
+                                   (1, 3, 2)])
+
+        Q = dnx.traveling_salesperson_qubo(G, lagrange=10)
+        bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+
+        # good routes won't have 0<->2 or 1<->3
+        min_routes = [(0, 1, 2, 3),
+                      (1, 2, 3, 0),
+                      (2, 3, 0, 1),
+                      (1, 2, 3, 0),
+                      (3, 2, 1, 0),
+                      (2, 1, 0, 3),
+                      (1, 0, 3, 2),
+                      (0, 3, 2, 1)]
+
+        # get the min energy of the qubo
+        sampleset = dimod.ExactSolver().sample(bqm)
+        ground_energy = sampleset.first.energy
+
+        # all possible routes are equally good
+        for route in min_routes:
+            sample = {v: 0 for v in bqm.variables}
+            for idx, city in enumerate(route):
+                sample[(city, idx)] = 1
+            self.assertAlmostEqual(bqm.energy(sample), ground_energy)
+
+        # all min-energy solutions are valid routes
+        ground_count = 0
+        for sample, energy in sampleset.data(['sample', 'energy']):
+            if abs(energy - ground_energy) > .001:
+                break
+            ground_count += 1
+
+        self.assertEqual(ground_count, len(min_routes))
+
+    def test_weighted_complete_graph(self):
+        G = nx.Graph()
+        G.add_weighted_edges_from({(0, 1, 1), (0, 2, 100),
+                                   (0, 3, 1), (1, 2, 1),
+                                   (1, 3, 100), (2, 3, 1)})
+
+        lagrange = 5.0
+
+        Q = dnx.traveling_salesperson_qubo(G, lagrange, 'weight')
+
+        N = G.number_of_nodes()
+        correct_sum = G.size('weight')*2*N-2*N*N*lagrange+2*N*N*(N-1)*lagrange
+
+        actual_sum = sum(Q.values())
+
+        self.assertEqual(correct_sum, actual_sum)
+
+    def test_exceptions(self):
+        G = nx.Graph([(0, 1)])
+        with self.assertRaises(ValueError):
+            dnx.traveling_salesperson_qubo(G)
+
+    def test_docstring_size(self):
+        # in the docstring we state the size of the resulting BQM, this checks
+        # that
+        for n in range(3, 20):
+            G = nx.Graph()
+            G.add_weighted_edges_from((u, v, .5)
+                                      for u, v
+                                      in itertools.combinations(range(n), 2))
+            Q = dnx.traveling_salesperson_qubo(G)
+            bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+
+            self.assertEqual(len(bqm), n**2)
+            self.assertEqual(len(bqm.quadratic), 2*n*n*(n - 1))
