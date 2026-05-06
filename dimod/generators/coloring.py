@@ -12,67 +12,78 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import math
 import itertools
+import math
+from collections.abc import Sequence
+
+from dimod.binary_quadratic_model import BinaryQuadraticModel
+from dimod.decorators import graph_argument
+from dimod.typing import GraphLike
+from dimod.vartypes import Vartype
 
 import networkx as nx
 
 __all__ = ["min_vertex_color_qubo",
-           "vertex_color_qubo",
+           "vertex_coloring",
            ]
 
 
 @nx.utils.decorators.nodes_or_number(1)
-def vertex_color_qubo(G, colors):
-    """Return the QUBO with ground states corresponding to a vertex coloring.
+@graph_argument('graph')
+def vertex_coloring(graph: GraphLike,
+                    colors: int | Sequence,
+                    ) -> BinaryQuadraticModel:
+    """Generate a binary quadratic model (BQM) with ground states corresponding
+    to a vertex coloring.
 
     If `V` is the set of nodes, `E` is the set of edges and `C` is the set of
-    colors the resulting qubo will have:
+    colors the resulting BQM will have:
 
     * :math:`|V|*|C|` variables/nodes
     * :math:`|V|*|C|*(|C| - 1) / 2 + |E|*|C|` interactions/edges
 
-    The QUBO has ground energy :math:`-|V|` and an infeasible gap of 1.
+    The BQM has ground energy :math:`-|V|` and an infeasible gap of 1.
 
-    Parameters
-    ----------
-    G : NetworkX graph
-        The graph on which to find a minimum vertex coloring.
+    Args:
+        graph:
+            The graph on which to find a vertex coloring. Either an integer `n`,
+            interpreted as a complete graph of size `n`, a nodes/edges
+            pair, a list of edges or a NetworkX graph.
 
-    colors : int/sequence
-        The colors. If an int, the colors are labelled `[0, n)`. The number of
-        colors must be greater or equal to the chromatic number of the graph.
+        colors:
+            The colors. If an int, the colors are labelled `[0, n)`. The number
+            of colors must be greater or equal to the chromatic number of the
+            graph.
 
-    Returns
-    -------
-    QUBO : dict
-        The QUBO with ground states corresponding to valid colorings of the
-        graph. The QUBO variables are labelled `(v, c)` where `v` is a node
-        in `G` and `c` is a color. In the ground state of the QUBO, a variable
-        `(v, c)` has value 1 if `v` should be colored `c` in a valid coloring.
-
+    Returns:
+        A binary quadratic model with ground states corresponding to valid
+        colorings of the graph. The BQM variables are labelled `(v, c)` where
+        `v` is a node in `G` and `c` is a color. In the ground state of the BQM,
+        a variable `(v, c)` has value 1 if `v` should be colored `c` in a valid
+        coloring.
 
     """
+    variables, edges = graph
     _, colors = colors
 
-    Q = {}
+    bqm = BinaryQuadraticModel(Vartype.BINARY)
 
     # enforce that each variable in G has at most one color
-    for v in G.nodes:
+    for v in variables:
         # 1 in k constraint
         for c in colors:
-            Q[(v, c), (v, c)] = -1
+            bqm.add_linear((v, c), -1)
 
         for c0, c1 in itertools.combinations(colors, 2):
-            Q[(v, c0), (v, c1)] = 2
+            bqm.add_quadratic((v, c0), (v, c1), 2)
 
     # enforce that adjacent nodes do not have the same color
-    for u, v in G.edges:
+    for u, v in edges:
         # NAND constraint
         for c in colors:
-            Q[(u, c), (v, c)] = 1
+            bqm.add_quadratic((u, c), (v, c), 1)
 
-    return Q
+    return bqm
 
 
 def _chromatic_number_upper_bound(G):
@@ -144,14 +155,11 @@ def min_vertex_color_qubo(G, chromatic_lb=None, chromatic_ub=None):
 
     chromatic_lb : int, optional
          A lower bound on the chromatic number. If one is not provided, a
-         bound is calulcated.
+         bound is calculated.
 
     chromatic_ub : int, optional
         An upper bound on the chromatic number. If one is not provided, a bound
         is calculated.
-
-    sampler_args
-        Additional keyword parameters are passed to the sampler.
 
     Returns
     -------

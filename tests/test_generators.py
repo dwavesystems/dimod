@@ -1898,22 +1898,22 @@ class TestMinVertexColorQubo(unittest.TestCase):
         )
 
 
-class TestVertexColorQUBO(unittest.TestCase):
+class TestVertexColoring(unittest.TestCase):
     def test_single_node(self):
         G = nx.Graph()
         G.add_node('a')
 
         # a single color
-        Q = dimod.generators.coloring.vertex_color_qubo(G, ['red'])
+        bqm = dimod.generators.coloring.vertex_coloring(G, ['red'])
 
-        self.assertEqual(Q, {(('a', 'red'), ('a', 'red')): -1})
+        self.assertEqual(bqm, dimod.BQM.from_qubo({(('a', 'red'), ('a', 'red')): -1}))
 
     def test_4cycle(self):
         G = nx.cycle_graph('abcd')
 
-        Q = dimod.generators.coloring.vertex_color_qubo(G, 2)
+        bqm = dimod.generators.coloring.vertex_coloring(G, 2)
 
-        sampleset = dimod.ExactSolver().sample_qubo(Q)
+        sampleset = dimod.ExactSolver().sample(bqm)
 
         # check that the ground state is a valid coloring
         ground_energy = sampleset.first.energy
@@ -1942,14 +1942,12 @@ class TestVertexColorQUBO(unittest.TestCase):
         G = nx.Graph()
         G.add_nodes_from(range(15))
 
-        Q = dimod.generators.coloring.vertex_color_qubo(G, 7)
-        bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+        bqm = dimod.generators.coloring.vertex_coloring(G, 7)
         self.assertEqual(len(bqm.quadratic), len(G)*7*(7-1)/2)
 
         # add one edge
         G.add_edge(0, 1)
-        Q = dimod.generators.coloring.vertex_color_qubo(G, 7)
-        bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+        bqm = dimod.generators.coloring.vertex_coloring(G, 7)
         self.assertEqual(len(bqm.quadratic), len(G)*7*(7-1)/2 + 7)
 
     def test_docstring_stats(self):
@@ -1958,9 +1956,7 @@ class TestVertexColorQUBO(unittest.TestCase):
 
         colors = range(10)
 
-        Q = dimod.generators.coloring.vertex_color_qubo(G, colors)
-
-        bqm = dimod.BinaryQuadraticModel.from_qubo(Q)
+        bqm = dimod.generators.coloring.vertex_coloring(G, colors)
 
         self.assertEqual(len(bqm), len(G)*len(colors))
         self.assertEqual(len(bqm.quadratic), len(G)*len(colors)*(len(colors)-1)/2
