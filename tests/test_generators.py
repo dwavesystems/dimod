@@ -1887,14 +1887,14 @@ class TestQuadraticAssignment(unittest.TestCase):
             self.assertEqual(lhs, 0)
 
 
-class TestMinVertexColorQubo(unittest.TestCase):
+class TestMinVertexColoring(unittest.TestCase):
     def test_chromatic_number(self):
         G = nx.cycle_graph('abcd')
 
         # when the chromatic number is fixed this is exactly vertex_color
         self.assertEqual(
-            dimod.generators.coloring.min_vertex_color_qubo(G, chromatic_lb=2, chromatic_ub=2),
-            dimod.generators.coloring.vertex_color_qubo(G, 2)
+            dimod.generators.coloring.min_vertex_coloring(G, chromatic_lb=2, chromatic_ub=2),
+            dimod.generators.coloring.vertex_coloring(G, 2)
         )
 
 

@@ -23,7 +23,7 @@ from dimod.vartypes import Vartype
 
 import networkx as nx
 
-__all__ = ["min_vertex_color_qubo",
+__all__ = ["min_vertex_coloring",
            "vertex_coloring",
            ]
 
@@ -36,8 +36,8 @@ def vertex_coloring(graph: GraphLike,
     """Generate a binary quadratic model (BQM) with ground states corresponding
     to a vertex coloring.
 
-    If `V` is the set of nodes, `E` is the set of edges and `C` is the set of
-    colors the resulting BQM will have:
+    If :math:`V` is the set of nodes, :math:`E` is the set of edges and
+    :math:`C` is the set of colors the resulting BQM will have:
 
     * :math:`|V|*|C|` variables/nodes
     * :math:`|V|*|C|*(|C| - 1) / 2 + |E|*|C|` interactions/edges
@@ -46,21 +46,21 @@ def vertex_coloring(graph: GraphLike,
 
     Args:
         graph:
-            The graph on which to find a vertex coloring. Either an integer `n`,
-            interpreted as a complete graph of size `n`, a nodes/edges
+            The graph on which to find a vertex coloring. Either an integer
+            ``n``, interpreted as a complete graph of size ``n``, a nodes/edges
             pair, a list of edges or a NetworkX graph.
 
         colors:
-            The colors. If an int, the colors are labelled `[0, n)`. The number
-            of colors must be greater or equal to the chromatic number of the
-            graph.
+            The colors. If an int, the colors are labelled ``[0, n)``. The
+            number of colors must be greater or equal to the chromatic number of
+            the graph.
 
     Returns:
         A binary quadratic model with ground states corresponding to valid
-        colorings of the graph. The BQM variables are labelled `(v, c)` where
-        `v` is a node in `G` and `c` is a color. In the ground state of the BQM,
-        a variable `(v, c)` has value 1 if `v` should be colored `c` in a valid
-        coloring.
+        colorings of the graph. The BQM variables are labelled ``(v, c)`` where
+        ``v`` is a node in ``graph`` and ``c`` is a color. In the ground state
+        of the BQM, a variable ``(v, c)`` has value 1 if ``v`` should be colored
+        ``c`` in a valid coloring.
 
     """
     variables, edges = graph
@@ -86,7 +86,7 @@ def vertex_coloring(graph: GraphLike,
     return bqm
 
 
-def _chromatic_number_upper_bound(G):
+def _chromatic_number_upper_bound(G: 'nx.Graph') -> int:
     # tries to determine an upper bound on the chromatic number of G
     # Assumes G is not complete
 
@@ -124,7 +124,7 @@ def _chromatic_number_upper_bound(G):
     return min(quad_bound, bound)
 
 
-def _chromatic_number_lower_bound(G):
+def _chromatic_number_lower_bound(G: 'nx.Graph') -> int:
     # find a random maximal clique and use that to determine a lower bound
     v = max(G, key=G.degree)
 
@@ -136,54 +136,58 @@ def _chromatic_number_lower_bound(G):
     return len(clique)
 
 
-def min_vertex_color_qubo(G, chromatic_lb=None, chromatic_ub=None):
-    """Return a QUBO with ground states corresponding to a minimum vertex
-    coloring.
+@graph_argument('graph', as_networkx=True)
+def min_vertex_coloring(graph: GraphLike,
+                        chromatic_lb: int | None = None,
+                        chromatic_ub: int | None = None,
+                        ) -> BinaryQuadraticModel:
+    """Generate a binary quadratic model (BQM) with ground states corresponding
+    to a minimum vertex coloring.
 
     Vertex coloring is the problem of assigning a color to the
     vertices of a graph in a way that no adjacent vertices have the
     same color. A minimum vertex coloring is the problem of solving
     the vertex coloring problem using the smallest number of colors.
 
-    Defines a QUBO [Dah2013]_ with ground states corresponding to minimum
-    vertex colorings and uses the sampler to sample from it.
+    After defining a BQM/QUBO [Dah2013]_ with ground states corresponding to
+    minimum vertex colorings, use a sampler to sample from it.
 
-    Parameters
-    ----------
-    G : NetworkX graph
-        The graph on which to find a minimum vertex coloring.
+    Args:
+        graph:
+            The graph on which to find a vertex coloring. Either an integer
+            ``n``, interpreted as a complete graph of size ``n``, a nodes/edges
+            pair, a list of edges or a NetworkX graph.
 
-    chromatic_lb : int, optional
-         A lower bound on the chromatic number. If one is not provided, a
-         bound is calculated.
+        chromatic_lb:
+            A lower bound on the chromatic number. If one is not provided, a
+            bound is calculated.
 
-    chromatic_ub : int, optional
-        An upper bound on the chromatic number. If one is not provided, a bound
-        is calculated.
+        chromatic_ub:
+            An upper bound on the chromatic number. If one is not provided, a
+            bound is calculated.
 
-    Returns
-    -------
-    QUBO : dict
-        The QUBO with ground states corresponding to minimum colorings of the
-        graph. The QUBO variables are labelled `(v, c)` where `v` is a node
-        in `G` and `c` is a color. In the ground state of the QUBO, a variable
-        `(v, c)` has value 1 if `v` should be colored `c` in a valid coloring.
+    Returns:
+        A binary quadratic model with ground states corresponding to minimum
+        colorings of the graph. The BQM variables are labelled ``(v, c)`` where
+        ``v`` is a node in ``graph`` and ``c`` is a color. In the ground state
+        of the BQM, a variable ``(v, c)`` has value 1 if ``v`` should be colored
+        ``c`` in a valid coloring.
 
     """
 
-    chi_ub = _chromatic_number_upper_bound(G)
+    chi_ub = _chromatic_number_upper_bound(graph)
     chromatic_ub = chi_ub if chromatic_ub is None else min(chi_ub, chromatic_ub)
 
-    chib_lb = _chromatic_number_lower_bound(G)
+    chib_lb = _chromatic_number_lower_bound(graph)
     chromatic_lb = chib_lb if chromatic_lb is None else max(chib_lb, chromatic_lb)
 
     if chromatic_lb > chromatic_ub:
         raise RuntimeError("something went wrong when calculating the "
                            "chromatic number bounds")
 
-    # our base QUBO is one with as many colors as we might need, so we use the
+    # our base BQM is one with as many colors as we might need, so we use the
     # upper bound
-    Q = vertex_color_qubo(G, int(chromatic_ub))
+    bqm = vertex_coloring(graph, colors=int(chromatic_ub))
 
     if chromatic_lb != chromatic_ub:
         # we want to penalize the colors that we aren't sure that we need
@@ -196,26 +200,23 @@ def min_vertex_color_qubo(G, chromatic_lb=None, chromatic_ub=None):
         weights = [p / (num_penalized + 1) for p in range(1, num_penalized + 1)]
 
         for p, c in zip(weights, range(chromatic_lb, chromatic_ub)):
-            for v in G:
-                Q[(v, c), (v, c)] += p
+            for v in bqm.variables:
+                bqm.linear[(v, c)] += p
 
-    return Q
+    return bqm
 
 
-def is_cycle(G):
+def is_cycle(G: 'nx.Graph') -> bool:
     """Determines whether the given graph is a cycle or circle graph.
 
     A cycle graph or circular graph is a graph that consists of a single cycle.
 
     https://en.wikipedia.org/wiki/Cycle_graph
 
-    Parameters
-    ----------
-    G : NetworkX graph
+    Args:
+        G: A NetworkX graph.
 
-    Returns
-    -------
-    is_cycle : bool
+    Returns:
         True if the graph consists of a single cycle.
 
     """
