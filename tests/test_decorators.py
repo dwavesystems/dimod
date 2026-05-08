@@ -299,7 +299,6 @@ class TestGraphArgument(unittest.TestCase):
             f()
 
     def test_allow_None_True(self):
-
         @graph_argument('G', allow_None=True)
         def f(G=None):
             return G
@@ -311,6 +310,45 @@ class TestGraphArgument(unittest.TestCase):
             @graph_argument('G', b=True)
             def f(G):
                 pass
+
+    @unittest.skipUnless(_networkx, "no networkx installed")
+    def test_as_networkx_graph(self):
+        from networkx.utils import graphs_equal
+
+        @graph_argument('g', as_networkx=True)
+        def f(g):
+            return g
+
+        with self.subTest('nx.Graph pass-through'):
+            g = nx.complete_graph(3)
+            G = f(g)
+
+            self.assertIsInstance(G, nx.Graph)
+            self.assertIs(G, g)
+
+        with self.subTest('int'):
+            G = f(3)
+
+            self.assertIsInstance(G, nx.Graph)
+            self.assertTrue(graphs_equal(G, nx.complete_graph(3)))
+
+        with self.subTest('nodes, edges'):
+            nodes = [1, 2, 3]
+            edges = [(1, 2), (2, 3)]
+            g = nx.Graph()
+            g.add_nodes_from(nodes)
+            g.add_edges_from(edges)
+            G = f((nodes, edges))
+
+            self.assertIsInstance(G, nx.Graph)
+            self.assertTrue(graphs_equal(G, g))
+
+        with self.subTest('edges'):
+            edges = [(0, 1), (2, 3), (0, 2)]
+            G = f(edges)
+
+            self.assertIsInstance(G, nx.Graph)
+            self.assertTrue(graphs_equal(G, nx.Graph(edges)))
 
 
 class TestForwardingMethod(unittest.TestCase):
