@@ -21,7 +21,11 @@ exclude_lines = [
 [tool.cibuildwheel]
 build-verbosity = "1"
 skip = "pp* *musllinux*"
-before-test = "pip install -r {project}/tests/requirements.txt"
+before-test = [
+    # Install local dimod first to make sure test dependencies use the version under test
+    "pip install {package}",
+    "pip install -r {project}/tests/requirements.txt",
+]
 test-command = "python -m unittest discover {project}/tests/"
 
 [tool.cibuildwheel.linux]
