@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add support for NetworkX graph output during function argument coercion via
+    ``@graph_argument(..., as_networkx=True)``.
