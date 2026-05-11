@@ -21,17 +21,14 @@ from dimod.decorators import graph_argument
 from dimod.typing import GraphLike
 from dimod.vartypes import Vartype
 
-import networkx as nx
-
 __all__ = ["min_vertex_coloring",
            "vertex_coloring",
            ]
 
 
-@nx.utils.decorators.nodes_or_number(1)
 @graph_argument('graph')
 def vertex_coloring(graph: GraphLike,
-                    colors: int | Sequence,
+                    colors: Sequence,
                     ) -> BinaryQuadraticModel:
     """Generate a binary quadratic model (BQM) with ground states corresponding
     to a vertex coloring.
@@ -51,9 +48,8 @@ def vertex_coloring(graph: GraphLike,
             pair, a list of edges or a NetworkX graph.
 
         colors:
-            The colors. If an int, the colors are labelled ``[0, n)``. The
-            number of colors must be greater or equal to the chromatic number of
-            the graph.
+            Color labels to use. The number of colors must be greater or equal
+            to the chromatic number of the graph.
 
     Returns:
         A binary quadratic model with ground states corresponding to valid
@@ -64,7 +60,6 @@ def vertex_coloring(graph: GraphLike,
 
     """
     variables, edges = graph
-    _, colors = colors
 
     bqm = BinaryQuadraticModel(Vartype.BINARY)
 
@@ -86,9 +81,14 @@ def vertex_coloring(graph: GraphLike,
     return bqm
 
 
+@graph_argument('G', as_networkx=True)
 def _chromatic_number_upper_bound(G: 'nx.Graph') -> int:
     # tries to determine an upper bound on the chromatic number of G
     # Assumes G is not complete
+
+    # nx is an optional dependency, so we defer import
+    # it's safe to import here, as `@graph_argument` would fail otherwise
+    import networkx as nx
 
     if not nx.is_connected(G):
         return max((_chromatic_number_upper_bound(G.subgraph(c))
@@ -187,7 +187,7 @@ def min_vertex_coloring(graph: GraphLike,
 
     # our base BQM is one with as many colors as we might need, so we use the
     # upper bound
-    bqm = vertex_coloring(graph, colors=int(chromatic_ub))
+    bqm = vertex_coloring(graph, colors=range(int(chromatic_ub)))
 
     if chromatic_lb != chromatic_ub:
         # we want to penalize the colors that we aren't sure that we need

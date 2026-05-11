@@ -1894,7 +1894,7 @@ class TestMinVertexColoring(unittest.TestCase):
         # when the chromatic number is fixed this is exactly vertex_color
         self.assertEqual(
             dimod.generators.coloring.min_vertex_coloring(G, chromatic_lb=2, chromatic_ub=2),
-            dimod.generators.coloring.vertex_coloring(G, 2)
+            dimod.generators.coloring.vertex_coloring(G, range(2))
         )
 
 
@@ -1911,7 +1911,7 @@ class TestVertexColoring(unittest.TestCase):
     def test_4cycle(self):
         G = nx.cycle_graph('abcd')
 
-        bqm = dimod.generators.coloring.vertex_coloring(G, 2)
+        bqm = dimod.generators.coloring.vertex_coloring(G, range(2))
 
         sampleset = dimod.ExactSolver().sample(bqm)
 
@@ -1942,12 +1942,12 @@ class TestVertexColoring(unittest.TestCase):
         G = nx.Graph()
         G.add_nodes_from(range(15))
 
-        bqm = dimod.generators.coloring.vertex_coloring(G, 7)
+        bqm = dimod.generators.coloring.vertex_coloring(G, range(7))
         self.assertEqual(len(bqm.quadratic), len(G)*7*(7-1)/2)
 
         # add one edge
         G.add_edge(0, 1)
-        bqm = dimod.generators.coloring.vertex_coloring(G, 7)
+        bqm = dimod.generators.coloring.vertex_coloring(G, range(7))
         self.assertEqual(len(bqm.quadratic), len(G)*7*(7-1)/2 + 7)
 
     def test_docstring_stats(self):
