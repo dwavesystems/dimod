@@ -14,7 +14,7 @@
 
 import dimod
 
-__all__ = ['markov_network_bqm',
+__all__ = ['markov_network',
            ]
 
 
@@ -50,26 +50,25 @@ __all__ = ['markov_network_bqm',
 #
 
 
-def markov_network_bqm(MN):
-    """Construct a binary quadratic model for a markov network.
+def markov_network(graph: 'nx.Graph') -> dimod.BinaryQuadraticModel:
+    """Construct a binary quadratic model for a Markov network.
 
+    Args:
+        graph:
+            A Markov network (in a NetworkX graph) as returned by
+            :func:`dwave.graphs.generators.markov.markov_network`.
 
-    Parameters
-    ----------
-    G : NetworkX graph
-        A Markov Network as returned by :func:`.markov_network`
-
-    Returns
-    -------
-    bqm : :obj:`dimod.BinaryQuadraticModel`
+    Returns:
         A binary quadratic model.
-
     """
+
+    if not hasattr(graph, 'nodes') or not hasattr(graph, 'edges'):
+        raise ValueError("A NetworkX graph with potentials data required")
 
     bqm = dimod.BinaryQuadraticModel.empty(dimod.BINARY)
 
     # the variable potentials
-    for v, ddict in MN.nodes(data=True, default=None):
+    for v, ddict in graph.nodes(data=True, default=None):
         potential = ddict.get('potential', None)
 
         if potential is None:
@@ -84,7 +83,7 @@ def markov_network_bqm(MN):
         bqm.offset += phi0
 
     # the interaction potentials
-    for u, v, ddict in MN.edges(data=True, default=None):
+    for u, v, ddict in graph.edges(data=True, default=None):
         potential = ddict.get('potential', None)
 
         if potential is None:

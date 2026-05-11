@@ -1964,11 +1964,15 @@ class TestVertexColoring(unittest.TestCase):
 
 
 @unittest.skipUnless(_dnx, "no dwave-graphs installed")
-class Test_sample_markov_network_bqm(unittest.TestCase):
+class TestMarkovNetwork(unittest.TestCase):
+    def test_input_validation(self):
+        with self.assertRaises(ValueError):
+            dimod.generators.markov.markov_network(dict())
+
     def test_one_node(self):
         potentials = {'a': {(0,): 1.2, (1,): .4}}
 
-        bqm = dimod.generators.markov.markov_network_bqm(dnx.markov_network(potentials))
+        bqm = dimod.generators.markov.markov_network(dnx.markov_network(potentials))
 
         for edge, potential in potentials.items():
             for config, energy in potential.items():
@@ -1979,7 +1983,7 @@ class Test_sample_markov_network_bqm(unittest.TestCase):
         potentials = {'ab': {(0, 0): 1.2, (1, 0): .4,
                              (0, 1): 1.3, (1, 1): -4}}
 
-        bqm = dimod.generators.markov.markov_network_bqm(dnx.markov_network(potentials))
+        bqm = dimod.generators.markov.markov_network(dnx.markov_network(potentials))
 
         for edge, potential in potentials.items():
             for config, energy in potential.items():
@@ -1994,7 +1998,7 @@ class Test_sample_markov_network_bqm(unittest.TestCase):
                              (0, 1): -1, (1, 1): -4},
                       'd': {(0,): -.5, (1,): 1.6}}
 
-        bqm = dimod.generators.markov.markov_network_bqm(dnx.markov_network(potentials))
+        bqm = dimod.generators.markov.markov_network(dnx.markov_network(potentials))
 
         samples = dimod.ExactSolver().sample(bqm)
 
