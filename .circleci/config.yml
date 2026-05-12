@@ -10,7 +10,7 @@ commands:
     parameters:
       cibw-version:
         type: string
-        default: 3.4.0
+        default: 3.4.1
     steps:
       - run:
           name: run cibuildwheel
@@ -297,7 +297,7 @@ workflows:
       - build-linux: &build
           matrix:
             parameters:
-              python-version: &python-versions [3.9.4, 3.10.0, 3.11.0, 3.12.0, 3.13.0, 3.14.0]
+              python-version: &python-versions [3.10.0, 3.11.0, 3.12.0, 3.13.0, 3.14.0]
       - build-linux-aarch64: *build
       - build-sdist
       - build-osx: *build
@@ -313,8 +313,7 @@ workflows:
             parameters:
               # test the lowest supported numpy and the latest
               dependencies: [oldest-supported-numpy, numpy]
-              # TODO: Use *python-versions once a non-rc image has been released for 3.14
-              python-version:  [3.9.4, 3.10.0, 3.11.0, 3.12.0, 3.13.0]
+              python-version:  *python-versions
             exclude:
               - dependencies: oldest-supported-numpy  # oldest-supported-numpy deprecated after 3.12
                 python-version: 3.13.0
