@@ -486,7 +486,16 @@ def concatenate(samplesets, defaults=None):
     record = recfunctions.stack_arrays(records, defaults=defaults,
                                        asrecarray=True, usemask=False)
 
-    return SampleSet(record, variables, {}, vartype)
+    # Merge info, preserving conflicts as lists
+    info = {}
+    for k in set().union(*[s.info for s in samplesets]):
+        info[k] = []
+        for s in samplesets:
+             if k in s.info and s.info[k] not in info[k]:
+                 info[k] += [s.info[k]]
+        info[k] = info[k] if len(info[k])>1 else info[k].pop()
+
+    return SampleSet(record, variables, info, vartype)
 
 
 def _iter_records(samplesets, vartype, variables):
