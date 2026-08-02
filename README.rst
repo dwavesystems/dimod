@@ -72,7 +72,14 @@ Testing
 All code should be thoroughly tested and all pull requests should include tests.
 
 To run the Python tests, first install the package using an editable install
-as described above. The tests can then be run with
+as described above. You will also need to install additional dependencies for
+the tests.
+
+.. code-block:: bash
+
+    pip install --group tests
+
+The tests can then be run with
 `unittest <https://docs.python.org/3/library/unittest.html>`_.
 
 .. code-block:: bash
