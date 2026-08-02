@@ -1,4 +1,10 @@
 option(
+    'build-extensions',
+    type: 'boolean',
+    value: true,
+    description: 'Whether to build the Cython extension modules.',
+)
+option(
     'build-tests',
     type: 'feature',
     value: 'auto',

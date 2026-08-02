@@ -26,51 +26,55 @@ if cpp.has_argument('-g1')
 endif
 
 dimod_dep = declare_dependency(
-    include_directories: include_directories('dimod/include/')
+    include_directories: 'dimod/include/',
 )
 
-foreach path : [
-    'dimod/binary/cybqm/cybqm_float32.pyx',
-    'dimod/binary/cybqm/cybqm_float64.pyx',
-    'dimod/constrained/cyconstrained.pyx',
-    'dimod/constrained/cyexpression.pyx',
-    'dimod/cyqmbase/cyqmbase_float32.pyx',
-    'dimod/cyqmbase/cyqmbase_float64.pyx',
-    'dimod/discrete/cydiscrete_quadratic_model.pyx',
-    'dimod/quadratic/cyqm/cyqm_float32.pyx',
-    'dimod/quadratic/cyqm/cyqm_float64.pyx',
-    'dimod/cyutilities.pyx',
-    'dimod/cyvariables.pyx',
-]
-    basename = path.split('/')[-1].split('.')[0]
-    directory = '/'.join(path.split('/').slice(0, -1))
+# Some packages that use dimod as a subproject do not need the extension modules
+# and it speeds up the build a lot to be able to turn them off.
+if get_option('build-extensions')
+    foreach path : [
+        'dimod/binary/cybqm/cybqm_float32.pyx',
+        'dimod/binary/cybqm/cybqm_float64.pyx',
+        'dimod/constrained/cyconstrained.pyx',
+        'dimod/constrained/cyexpression.pyx',
+        'dimod/cyqmbase/cyqmbase_float32.pyx',
+        'dimod/cyqmbase/cyqmbase_float64.pyx',
+        'dimod/discrete/cydiscrete_quadratic_model.pyx',
+        'dimod/quadratic/cyqm/cyqm_float32.pyx',
+        'dimod/quadratic/cyqm/cyqm_float64.pyx',
+        'dimod/cyutilities.pyx',
+        'dimod/cyvariables.pyx',
+    ]
+        basename = path.split('/')[-1].split('.')[0]
+        directory = '/'.join(path.split('/').slice(0, -1))
+
+        py.extension_module(
+            basename,
+            path,
+            cython_args : ['-Xfreethreading_compatible=True'],
+            dependencies: dimod_dep,
+            install: true,
+            override_options : ['cython_language=cpp'],
+            subdir: directory,
+        )
+    endforeach
 
     py.extension_module(
-        basename,
-        path,
+        'cylp',
+        'dimod/cylp.pyx',
         cython_args : ['-Xfreethreading_compatible=True'],
-        dependencies: dimod_dep,
+        dependencies: [
+            dimod_dep,
+            declare_dependency(
+                include_directories: 'dimod/_extern',
+                sources: 'dimod/_extern/filereaderlp/reader.cpp',
+            ),
+        ],
         install: true,
         override_options : ['cython_language=cpp'],
-        subdir: directory,
+        subdir: 'dimod/',
     )
-endforeach
-
-py.extension_module(
-    'cylp',
-    'dimod/cylp.pyx',
-    cython_args : ['-Xfreethreading_compatible=True'],
-    dependencies: [
-        dimod_dep,
-        declare_dependency(
-            include_directories: 'dimod/_extern',
-            sources: 'dimod/_extern/filereaderlp/reader.cpp',
-        ),
-    ],
-    install: true,
-    override_options : ['cython_language=cpp'],
-    subdir: 'dimod/',
-)
+endif  # get_option('build-extensions')
 
 install_subdir('dimod', install_dir: py.get_install_dir(pure: false))
 
