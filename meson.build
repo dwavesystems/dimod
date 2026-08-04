@@ -31,7 +31,7 @@ dimod_dep = declare_dependency(
 
 # Some packages that use dimod as a subproject do not need the extension modules
 # and it speeds up the build a lot to be able to turn them off.
-if get_option('build-extensions')
+if get_option('build-python')
     foreach path : [
         'dimod/binary/cybqm/cybqm_float32.pyx',
         'dimod/binary/cybqm/cybqm_float64.pyx',
@@ -74,9 +74,12 @@ if get_option('build-extensions')
         override_options : ['cython_language=cpp'],
         subdir: 'dimod/',
     )
-endif  # get_option('build-extensions')
 
-install_subdir('dimod', install_dir: py.get_install_dir(pure: false))
+    # If we're not building the extensions, we shouldn't install the package
+    # because imports will fail.
+    install_subdir('dimod', install_dir: py.get_install_dir(pure: false))
+
+endif  # get_option('build-python')
 
 # meson doesn't disable tests by default, so we let the user decide via the build-tests
 # option. If set to 'auto', then we build the tests for non-release builds.

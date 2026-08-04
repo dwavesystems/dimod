@@ -1,8 +1,11 @@
 option(
-    'build-extensions',
+    'build-python',
     type: 'boolean',
     value: true,
-    description: 'Whether to build the Cython extension modules.',
+    description:
+        'Whether to build the Cython extension modules. ' +
+        'The Python files are not "built", but without the Cython modules ' +
+        'the Python package is malformed and therefore not installed.',
 )
 option(
     'build-tests',
