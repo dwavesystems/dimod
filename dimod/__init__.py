@@ -13,7 +13,7 @@
 #    limitations under the License.
 
 # version is used by serialization below so we need it before everything
-__version__ = '0.12.22'
+__version__ = "0.12.22"
 
 from dimod.constrained import *
 import dimod.constrained
@@ -46,8 +46,6 @@ import dimod.exceptions
 
 from dimod.higherorder import make_quadratic, make_quadratic_cqm, reduce_binary_polynomial, poly_energy, poly_energies, BinaryPolynomial
 import dimod.higherorder
-
-from dimod.package_info import __version__, __author__, __authoremail__, __description__
 
 from dimod.quadratic import *
 import dimod.quadratic

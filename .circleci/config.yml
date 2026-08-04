@@ -1,7 +1,6 @@
 version: 2.1
 
 orbs:
-  codecov: codecov/codecov@3
   win: circleci/windows@5.0
   macos: circleci/macos@2.4
 
@@ -10,7 +9,7 @@ commands:
     parameters:
       cibw-version:
         type: string
-        default: 3.4.1
+        default: 4.1.1  # latest as of July 2026
     steps:
       - run:
           name: run cibuildwheel
@@ -94,8 +93,9 @@ jobs:
           command: |
             python -m venv env
             . env/bin/activate
-            pip install -r requirements.txt
-            python setup.py sdist -d ./dist
+            pip install build pip --upgrade
+            pip install --group build
+            python -m build --sdist
       - store_artifacts: *store-artifacts
       - persist_to_workspace: *persist-to-workspace
 
@@ -138,56 +138,6 @@ jobs:
             python -m pip install twine
             twine upload -u "$PYPI_USERNAME" -p "$PYPI_PASSWORD" --skip-existing ./dist/*
 
-  test-airspeed-velocity:
-    docker:
-      - image: cimg/python:3.12  # latest version supported by asv
-
-    steps:
-      - checkout:
-          method: full
-      - run:
-          name: install dependencies
-          command: |
-            python -m venv env
-            . env/bin/activate
-            pip install -r benchmarks/requirements.txt
-      - run:
-          name: check that our airspeed velocity tests run without failure
-          command: |
-            . env/bin/activate
-            asv machine --yes
-            asv run --quick HEAD^!
-
-  # we could do this as part of the various test jobs but getting the pathing
-  # and configuration to work correctly is a pain. And since there is not
-  # significant different between the linux/osx/windows code I think it
-  # suffices to just do it once
-  test-codecov:
-    docker:
-      - image: cimg/python:3.12
-
-    steps:
-      - checkout
-      - run:
-          name: run c++ coverage
-          command: |
-            sudo apt update
-            sudo apt install lcov
-            make -C testscpp/ catch2 coverage
-      - run:
-          name: run python coverage
-          command: |
-            python -m venv env
-            . env/bin/activate
-            pip install -r requirements.txt -r tests/requirements.txt
-            python setup.py build_ext --inplace
-            coverage run -m unittest
-            coverage xml
-      - codecov/upload:
-          file: coverage.xml
-      - codecov/upload:
-          file: testscpp/coverage.info
-
   test-doctest:
     docker:
       - image: cimg/python:3.10  # As of October 2024, RTD uses 3.10
@@ -202,13 +152,13 @@ jobs:
           command: |
             python -m venv env
             . env/bin/activate
-            pip install -r requirements.txt
-            pip install -r docs/requirements.txt
+            pip install pip --upgrade
+            pip install --group dev --group docs
       - run:
           name: build dimod
           command: |
             . env/bin/activate
-            python setup.py build_ext --inplace
+            pip install --editable . --no-build-isolation
       - run:
           name: build docs
           command: |
@@ -252,28 +202,48 @@ jobs:
           name: run tests
           command: |
             . env/bin/activate
+            pip install pip --upgrade
+            pip install --group test
             cd tests/
-            pip install -r requirements.txt
             python -m unittest
 
   test-linux-cpp:
     docker:
       - image: cimg/python:3.12
 
-    steps:
+    steps: &cpp-tests
       - checkout
-      - run: &cpp-tests
+
+      - run:
+          name: Install requirements
+          command: |
+            python -m venv env
+            . env/bin/activate
+            pip install pip --upgrade
+            pip install --group dev --group test
+
+      - run:
           name: run cpp tests
           command: |
-            make -C testscpp/ --always-make
+            . env/bin/activate
+            meson setup _build -Dbuild-tests="enabled"
+            meson compile -C _build
+            meson test -C _build
+
+      - run:
+          name: run cpp tests with debug symbols
+          command: |
+            . env/bin/activate
+            meson setup _build -Dbuildtype=debug --reconfigure
+            meson compile -C _build
+            meson test -C _build
+
 
   test-osx-cpp:
     macos:
       xcode: 26.3.0  # latest as of February 2026
 
-    steps:
-      - checkout
-      - run: *cpp-tests
+    steps: *cpp-tests
 
   test-sdist:
     docker:
@@ -302,8 +272,6 @@ workflows:
       - build-sdist
       - build-osx: *build
       - build-windows: *build
-      - test-airspeed-velocity
-      - test-codecov
       - test-doctest
       - test-linux:
           name: test-linux-<< matrix.dependencies >>-py<< matrix.python-version >>

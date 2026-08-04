@@ -1,9 +1,0 @@
-coverage[toml]
-parameterized==0.7.4
-pandas~=2.3.0; python_version < '3.14'
-pandas~=3.0.0; python_version >= '3.14'
-networkx==2.6.3
-pymongo~=4.17.0
-
-# TODO: update to dwave-graphs once released
-dwave_networkx

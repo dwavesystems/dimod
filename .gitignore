@@ -144,3 +144,7 @@ testscpp/test_main_parallel.out
 testscpp/coverage.info
 *.gcda
 *.gcno
+
+# meson-managed subprojects
+subprojects/*
+!subprojects/*.wrap

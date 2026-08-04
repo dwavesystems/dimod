@@ -1,0 +1,16 @@
+option(
+    'build-extensions',
+    type: 'boolean',
+    value: true,
+    description: 'Whether to build the Cython extension modules.',
+)
+option(
+    'build-tests',
+    type: 'feature',
+    value: 'auto',
+    description:
+        'Whether to build the C++ tests.' +
+        'When set to enabled, the tests are always built.' +
+        'When set to disabled, the tests are never built.' +
+        'When set to auto (default), the tests are built when buildtype != release.',
+)

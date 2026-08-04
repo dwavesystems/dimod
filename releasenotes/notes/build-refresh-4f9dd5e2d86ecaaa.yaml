@@ -1,0 +1,4 @@
+---
+features:
+  - Build with `Meson <https://mesonbuild.com/>`_ rather than `Setuptools <https://pypi.org/project/setuptools/>`_.
+  - Switch to using `dependency groups <https://packaging.python.org/en/latest/specifications/dependency-groups/>`_ rather than ``requirements.txt`` files.

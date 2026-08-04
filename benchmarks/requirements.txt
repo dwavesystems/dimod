@@ -1,2 +1,0 @@
-asv==0.6.5
-virtualenv==21.2.0

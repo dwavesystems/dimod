@@ -1,7 +1,0 @@
-oldest-supported-numpy; python_version < '3.13'
-numpy==2.3.2; python_version >= '3.13'  # first that supports Python 3.14
-cython==3.1.2
-
-reno==3.3.0  # for changelog
-
-setuptools>=46.4.0  # to support setup.cfg getting __version__

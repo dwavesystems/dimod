@@ -1,4 +1,6 @@
-# Copyright 2018 D-Wave Systems Inc.
+#!/usr/bin/env python3
+
+# Copyright 2024 D-Wave Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -12,11 +14,14 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-# This file is kept for backwards compatibility
+if __name__ == "__main__":
+    import os.path
+    import re
 
-from dimod import __version__
-
-# keep description, author and author email up to date with setup.cfg
-__author__ = 'D-Wave Systems Inc.'
-__authoremail__ = 'acondello@dwavesys.com'
-__description__ = 'A shared API for binary quadratic model samplers.'
+    pck_root = os.path.dirname(os.path.dirname(__file__))
+    with open(os.path.join(pck_root, '__init__.py')) as f:
+        m = re.search(
+            r"__version__ = \"([0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?)\"",
+            f.read()
+        )
+    print(m.group(1))
