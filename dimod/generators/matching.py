@@ -88,7 +88,7 @@ def maximal_matching(graph: GraphLike,
     once. A maximal matching is one in which no edges from ``graph`` can be
     added without violating the matching rule.
     This function returns a binary quadratic model (BQM) with ground
-    states corresponding to the possible maximal matchings of ``graph`.
+    states corresponding to the possible maximal matchings of ``graph``.
 
     Finding maximal matchings can be done in polynomial time, so finding
     maximal matching with BQMs is generally inefficient.
