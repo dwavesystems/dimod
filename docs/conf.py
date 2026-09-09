@@ -73,6 +73,10 @@ from __future__ import print_function, division
 
 import dimod
 
+# make sure numpy numeric scalars are printed without their type information,
+# e.g. as 3.0 rather than np.float64(3.0).
+import numpy
+numpy.set_printoptions(legacy='1.25')
 """
 
 # -- Breath ---------------------------------------------------------------

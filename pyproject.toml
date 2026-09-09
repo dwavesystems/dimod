@@ -20,8 +20,8 @@ changelog = [
     "reno==4.1.0",  # latest as of July 2026
 ]
 dev = [
-    "oldest-supported-numpy; python_version < '3.13'",
-    "numpy~=2.3.0; python_version >= '3.13'",  # first that supports Python 3.14
+    "numpy==2.0.0; python_version < '3.13'",
+    "numpy~=2.5.0; python_version >= '3.13'",  # first that supports Python 3.15
     {include-group = "build"},
     {include-group = "changelog"},
 ]
@@ -35,9 +35,9 @@ docs = [
 test = [
     "parameterized==0.9.0",
     "pandas~=2.3.0; python_version < '3.14'",
-    "pandas~=3.0.0; python_version >= '3.14'",
+    "pandas~=3.0.0; python_version >= '3.14' and python_version < '3.15'",  # no 3.15 wheel as of Sept 2026
     "networkx==3.2.0",
-    "pymongo~=4.17.0",
+    "pymongo~=4.17.0; python_version < '3.15'",  # no 3.15 wheel as of Sept 2026
 ]
 
 [project]
@@ -56,17 +56,17 @@ classifiers = [
     "Operating System :: MacOS",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: 3 :: Only",
     'Programming Language :: Python :: Implementation :: CPython',
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-    "numpy>=1.17.3",  # oldest supported NumPy on Python 3.8
+    "numpy>=2",
 ]
 
 [project.optional-dependencies]
@@ -100,3 +100,15 @@ archs = "x86_64 arm64"
 
 [tool.cibuildwheel.windows]
 archs = "AMD64"
+
+[[tool.cibuildwheel.overrides]]
+# For Python3.12+, rather than building individual wheels we build an abi3
+# wheel. 313t and 314t do not support abi wheels yet.
+select = "cp31[!01]-*"  # uses fnmatch, will fail for 3.20+ but good enough for now
+build-frontend = { name = "build", args = ["-Csetup-args=-Dpython.allow_limited_api=true"] }
+
+# This is, by default, overridden in meson.build. We then override the override
+# in cibuildwheel. It's a bit convoluted, but (as of Sept 2026) it's the only
+# way to get it to work, see https://github.com/mesonbuild/meson-python/issues/787
+[tool.meson-python]
+limited-api = true
