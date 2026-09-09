@@ -125,7 +125,6 @@ class QuadraticModel(QuadraticViewsMixin):
                 f"{self.offset}, {vartypes}, dtype={self.dtype.name!r})")
 
     def __add__(self, other: typing.Union['QuadraticModel', Bias]) -> 'QuadraticModel':
-        # in python 3.8+ we could do this is functools.singledispatchmethod
         if isinstance(other, QuadraticModel):
             new = self.copy()
             new.update(other)
@@ -137,7 +136,6 @@ class QuadraticModel(QuadraticViewsMixin):
         return NotImplemented
 
     def __iadd__(self, other: typing.Union['QuadraticModel', Bias]) -> 'QuadraticModel':
-        # in python 3.8+ we could do this is functools.singledispatchmethod
         if isinstance(other, QuadraticModel):
             self.update(other)
             return self

@@ -194,7 +194,6 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
         and :meth:`~.ConstrainedQuadraticModel.add_constraint_from_iterable`.
 
         """
-        # in python 3.8+ we can use singledispatchmethod
         if isinstance(data, (BinaryQuadraticModel, QuadraticModel)):
             return self.add_constraint_from_model(data, *args, **kwargs)
         elif isinstance(data, Comparison):
@@ -496,7 +495,6 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             'discrete-def'            
 
         """
-        # in python 3.8+ we can use singledispatchmethod
         if isinstance(data, (BinaryQuadraticModel, QuadraticModel)):
             return self.add_discrete_from_model(data, *args, **kwargs)
         elif isinstance(data, Comparison):
