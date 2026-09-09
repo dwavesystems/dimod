@@ -9,7 +9,7 @@ commands:
     parameters:
       cibw-version:
         type: string
-        default: 4.1.1  # latest as of July 2026
+        default: 4.2.1  # latest as of Sept 2026
     steps:
       - run:
           name: run cibuildwheel
@@ -29,16 +29,11 @@ environment: &global-environment
 
 jobs:
   build-linux:
-    parameters:
-      python-version:
-        type: string
-
     docker:
       - image: cimg/python:3.12
 
     environment:
       <<: *global-environment
-      CIBW_PROJECT_REQUIRES_PYTHON: ~=<< parameters.python-version>>
       CIBW_ARCHS_LINUX: x86_64
 
     steps:
@@ -47,10 +42,6 @@ jobs:
       - run-cibuildwheel
 
   build-linux-aarch64:
-    parameters:
-      python-version:
-        type: string
-
     machine:
       image: default
 
@@ -59,23 +50,17 @@ jobs:
     environment:
       <<: *global-environment
       CIBW_ARCHS_LINUX: aarch64
-      CIBW_PROJECT_REQUIRES_PYTHON: ~=<< parameters.python-version>>
 
     steps: &build-steps
       - checkout
       - run-cibuildwheel
 
   build-osx:
-    parameters:
-      python-version:
-        type: string
-
     macos:
       xcode: 26.3.0  # latest as of February 2026
 
     environment:
       <<: *global-environment
-      CIBW_PROJECT_REQUIRES_PYTHON: ~=<< parameters.python-version>>
 
     steps:
       - checkout
@@ -100,20 +85,12 @@ jobs:
       - persist_to_workspace: *persist-to-workspace
 
   build-windows:
-    parameters:
-      python-version:
-        type: string
-
     executor:
       name: win/default
 
     environment:
       <<: *global-environment
-      CIBW_PROJECT_REQUIRES_PYTHON: ~=<< parameters.python-version>>
       CIBW_ARCHS_WINDOWS: AMD64
-      # use delvewheel on windows
-      CIBW_BEFORE_BUILD_WINDOWS: "pip install delvewheel"
-      CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
 
     steps:
       - checkout
@@ -140,7 +117,7 @@ jobs:
 
   test-doctest:
     docker:
-      - image: cimg/python:3.10  # As of October 2024, RTD uses 3.10
+      - image: cimg/python:3.13  # As of Sept 2026, the dwave-ocean-sdk uses 3.13
 
     steps:
       - checkout
@@ -177,7 +154,7 @@ jobs:
             . env/bin/activate
             make -C docs/ linkcheck
 
-  test-linux:
+  test-dependencies:
     parameters:
       python-version:
         type: string
@@ -264,29 +241,24 @@ jobs:
 workflows:
   tests:
     jobs:
-      - build-linux: &build
-          matrix:
-            parameters:
-              python-version: &python-versions [3.10.0, 3.11.0, 3.12.0, 3.13.0, 3.14.0]
-      - build-linux-aarch64: *build
+      - build-linux
+      - build-linux-aarch64
       - build-sdist
-      - build-osx: *build
-      - build-windows: *build
+      - build-osx
+      - build-windows
       - test-doctest
-      - test-linux:
-          name: test-linux-<< matrix.dependencies >>-py<< matrix.python-version >>
+      - test-dependencies:
+          name: test-dependencies-latest
+          python-version: "3.15-rc"
+          dependencies: numpy
           requires:
             - build-linux
-          matrix:
-            parameters:
-              # test the lowest supported numpy and the latest
-              dependencies: [numpy==2.0, numpy]
-              python-version:  *python-versions
-            exclude:
-              - dependencies: numpy==2.0
-                python-version: 3.13.0
-              - dependencies: numpy==2.0
-                python-version: 3.14.0
+      - test-dependencies:
+          name: test-dependencies-min
+          python-version: "3.11"
+          dependencies: numpy==2.0
+          requires:
+            - build-linux
       - test-linux-cpp
       - test-osx-cpp
       - test-sdist:
@@ -295,7 +267,6 @@ workflows:
   deploy:
     jobs:
       - build-linux: &deploy-build
-          <<: *build
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+)*((\.dev|rc)([0-9]+)?)?$/

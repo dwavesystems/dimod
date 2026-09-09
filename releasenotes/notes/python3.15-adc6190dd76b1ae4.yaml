@@ -1,0 +1,6 @@
+---
+features:
+  - Build abi3 wheels for Python 3.12+.
+  - Support Python 3.15.
+upgrade:
+  - Drop support for Python 3.10.
