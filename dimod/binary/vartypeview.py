@@ -21,10 +21,7 @@ from typing import Tuple, Iterator, Optional, Mapping, Any
 
 import numpy as np
 
-try:
-    from numpy.typing import ArrayLike, DTypeLike
-except ImportError:
-    DTypeLike = Any
+from numpy.typing import DTypeLike
 
 from dimod.binary.pybqm import pyBQM
 from dimod.sampleset import as_samples

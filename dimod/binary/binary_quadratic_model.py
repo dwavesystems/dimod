@@ -46,11 +46,7 @@ from typing import (Any, BinaryIO, Callable, Dict,
 
 import numpy as np
 
-try:
-    from numpy.typing import ArrayLike, DTypeLike
-except ImportError:
-    ArrayLike = Any
-    DTypeLike = Any
+from numpy.typing import ArrayLike, DTypeLike
 
 from dimod.binary.cybqm import cyBQM_float32, cyBQM_float64
 from dimod.binary.pybqm import pyBQM
@@ -58,7 +54,7 @@ from dimod.binary.vartypeview import VartypeView
 from dimod.decorators import forwarding_method, unique_variable_labels
 from dimod.quadratic import QuadraticModel, QM
 from dimod.quadratic.quadratic_model import _VariableArray
-from dimod.serialization.fileview import SpooledTemporaryFile, _BytesIO, VariablesSection
+from dimod.serialization.fileview import _BytesIO, VariablesSection
 from dimod.serialization.fileview import load, read_header, write_header
 from dimod.sym import Eq, Ge, Le
 from dimod.typing import (Bias, BQMVectors, LabelledBQMVectors, QuadraticVectors,
@@ -2201,7 +2197,7 @@ class BinaryQuadraticModel(QuadraticViewsMixin):
             raise ValueError(f"Unsupported version: {version!r}")
 
         # the file we'll be writing to
-        file = SpooledTemporaryFile(max_size=spool_size)
+        file = tempfile.SpooledTemporaryFile(max_size=spool_size)
 
         # the data in the header
         data = dict(shape=self.shape,

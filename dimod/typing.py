@@ -22,18 +22,7 @@ import numpy as np
 
 from dimod.vartypes import VartypeLike
 
-try:
-    from numpy.typing import ArrayLike, DTypeLike
-except ImportError:
-    # support numpy < 1.20
-    ArrayLike: typing.TypeAlias = collections.abc.Sequence
-    DTypeLike: typing.TypeAlias = typing.Any
-
-try:
-    from numpy.typing import NDArray
-except ImportError:
-    # support numpy < 1.21
-    NDArray: typing.TypeAlias = collections.abc.Sequence
+from numpy.typing import ArrayLike, DTypeLike, NDArray
 
 
 __all__ = ['Bias',

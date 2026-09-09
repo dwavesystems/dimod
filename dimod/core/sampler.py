@@ -184,7 +184,8 @@ class Sampler(Scoped, metaclass=SamplerABCMeta):
         default.
     """
 
-    @abc.abstractproperty  # for python2 compatibility
+    @property
+    @abc.abstractmethod
     def parameters(self) -> dict[str, typing.Any]:
         """Parameters as a dict, where keys are keyword parameters accepted by the
         sampler methods and values are lists of the properties relevent to each
@@ -192,7 +193,8 @@ class Sampler(Scoped, metaclass=SamplerABCMeta):
         """
         pass
 
-    @abc.abstractproperty  # for python2 compatibility
+    @property
+    @abc.abstractmethod
     def properties(self) -> dict[str, typing.Any]:
         """Properties as a dict containing any additional information about the
         sampler.

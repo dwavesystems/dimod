@@ -17,13 +17,9 @@ import typing
 
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 from dimod.core import Sampler, Initialized
+from dimod.core.initialized import InitialStateGenerator
 from dimod.sampleset import SampleSet
-
 from dimod.typing import SamplesLike
-try:
-    InitialStateGenerator = typing.Literal['none', 'tile', 'random']
-except AttributeError:
-    InitialStateGenerator = str
 
 __all__ = ['IdentitySampler']
 

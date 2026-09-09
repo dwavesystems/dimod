@@ -39,16 +39,11 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-try:
-    from numpy.typing import ArrayLike, DTypeLike
-except ImportError:
-    ArrayLike = typing.Any
-    DTypeLike = typing.Any
+from numpy.typing import DTypeLike
 
 from dimod.decorators import forwarding_method, unique_variable_labels
 from dimod.quadratic.cyqm import cyQM_float32, cyQM_float64
 from dimod.serialization.fileview import (
-    SpooledTemporaryFile,
     _BytesIO,
     LinearSection,
     NeighborhoodSection,
@@ -130,7 +125,6 @@ class QuadraticModel(QuadraticViewsMixin):
                 f"{self.offset}, {vartypes}, dtype={self.dtype.name!r})")
 
     def __add__(self, other: typing.Union['QuadraticModel', Bias]) -> 'QuadraticModel':
-        # in python 3.8+ we could do this is functools.singledispatchmethod
         if isinstance(other, QuadraticModel):
             new = self.copy()
             new.update(other)
@@ -142,7 +136,6 @@ class QuadraticModel(QuadraticViewsMixin):
         return NotImplemented
 
     def __iadd__(self, other: typing.Union['QuadraticModel', Bias]) -> 'QuadraticModel':
-        # in python 3.8+ we could do this is functools.singledispatchmethod
         if isinstance(other, QuadraticModel):
             self.update(other)
             return self
@@ -1295,7 +1288,7 @@ class QuadraticModel(QuadraticViewsMixin):
         """
         # todo: document the serialization format sections
 
-        file = SpooledTemporaryFile(max_size=spool_size)
+        file = tempfile.SpooledTemporaryFile(max_size=spool_size)
 
         data = dict(shape=self.shape,
                     dtype=self.dtype.name,

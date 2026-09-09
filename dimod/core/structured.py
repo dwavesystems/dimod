@@ -99,12 +99,14 @@ class Structured(abc.ABC):
     must be implemented.
 
     """
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def nodelist(self) -> list[Variable]:
         """Nodes/variables allowed by the sampler."""
         pass
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def edgelist(self) -> list[tuple[Variable, Variable]]:
         """Edges/interactions allowed by the sampler.
         """

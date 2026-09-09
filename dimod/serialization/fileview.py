@@ -18,7 +18,6 @@ import collections.abc
 import io
 import json
 import struct
-import tempfile
 import typing
 import warnings
 
@@ -30,29 +29,6 @@ from dimod.variables import iter_deserialize_variables, iter_serialize_variables
 
 
 __all__ = ['FileView', 'load']
-
-
-if issubclass(tempfile.SpooledTemporaryFile, io.IOBase):
-    # Python 3.11+
-    SpooledTemporaryFile = tempfile.SpooledTemporaryFile
-else:
-    # we want to use SpooledTemporaryFile but have it also include the methods
-    # from io.IOBase.
-    class SpooledTemporaryFile(tempfile.SpooledTemporaryFile):
-        # This is not part of io.IOBase, but it is implemented in io.BytesIO
-        # and io.TextIOWrapper
-
-        def readinto(self, *args, **kwargs):
-            return self._file.readinto(*args, **kwargs)
-
-        def readable(self):
-            return self._file.readable()
-
-        def seekable(self):
-            return self._file.seekable()
-
-        def writable(self):
-            return self._file.writable()
 
 
 class Section(abc.ABC):
