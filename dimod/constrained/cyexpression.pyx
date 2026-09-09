@@ -31,7 +31,7 @@ from dimod.libcpp.constrained_quadratic_model cimport Penalty as cppPenalty
 from dimod.libcpp.vartypes cimport Vartype as cppVartype
 from dimod.sampleset import as_samples
 from dimod.serialization.fileview import (
-    SpooledTemporaryFile, _BytesIO,
+    _BytesIO,
     read_header, write_header,
     IndicesSection, LinearSection, OffsetSection, NeighborhoodSection, QuadraticSection,
     )

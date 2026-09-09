@@ -14,6 +14,7 @@
 
 import collections.abc as abc
 import io
+import tempfile
 import warnings
 
 from collections import defaultdict, namedtuple
@@ -23,7 +24,7 @@ import numpy as np
 
 from dimod.discrete.cydiscrete_quadratic_model import cyDiscreteQuadraticModel
 from dimod.sampleset import as_samples
-from dimod.serialization.fileview import VariablesSection, _BytesIO, SpooledTemporaryFile
+from dimod.serialization.fileview import VariablesSection, _BytesIO
 from dimod.serialization.fileview import load, read_header, write_header
 from dimod.typing import QuadraticVectors, DQMVectors
 from dimod.variables import Variables
@@ -860,7 +861,7 @@ class DiscreteQuadraticModel:
 
         """
 
-        file = SpooledTemporaryFile(max_size=spool_size)
+        file = tempfile.SpooledTemporaryFile(max_size=spool_size)
 
         index_labeled = ignore_labels or self.variables.is_range
 

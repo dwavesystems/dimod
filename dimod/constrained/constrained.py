@@ -66,7 +66,7 @@ from dimod.constrained.cyconstrained import cyConstrainedQuadraticModel, Constra
 from dimod.quadratic.quadratic_model import QuadraticModel
 from dimod.sampleset import as_samples
 from dimod.serialization.fileview import (
-    _BytesIO, SpooledTemporaryFile,
+    _BytesIO,
     load, read_header, write_header,
     VartypesSection,
     )
@@ -1793,7 +1793,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             >>> print(cqm2.objective.to_polystring())
             -2*x + 2*x*y
         """
-        file = SpooledTemporaryFile(max_size=spool_size)
+        file = tempfile.SpooledTemporaryFile(max_size=spool_size)
 
         data = dict(num_variables=len(self.variables),
                     num_constraints=len(self.constraints),

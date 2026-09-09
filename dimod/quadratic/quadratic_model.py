@@ -48,7 +48,6 @@ except ImportError:
 from dimod.decorators import forwarding_method, unique_variable_labels
 from dimod.quadratic.cyqm import cyQM_float32, cyQM_float64
 from dimod.serialization.fileview import (
-    SpooledTemporaryFile,
     _BytesIO,
     LinearSection,
     NeighborhoodSection,
@@ -1295,7 +1294,7 @@ class QuadraticModel(QuadraticViewsMixin):
         """
         # todo: document the serialization format sections
 
-        file = SpooledTemporaryFile(max_size=spool_size)
+        file = tempfile.SpooledTemporaryFile(max_size=spool_size)
 
         data = dict(shape=self.shape,
                     dtype=self.dtype.name,
