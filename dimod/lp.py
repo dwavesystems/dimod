@@ -133,18 +133,13 @@ class _WidthLimitedFile:
 def dump(cqm: dimod.ConstrainedQuadraticModel, file_like: typing.TextIO):
     """Serialize a constrained quadratic model as an LP file.
 
-    LP files are a common format for encoding optimization models. See
-    documentation from Gurobi_ and CPLEX_.
+    LP files are a common format for encoding optimization models.
 
     Args:
         cqm: A constrained quadratic model.
         file_like: A ``.write()`` supporting file-like_ object.
 
     .. _file-like: https://docs.python.org/3/glossary.html#term-file-object
-
-    .. _Gurobi: https://www.gurobi.com/documentation/9.5/refman/lp_format.html
-
-    .. _CPLEX: https://www.ibm.com/docs/en/icos/12.8.0.0?topic=cplex-lp-file-format-algebraic-representation
 
     """
     # check that there are no soft constraints, LP format does not support them
@@ -247,18 +242,13 @@ def dump(cqm: dimod.ConstrainedQuadraticModel, file_like: typing.TextIO):
 def dumps(cqm: dimod.ConstrainedQuadraticModel) -> str:
     """Serialize a constrained quadratic model as an LP file.
 
-    LP files are a common format for encoding optimization models. See
-    documentation from Gurobi_ and CPLEX_.
+    LP files are a common format for encoding optimization models.
 
     Args:
         cqm: A constrained quadratic model.
 
     Returns:
         A string encoding the constrained quadratic model as an LP file.
-
-    .. _Gurobi: https://www.gurobi.com/documentation/9.5/refman/lp_format.html
-
-    .. _CPLEX: https://www.ibm.com/docs/en/icos/12.8.0.0?topic=cplex-lp-file-format-algebraic-representation
 
     """
     with io.StringIO() as f:
@@ -270,8 +260,7 @@ def dumps(cqm: dimod.ConstrainedQuadraticModel) -> str:
 def load(file_like: typing.Union[str, bytes, io.IOBase]) -> dimod.ConstrainedQuadraticModel:
     """Construct a constrained quadratic model from a LP file.
 
-    LP files are a common format for encoding optimization models. See
-    documentation from Gurobi_ and CPLEX_.
+    LP files are a common format for encoding optimization models.
 
     Note that if the objective function is specified as a maximization function
     then it will be converted to a minimization function by flipping the sign
@@ -301,10 +290,6 @@ def load(file_like: typing.Union[str, bytes, io.IOBase]) -> dimod.ConstrainedQua
         :func:`~dimod.serialization.lp.loads`
 
     .. versionadded:: 0.11.0
-
-    .. _Gurobi: https://www.gurobi.com/documentation/9.5/refman/lp_format.html
-
-    .. _CPLEX: https://www.ibm.com/docs/en/icos/12.8.0.0?topic=cplex-lp-file-format-algebraic-representation
 
     .. _file-like: https://docs.python.org/3/glossary.html#term-file-object
 
@@ -345,8 +330,7 @@ def load(file_like: typing.Union[str, bytes, io.IOBase]) -> dimod.ConstrainedQua
 def loads(obj: typing.Union[str, typing.Union[bytes, bytearray]]) -> dimod.ConstrainedQuadraticModel:
     """Construct a constrained quadratic model from a string formatted as a LP file.
 
-    LP files are a common format for encoding optimization models. See
-    documentation from Gurobi_ and CPLEX_.
+    LP files are a common format for encoding optimization models.
 
     Note that if the objective function is specified as a maximization function
     then it will be converted to a minimization function by flipping the sign
@@ -379,10 +363,6 @@ def loads(obj: typing.Union[str, typing.Union[bytes, bytearray]]) -> dimod.Const
         :func:`~dimod.serialization.lp.load`
 
     .. versionadded:: 0.11.0
-
-    .. _Gurobi: https://www.gurobi.com/documentation/9.5/refman/lp_format.html
-
-    .. _CPLEX: https://www.ibm.com/docs/en/icos/12.8.0.0?topic=cplex-lp-file-format-algebraic-representation
 
     .. _file-like: https://docs.python.org/3/glossary.html#term-file-object
 
