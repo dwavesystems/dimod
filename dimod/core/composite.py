@@ -68,7 +68,8 @@ class Composite(Scoped):
         resources of sub-samplers/composites by default.
     """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def children(self):
         """list[ :obj:`.Sampler`]: List of child samplers that that are used by
         this composite.

@@ -42,14 +42,16 @@ class PolySampler(Scoped):
         interface, so it supports context manager protocol by default.
 
     """
-    @abc.abstractproperty  # for python2 compatibility
+    @property
+    @abc.abstractmethod
     def parameters(self):
         """dict: A dict where keys are the keyword parameters accepted by the sampler
         methods and values are lists of the properties relevant to each parameter.
         """
         pass
 
-    @abc.abstractproperty  # for python2 compatibility
+    @property
+    @abc.abstractmethod
     def properties(self):
         """dict: A dict containing any additional information about the sampler.
         """
