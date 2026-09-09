@@ -46,11 +46,7 @@ from typing import (Any, BinaryIO, Callable, Dict,
 
 import numpy as np
 
-try:
-    from numpy.typing import ArrayLike, DTypeLike
-except ImportError:
-    ArrayLike = Any
-    DTypeLike = Any
+from numpy.typing import ArrayLike, DTypeLike
 
 from dimod.binary.cybqm import cyBQM_float32, cyBQM_float64
 from dimod.binary.pybqm import pyBQM

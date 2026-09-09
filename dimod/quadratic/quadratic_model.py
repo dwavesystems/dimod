@@ -39,11 +39,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-try:
-    from numpy.typing import ArrayLike, DTypeLike
-except ImportError:
-    ArrayLike = typing.Any
-    DTypeLike = typing.Any
+from numpy.typing import DTypeLike
 
 from dimod.decorators import forwarding_method, unique_variable_labels
 from dimod.quadratic.cyqm import cyQM_float32, cyQM_float64

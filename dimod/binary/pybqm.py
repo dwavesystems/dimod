@@ -21,11 +21,7 @@ from typing import Any, Dict, Iterator, Optional, Tuple, Mapping
 
 import numpy as np
 
-try:
-    from numpy.typing import ArrayLike, DTypeLike
-except ImportError:
-    ArrayLike = Any
-    DTypeLike = Any
+from numpy.typing import ArrayLike, DTypeLike
 
 from dimod.sampleset import as_samples
 from dimod.typing import Variable, VartypeLike
