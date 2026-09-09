@@ -107,7 +107,7 @@ archs = "AMD64"
 select = "cp31[!01]-*"  # uses fnmatch, will fail for 3.20+ but good enough for now
 build-frontend = { name = "build", args = ["-Csetup-args=-Dpython.allow_limited_api=true"] }
 
-# This is, by default, overriden in meson.build. We then override the override
+# This is, by default, overridden in meson.build. We then override the override
 # in cibuildwheel. It's a bit convoluted, but (as of Sept 2026) it's the only
 # way to get it to work, see https://github.com/mesonbuild/meson-python/issues/787
 [tool.meson-python]
