@@ -280,11 +280,13 @@ workflows:
           matrix:
             parameters:
               # test the lowest supported numpy and the latest
-              dependencies: [oldest-supported-numpy, numpy]
+              dependencies: [numpy==2.0, numpy]
               python-version:  *python-versions
             exclude:
-              - dependencies: oldest-supported-numpy  # oldest-supported-numpy deprecated after 3.12
+              - dependencies: numpy==2.0
                 python-version: 3.13.0
+              - dependencies: numpy==2.0
+                python-version: 3.14.0
       - test-linux-cpp
       - test-osx-cpp
       - test-sdist:

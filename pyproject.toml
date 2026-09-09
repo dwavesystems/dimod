@@ -20,7 +20,7 @@ changelog = [
     "reno==4.1.0",  # latest as of July 2026
 ]
 dev = [
-    "oldest-supported-numpy; python_version < '3.13'",
+    "numpy==2.0.0; python_version < '3.13'",
     "numpy~=2.3.0; python_version >= '3.13'",  # first that supports Python 3.14
     {include-group = "build"},
     {include-group = "changelog"},
@@ -66,7 +66,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "numpy>=1.17.3",  # oldest supported NumPy on Python 3.8
+    "numpy>=2",
 ]
 
 [project.optional-dependencies]
