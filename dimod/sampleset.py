@@ -1670,7 +1670,7 @@ class SampleSet(abc.Iterable, abc.Sized):
         """
         return self.slice(n, sorted_by=sorted_by)
 
-    def slice(self, *slice_args, **kwargs):
+    def slice(self, *slice_args, sorted_by="energy"):
         """Create a new sample set with rows sliced according to standard Python
         slicing syntax.
 
@@ -1739,13 +1739,6 @@ class SampleSet(abc.Iterable, abc.Sized):
             ['BINARY', 2 rows, 2 samples, 10 variables]
 
         """
-        # handle `sorted_by` kwarg with a default value in a python2-compatible way
-        sorted_by = kwargs.pop('sorted_by', 'energy')
-        if kwargs:
-            # be strict about allowed kwargs: throw the same error as python3 would
-            raise TypeError('slice got an unexpected '
-                            'keyword argument {!r}'.format(kwargs.popitem()[0]))
-
         # follow Python's slice syntax
         if slice_args:
             selector = slice(*slice_args)

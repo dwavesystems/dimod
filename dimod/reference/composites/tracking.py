@@ -15,13 +15,7 @@
 """A composite that tracks inputs and outputs."""
 from copy import deepcopy
 from functools import wraps
-
-try:
-    from inspect import getfullargspec
-except ImportError:
-    # python 2.7, we only use .arg so it's ok
-    from inspect import getargspec as getfullargspec
-
+from inspect import getfullargspec
 
 from dimod.core.composite import ComposedSampler
 
@@ -148,9 +142,8 @@ class TrackingComposite(ComposedSampler):
 
     def clear(self):
         """Clear all the inputs/outputs."""
-        # we want to use self.inputs.clear() but it's not in python2
-        del self.inputs[:]
-        del self.outputs[:]
+        self.inputs.clear()
+        self.outputs.clear()
 
     @tracking
     def sample(self, bqm, **parameters):

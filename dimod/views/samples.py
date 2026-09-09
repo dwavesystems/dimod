@@ -143,8 +143,6 @@ class SamplesArray(abc.Sequence, abc.Iterator):
             return self[itercount]
         raise StopIteration
 
-    next = __next__  # for python2
-
 
     def __len__(self):
         return self._samples.shape[0]

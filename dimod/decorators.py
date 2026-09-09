@@ -227,8 +227,7 @@ def _is_integer(a):
     return False
 
 
-# we would like to do graph_argument(*arg_names, allow_None=False), but python2...
-def graph_argument(*arg_names, **options):
+def graph_argument(*arg_names, allow_None=False, as_networkx=False):
     """Decorator to coerce given graph arguments into a consistent form.
 
     The wrapped function accepts either an integer n, interpreted as a
@@ -251,16 +250,6 @@ def graph_argument(*arg_names, **options):
     # by default, constrain only one argument, the 'G`
     if not arg_names:
         arg_names = ['G']
-
-    # we only allow two options
-    allow_None = options.pop("allow_None", False)
-    as_networkx = options.pop("as_networkx", False)
-    if options:
-        # to keep it consistent with python3
-        # behaviour like graph_argument(*arg_names, allow_None=False)
-        key, _ = options.popitem()
-        msg = "graph_argument() for an unexpected keyword argument '{}'".format(key)
-        raise TypeError(msg)
 
     def _graph_arg(f):
         argspec = inspect.getfullargspec(f)
