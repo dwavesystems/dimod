@@ -31,12 +31,13 @@ from dimod.sampleset import as_samples, infer_vartype, SampleSet
 from dimod.vartypes import Vartype
 from dimod.binary.binary_quadratic_model import BinaryQuadraticModel
 from dimod.typing import SamplesLike
-try:
-    InitialStateGenerator = typing.Literal['none', 'tile', 'random']
-except AttributeError:
-    InitialStateGenerator = str
+
 
 __all__ = ['Initialized']
+
+
+InitialStateGenerator: typing.TypeAlias = typing.Literal['none', 'tile', 'random']
+
 
 class ParsedInputs(typing.NamedTuple):
     initial_states: SampleSet

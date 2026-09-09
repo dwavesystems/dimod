@@ -241,10 +241,7 @@ def _sample_array(array_like: ArrayLike, *, dtype: Optional[DTypeLike] = None, c
     return arr
 
 
-try:
-    ArrayOrder = typing.Literal['K', 'A', 'C', 'F']
-except AttributeError:
-    ArrayOrder = str
+ArrayOrder: typing.TypeAlias = typing.Literal['K', 'A', 'C', 'F']
 
 
 @functools.singledispatch
