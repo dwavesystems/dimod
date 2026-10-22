@@ -1,15 +1,15 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@5.0
-  macos: circleci/macos@2.4
+  win: circleci/windows@5.1  # latest as of October 2026
+  macos: circleci/macos@3.0  # latest as of October 2026
 
 commands:
   run-cibuildwheel:
     parameters:
       cibw-version:
         type: string
-        default: 4.2.1  # latest as of Sept 2026
+        default: 4.3.4  # latest as of October 2026
     steps:
       - run:
           name: run cibuildwheel
@@ -57,7 +57,7 @@ jobs:
 
   build-osx:
     macos:
-      xcode: 26.3.0  # latest as of February 2026
+      xcode: 27.2  # latest as of October 2026
 
     environment:
       <<: *global-environment
@@ -117,7 +117,7 @@ jobs:
 
   test-doctest:
     docker:
-      - image: cimg/python:3.13  # As of Sept 2026, the dwave-ocean-sdk uses 3.13
+      - image: cimg/python:3.13  # As of October 2026, the dwave-ocean-sdk uses 3.13
 
     steps:
       - checkout
@@ -218,7 +218,7 @@ jobs:
 
   test-osx-cpp:
     macos:
-      xcode: 26.3.0  # latest as of February 2026
+      xcode: 27.2  # latest as of October 2026
 
     steps: *cpp-tests
 
@@ -249,7 +249,7 @@ workflows:
       - test-doctest
       - test-dependencies:
           name: test-dependencies-latest
-          python-version: "3.15-rc"
+          python-version: "3.15"
           dependencies: numpy
           requires:
             - build-linux
