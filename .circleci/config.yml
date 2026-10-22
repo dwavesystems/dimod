@@ -1,8 +1,8 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@5.1  # latest as of October 2026
-  macos: circleci/macos@3.0  # latest as of October 2026
+  win: circleci/windows@5  # latest as of October 2026
+  macos: circleci/macos@3  # latest as of October 2026
 
 commands:
   run-cibuildwheel:
