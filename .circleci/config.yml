@@ -1,15 +1,15 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@5.0
-  macos: circleci/macos@2.4
+  win: circleci/windows@5  # latest as of October 2026
+  macos: circleci/macos@3  # latest as of October 2026
 
 commands:
   run-cibuildwheel:
     parameters:
       cibw-version:
         type: string
-        default: 4.2.1  # latest as of Sept 2026
+        default: 4.3.4  # latest as of October 2026
     steps:
       - run:
           name: run cibuildwheel
@@ -30,7 +30,7 @@ environment: &global-environment
 jobs:
   build-linux:
     docker:
-      - image: cimg/python:3.12
+      - image: cimg/python:3.13
 
     environment:
       <<: *global-environment
@@ -57,7 +57,7 @@ jobs:
 
   build-osx:
     macos:
-      xcode: 26.3.0  # latest as of February 2026
+      xcode: 27.2  # latest as of October 2026
 
     environment:
       <<: *global-environment
@@ -69,7 +69,7 @@ jobs:
 
   build-sdist:
     docker:
-      - image: cimg/python:3.12
+      - image: cimg/python:3.13
 
     steps:
       - checkout
@@ -98,7 +98,7 @@ jobs:
 
   deploy-all:
     docker:
-      - image: cimg/python:3.12
+      - image: cimg/python:3.13
 
     steps:
       - attach_workspace:
@@ -117,7 +117,7 @@ jobs:
 
   test-doctest:
     docker:
-      - image: cimg/python:3.13  # As of Sept 2026, the dwave-ocean-sdk uses 3.13
+      - image: cimg/python:3.13  # As of October 2026, the dwave-ocean-sdk uses 3.13
 
     steps:
       - checkout
@@ -186,7 +186,7 @@ jobs:
 
   test-linux-cpp:
     docker:
-      - image: cimg/python:3.12
+      - image: cimg/python:3.13
 
     steps: &cpp-tests
       - checkout
@@ -218,13 +218,13 @@ jobs:
 
   test-osx-cpp:
     macos:
-      xcode: 26.3.0  # latest as of February 2026
+      xcode: 27.2  # latest as of October 2026
 
     steps: *cpp-tests
 
   test-sdist:
     docker:
-      - image: cimg/python:3.12
+      - image: cimg/python:3.13
 
     steps:
       - checkout
@@ -249,7 +249,7 @@ workflows:
       - test-doctest
       - test-dependencies:
           name: test-dependencies-latest
-          python-version: "3.15-rc"
+          python-version: "3.15"
           dependencies: numpy
           requires:
             - build-linux
