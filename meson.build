@@ -2,7 +2,7 @@ project(
     'dimod',
     'c', 'cpp', 'cython',
     default_options: [
-        'cpp_std=c++11',
+        'cpp_std=c++23',
         'buildtype=release',
         'b_ndebug=if-release',  # add -DNDEBUG when building for "release", which we do by default
         'optimization=3',
