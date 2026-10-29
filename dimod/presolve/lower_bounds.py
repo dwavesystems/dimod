@@ -14,7 +14,7 @@
 
 from dimod.vartypes import Vartype
 
-from dwave.preprocessing.cyfix_variables import fix_variables_wrapper
+from dimod.presolve.cyfix_variables import fix_variables_wrapper
 
 def roof_duality(bqm, *, strict=True):
     """Determine a lower bound for a binary quadratic model's energy, as well as 
@@ -44,7 +44,7 @@ def roof_duality(bqm, *, strict=True):
         model's single variable. 
 
         >>> import dimod
-        >>> from dwave.preprocessing.lower_bounds import roof_duality
+        >>> from dimod.presolve.lower_bounds import roof_duality
         >>> bqm = dimod.BinaryQuadraticModel.from_ising({'a': 1.0}, {})
         >>> roof_duality(bqm)
         (-1.0, {'a': -1})

@@ -24,11 +24,11 @@
 #include <vector>
 
 #include "dimod/constrained_quadratic_model.h"
-#include "dwave/exceptions.hpp"
-#include "dwave/flags.hpp"
+#include "dimod/presolve/exceptions.h"
+#include "dimod/presolve/flags.h"
 
-namespace dwave {
-namespace presolve {
+namespace dimod {
+namespace cqm {
 
 template <class Bias, class Index = int, class Assignment = double>
 class PresolverImpl {
@@ -1056,5 +1056,5 @@ class PresolverImpl {
     bool detached_ = false;
     bool normalized_ = false;
 };
-}  // namespace presolve
-}  // namespace dwave
+}  // namespace cqm
+}  // namespace dimod

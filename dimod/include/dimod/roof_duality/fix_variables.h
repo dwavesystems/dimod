@@ -13,10 +13,10 @@
 // limitations under the License.
 
 #include "dimod/binary_quadratic_model.h"
-#include "implication_network.hpp"
-#include "posiform_info.hpp"
+#include "implication_network.h"
+#include "posiform_info.h"
 
-namespace fix_variables_ {
+namespace dimod {
 
 typedef long long int capacity_type;
 
@@ -48,7 +48,7 @@ template <class PosiformInfo>
 capacity_type fixQuboVariables(PosiformInfo &posiform_info, int num_bqm_variables,
                       bool strict,
                       std::vector<std::pair<int, int>> &fixed_variables) {
-  ImplicationNetwork<capacity_type> implication_network(posiform_info);
+  detail_::ImplicationNetwork<capacity_type> implication_network(posiform_info);
   fixed_variables.reserve(num_bqm_variables);
 
   // Fix the variables with respect to the posiform.
@@ -96,7 +96,7 @@ template <class V, class B>
 std::pair<double, std::vector<std::pair<int, int>>>
 fixQuboVariables(dimod::BinaryQuadraticModel<B, V> &bqm, bool strict, double offset=0.0) {
   int num_bqm_variables = bqm.num_variables();
-  PosiformInfo<dimod::BinaryQuadraticModel<B, V>, capacity_type> posiform_info(bqm);
+  detail_::PosiformInfo<dimod::BinaryQuadraticModel<B, V>, capacity_type> posiform_info(bqm);
   std::vector<std::pair<int, int>> fixed_variables;
   capacity_type max_flow = fixQuboVariables(posiform_info, num_bqm_variables, strict, fixed_variables);
 
@@ -116,4 +116,4 @@ fixQuboVariables(dimod::BinaryQuadraticModel<B, V> &bqm, bool strict, double off
   return {lower_bound, fixed_variables};
 }
 
-} // namespace fix_variables_
+} // namespace dimod

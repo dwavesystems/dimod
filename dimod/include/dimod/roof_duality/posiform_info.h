@@ -23,6 +23,8 @@
 #include <utility>
 #include <vector>
 
+namespace dimod::detail_ {
+
 /**
  * Contains all the information needed to recreate a posiform corresponding to 
  * a BQM. The intention is to reduce the memory footprint as much as possible, 
@@ -380,5 +382,7 @@ void PosiformInfo<BQM, coefficient_t>::print() {
   }
   std::cout << std::endl;
 }
+
+}  // namespace dimod::detail_
 
 #endif // POSIFORM_INFORMATION_INCLUDED

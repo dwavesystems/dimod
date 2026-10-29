@@ -25,9 +25,9 @@
 #include <vector>
 
 #include "dimod/constrained_quadratic_model.h"
-#include "dwave/flags.hpp"
+#include "dimod/presolve/flags.h"
 
-namespace dwave::presolve {
+namespace dimod::cqm {
 
 template <class Bias, class Index = int, class Assignment = Bias>
 class Presolver {
@@ -88,4 +88,4 @@ class Presolver {
 #endif
 };
 
-}  // namespace dwave::presolve
+}  // namespace dimod::cqm

@@ -12,12 +12,12 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#include "dwave/presolve.hpp"
+#include "dimod/presolve/presolve.h"
 
-#include "dwave/flags.hpp"
-#include "presolveimpl.hpp"
+#include "dimod/presolve/flags.h"
+#include "presolveimpl.h"
 
-namespace dwave::presolve {
+namespace dimod::cqm {
 
 template <class Bias, class Index, class Assignment>
 class Presolver<Bias, Index, Assignment>::PresolverImpl_
@@ -102,4 +102,4 @@ TechniqueFlags Presolver<Bias, Index, Assignment>::techniques() const {
 template class Presolver<double, int, double>;
 template class Presolver<double, long, double>;
 
-}  // namespace dwave::presolve
+}  // namespace dimod::cqm

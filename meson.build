@@ -53,6 +53,7 @@ if get_option('build-python')
         'dimod/cyqmbase/cyqmbase_float32.pyx',
         'dimod/cyqmbase/cyqmbase_float64.pyx',
         'dimod/discrete/cydiscrete_quadratic_model.pyx',
+        'dimod/presolve/cyfix_variables.pyx',
         'dimod/quadratic/cyqm/cyqm_float32.pyx',
         'dimod/quadratic/cyqm/cyqm_float64.pyx',
         'dimod/cyutilities.pyx',
@@ -87,6 +88,22 @@ if get_option('build-python')
         install: true,
         override_options : ['cython_language=cpp'],
         subdir: 'dimod/',
+        limited_api: limited_api,
+    )
+
+    py.extension_module(
+        'cypresolve',
+        'dimod/presolve/cypresolve.pyx',
+        cython_args : ['-Xfreethreading_compatible=True'],
+        dependencies: [
+            dimod_dep,
+            declare_dependency(
+                sources: ['dimod/src/exceptions.cpp', 'dimod/src/presolve.cpp'],
+            ),
+        ],
+        install: true,
+        override_options : ['cython_language=cpp'],
+        subdir: 'dimod/presolve/',
         limited_api: limited_api,
     )
 

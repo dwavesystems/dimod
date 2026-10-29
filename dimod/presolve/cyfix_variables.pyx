@@ -27,7 +27,7 @@ from dimod.libcpp cimport BinaryQuadraticModel as cppBinaryQuadraticModel
 from dimod.binary.cybqm cimport cyBQM_float64
 
 
-cdef extern from "include/dwave-preprocessing/fix_variables.hpp" namespace "fix_variables_":
+cdef extern from "dimod/roof_duality/fix_variables.h" namespace "dimod":
     pair[double, vector[pair[int, int]]] fixQuboVariables[V, B](cppBinaryQuadraticModel[B, V]& refBQM,
                                                                 bint strict, 
                                                                 double offset) except +

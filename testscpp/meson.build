@@ -9,13 +9,19 @@ tests_all = executable(
         'test_binary_quadratic_model.cpp',
         'test_constrained_quadratic_model.cpp',
         'test_iterators.cpp',
+        'test_presolve.cpp',
+        'test_presolveimpl.cpp',
         'test_quadratic_model.cpp',
+        'test_roof_duality.cpp',
         'test_utils.cpp',
+        '../dimod/src/exceptions.cpp',
+        '../dimod/src/presolve.cpp',
     ],
     dependencies: [
         catch2,
         dimod_dep,
     ],
+    include_directories: '../dimod/src',
 )
 
 test('tests-all', tests_all, verbose: true)

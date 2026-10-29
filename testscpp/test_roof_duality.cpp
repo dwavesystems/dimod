@@ -15,9 +15,9 @@
 #include <dimod/quadratic_model.h>
 
 #include "catch2/catch.hpp"
-#include "dwave-preprocessing/fix_variables.hpp"
+#include "dimod/roof_duality/fix_variables.h"
 
-namespace fix_variables_ {
+namespace dimod {
 
 TEST_CASE("Tests for fixQuboVariables", "[roofduality]") {
     SECTION("Test simple case") {
@@ -27,7 +27,7 @@ TEST_CASE("Tests for fixQuboVariables", "[roofduality]") {
         auto bqm = dimod::BinaryQuadraticModel<float, int>(Q, num_vars, dimod::Vartype::BINARY);
 
         // Checking fixQuboVariables(PosiformInfo, ..)
-        PosiformInfo<dimod::BinaryQuadraticModel<float, int>, capacity_type> posiform(bqm);
+        detail_::PosiformInfo<dimod::BinaryQuadraticModel<float, int>, capacity_type> posiform(bqm);
         std::vector<std::pair<int, int>> fixed_vars;
         fixQuboVariables(posiform, num_vars, true, fixed_vars);
 
@@ -168,7 +168,7 @@ TEST_CASE("Tests for PosiformInfo", "[roofduality]") {
         int num_vars = 3;
         auto bqm = dimod::BinaryQuadraticModel<float, int>(Q, num_vars, dimod::Vartype::BINARY);
 
-        PosiformInfo<dimod::BinaryQuadraticModel<float, int>, capacity_type> posiform(bqm);
+        detail_::PosiformInfo<dimod::BinaryQuadraticModel<float, int>, capacity_type> posiform(bqm);
         REQUIRE(posiform.getNumVariables() == num_vars);
         REQUIRE(posiform.getNumLinear() == 2);
 
@@ -206,7 +206,7 @@ TEST_CASE("Tests for PosiformInfo", "[roofduality]") {
 
         int num_vars = 3;
         auto bqm = dimod::BinaryQuadraticModel<float, int>(Q, num_vars, dimod::Vartype::BINARY);
-        PosiformInfo<dimod::BinaryQuadraticModel<float, int>, capacity_type> posiform(bqm);
+        detail_::PosiformInfo<dimod::BinaryQuadraticModel<float, int>, capacity_type> posiform(bqm);
 
         REQUIRE(posiform.getNumVariables() == 1);
 
@@ -224,4 +224,4 @@ TEST_CASE("Tests for PosiformInfo", "[roofduality]") {
     }
 }
 
-}  // namespace fix_variables_
+}  // namespace dimod

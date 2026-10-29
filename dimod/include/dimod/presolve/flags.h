@@ -16,7 +16,7 @@
 
 #include <cstdint>
 
-namespace dwave::presolve {
+namespace dimod::cqm {
 
 enum Feasibility {
     Infeasible,  //< The model is known to be infeasible
@@ -60,4 +60,4 @@ inline TechniqueFlags operator&(TechniqueFlags lhs, TechniqueFlags rhs) {
                                        static_cast<std::underlying_type_t<TechniqueFlags>>(rhs));
 }
 
-}  // namespace dwave::presolve
+}  // namespace dimod::cqm

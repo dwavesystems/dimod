@@ -14,11 +14,12 @@
 
 #include "catch2/catch.hpp"
 #include "dimod/constrained_quadratic_model.h"
-#include "dwave/exceptions.hpp"
-#include "dwave/flags.hpp"
-#include "dwave/presolve.hpp"
+#include "dimod/presolve/exceptions.h"
+#include "dimod/presolve/flags.h"
+#include "dimod/presolve/presolve.h"
 
 namespace dwave {
+namespace presolve = dimod::cqm;
 
 using Presolver = presolve::Presolver<double, int, double>;
 using ConstrainedQuadraticModel = dimod::ConstrainedQuadraticModel<double, int>;

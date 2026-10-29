@@ -16,7 +16,7 @@ import unittest
 
 import dimod
 
-from dwave.preprocessing.lower_bounds import roof_duality
+from dimod.presolve.lower_bounds import roof_duality
 
 class TestRoofDuality(unittest.TestCase):
     def test_empty(self):

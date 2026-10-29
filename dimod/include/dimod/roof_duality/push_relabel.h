@@ -59,7 +59,9 @@
 #include <tuple>
 #include <vector>
 
-#include "helper_data_structures.hpp"
+#include "helper_data_structures.h"
+
+namespace dimod::detail_ {
 
 //#define COLLECT_STATISTICS
 
@@ -771,5 +773,7 @@ template <class EdgeType> void PushRelabelSolver<EdgeType>::printStatistics() {
   std::cout << "Statistics not collected." << std::endl << std::endl;
 #endif
 }
+
+}  // namespace dimod::detail_
 
 #endif // PUSH_RELABEL_INCLUDED

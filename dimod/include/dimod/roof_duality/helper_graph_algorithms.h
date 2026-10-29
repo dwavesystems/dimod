@@ -20,7 +20,9 @@
 #include <iostream>
 #include <vector>
 
-#include "helper_data_structures.hpp"
+#include "helper_data_structures.h"
+
+namespace dimod::detail_ {
 
 // Perform breadth first search from a certain vertex, a depth equal to  the
 // number of vertices means that vertex could not be reached from the
@@ -472,5 +474,7 @@ void createGraphOfStronglyConnectedComponents(
     }
   }
 }
+
+}  // namespace dimod::detail_
 
 #endif // HELPER_GRAPH_ALGORITHM_HPP_INCLUDED

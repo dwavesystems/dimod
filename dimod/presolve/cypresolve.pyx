@@ -1,5 +1,3 @@
-# distutils: sources = dwave/preprocessing/src/presolve.cpp dwave/preprocessing/src/exceptions.cpp
-
 # Copyright 2022 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,14 +26,14 @@ import dimod
 from dimod.libcpp cimport ConstrainedQuadraticModel as cppConstrainedQuadraticModel
 from dimod.constrained.cyconstrained cimport cyConstrainedQuadraticModel, make_cqm
 
-from dwave.preprocessing.libcpp cimport Feasibility as cppFeasibility
-from dwave.preprocessing.libcpp cimport TechniqueFlags as cppTechniqueFlags
-from dwave.preprocessing.libcpp cimport duration
-from dwave.preprocessing.presolve.exceptions import InvalidModelError
+from dimod.libcpp.presolve cimport Feasibility as cppFeasibility
+from dimod.libcpp.presolve cimport TechniqueFlags as cppTechniqueFlags
+from dimod.libcpp.presolve cimport duration
+from dimod.presolve.exceptions import InvalidModelError
 
-# We want to establish a relationship between presolveimpl.hpp and this file, so that
-# changes to presolveimpl.hpp will trigger a rebuild.
-cdef extern from "../src/presolveimpl.hpp" namespace "dwave::presolve" nogil:
+# We want to establish a relationship between presolveimpl.h and this file, so that
+# changes to presolveimpl.h will trigger a rebuild.
+cdef extern from "../src/presolveimpl.h" namespace "dimod::cqm" nogil:
     pass
 
 

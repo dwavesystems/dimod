@@ -25,7 +25,7 @@ algorithms provided here prior to submitting your CQM to a solver, such as the
 
 This example uses a simplified problem for illustrative purposes: a CQM with just
 a single-variable objective and constraint. This is sufficient to
-show how to run :class:`~dwave.preprocessing.presolve.Presolver` methods.
+show how to run :class:`~dimod.presolve.Presolver` methods.
 
 The CQM created below has a constraint requiring that integer variable ``j``
 not exceed 5.
@@ -44,10 +44,10 @@ bound of ``j``.
 >>> cqm.lower_bound("j")
 0.0
 
-To run Ocean's presolve algorithms locally, instantiate a :class:`~dwave.preprocessing.presolve.Presolver`
+To run Ocean's presolve algorithms locally, instantiate a :class:`~dimod.presolve.Presolver`
 on your CQM and apply a supported presolve (default is used here).
 
->>> from dwave.preprocessing.presolve import Presolver
+>>> from dimod.presolve import Presolver
 ...
 >>> presolve = Presolver(cqm)
 >>> presolve.apply()
@@ -89,7 +89,7 @@ import warnings
 
 import dimod
 
-from dwave.preprocessing.presolve.cypresolve import cyPresolver, Feasibility, TechniqueFlags
+from dimod.presolve.cypresolve import cyPresolver, Feasibility, TechniqueFlags
 
 __all__ = ["Feasibility", "Presolver", "TechniqueFlags"]
 
@@ -113,7 +113,7 @@ class Presolver(cyPresolver):
         This example reduces an implicitly fixed constraint.
 
         >>> import dimod
-        >>> from dwave.preprocessing import Presolver
+        >>> from dimod.presolve import Presolver
 
         Create a simple CQM with one variable fixed by bounds.
 

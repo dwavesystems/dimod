@@ -12,10 +12,10 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-#include "dwave/exceptions.hpp"
+#include "dimod/presolve/exceptions.h"
 
-namespace dwave::presolve {
+namespace dimod::cqm {
 
 InvalidModelError::InvalidModelError(const std::string& msg) : std::runtime_error(msg) {}
 
-}  // namespace dwave::presolve
+}  // namespace dimod::cqm

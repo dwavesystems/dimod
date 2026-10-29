@@ -14,9 +14,10 @@
 
 #include "catch2/catch.hpp"
 #include "dimod/constrained_quadratic_model.h"
-#include "presolveimpl.hpp"
+#include "presolveimpl.h"
 
 namespace dwave {
+namespace presolve = dimod::cqm;
 
 using PresolverImpl = presolve::PresolverImpl<double, int, double>;
 using ConstrainedQuadraticModel = dimod::ConstrainedQuadraticModel<double, int>;

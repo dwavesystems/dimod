@@ -27,6 +27,8 @@
 
 #include <vector>
 
+namespace dimod::detail_ {
+
 // Queue with std::vector as internal container.
 template <typename T> class vector_based_queue {
   std::vector<T> _data;
@@ -148,5 +150,7 @@ public:
     other.clear();
   }
 };
+
+}  // namespace dimod::detail_
 
 #endif

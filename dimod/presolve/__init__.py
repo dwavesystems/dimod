@@ -12,5 +12,5 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from dwave.preprocessing.presolve.pypresolve import *
-from dwave.preprocessing.presolve.exceptions import *
+from dimod.presolve.pypresolve import *
+from dimod.presolve.exceptions import *

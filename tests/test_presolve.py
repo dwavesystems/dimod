@@ -20,7 +20,7 @@ import unittest
 import dimod
 import numpy as np
 
-from dwave.preprocessing import Presolver, Feasibility, InvalidModelError, TechniqueFlags
+from dimod.presolve import Presolver, Feasibility, InvalidModelError, TechniqueFlags
 
 try:
     NUM_CPUS = len(os.sched_getaffinity(0))

@@ -16,9 +16,11 @@
 #define IMPLICATION_NETWORK_HPP_INCLUDED
 
 #include <assert.h>
-#include "helper_graph_algorithms.hpp"
-#include "mapping_policy.hpp"
-#include "push_relabel.hpp"
+#include "helper_graph_algorithms.h"
+#include "mapping_policy.h"
+#include "push_relabel.h"
+
+namespace dimod::detail_ {
 
 // Edge type for implication network. An implication network is formed from a
 // posiform. If there is a term Coeff * X_i * X_j, we will have two edges in the
@@ -687,4 +689,6 @@ template <class capacity_t> void ImplicationNetwork<capacity_t>::print() {
     std::cout << std::endl;
   }
 }
+}  // namespace dimod::detail_
+
 #endif // IMPLICATION_NETWORK_INCLUDED

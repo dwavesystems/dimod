@@ -1,5 +1,3 @@
-# distutils: include_dirs = dwave/preprocessing/include/
-
 # Copyright 2022 D-Wave Systems Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,10 +21,10 @@ cdef extern from "<chrono>" namespace "std::chrono" nogil:
     cdef cppclass duration[Rep]:
         duration(Rep)
 
-cdef extern from "dwave/exceptions.hpp" namespace "dwave::presolve" nogil:
+cdef extern from "dimod/presolve/exceptions.h" namespace "dimod::cqm" nogil:
     pass
 
-cdef extern from "dwave/flags.hpp" namespace "dwave::presolve" nogil:
+cdef extern from "dimod/presolve/flags.h" namespace "dimod::cqm" nogil:
     enum Feasibility:
         Unknown,
         Infeasible,
@@ -40,7 +38,7 @@ cdef extern from "dwave/flags.hpp" namespace "dwave::presolve" nogil:
         All
         Default
 
-cdef extern from "dwave/presolve.hpp" namespace "dwave::presolve" nogil:
+cdef extern from "dimod/presolve/presolve.h" namespace "dimod::cqm" nogil:
     cdef cppclass Presolver[bias_type, index_type, assignment_type]:
         ctypedef ConstrainedQuadraticModel[bias_type, index_type] model_type
 
