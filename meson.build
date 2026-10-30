@@ -40,6 +40,13 @@ endif
 
 dimod_dep = declare_dependency(
     include_directories: 'dimod/include/',
+    link_with: static_library(
+        'dimod',
+        sources: ['dimod/src/exceptions.cpp', 'dimod/src/presolve.cpp'],
+        include_directories: 'dimod/include/',
+        gnu_symbol_visibility: 'hidden',
+        build_by_default: false,
+    ),
 )
 
 # Some packages that use dimod as a subproject do not need the extension modules
@@ -53,6 +60,8 @@ if get_option('build-python')
         'dimod/cyqmbase/cyqmbase_float32.pyx',
         'dimod/cyqmbase/cyqmbase_float64.pyx',
         'dimod/discrete/cydiscrete_quadratic_model.pyx',
+        'dimod/presolve/cyfix_variables.pyx',
+        'dimod/presolve/cypresolve.pyx',
         'dimod/quadratic/cyqm/cyqm_float32.pyx',
         'dimod/quadratic/cyqm/cyqm_float64.pyx',
         'dimod/cyutilities.pyx',

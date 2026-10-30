@@ -1,0 +1,14 @@
+---
+prelude: >
+    Roof duality and the constrained quadratic model presolver from
+    ``dwave-preprocessing`` 0.6.11 have been copied to ``dimod.presolve``.
+features:
+  - |
+    Add a presolver for constrained quadratic models
+    (``dimod.presolve.Presolver``), along with ``dimod.presolve.Feasibility``,
+    ``dimod.presolve.TechniqueFlags`` and ``dimod.presolve.InvalidModelError``.
+    Copied from ``dwave-preprocessing`` 0.6.11.
+  - |
+    Add roof duality for binary quadratic models
+    (``dimod.presolve.lower_bounds.roof_duality``). Copied from
+    ``dwave-preprocessing`` 0.6.11.
