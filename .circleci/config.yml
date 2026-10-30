@@ -7,6 +7,9 @@ orbs:
 commands:
   run-cibuildwheel:
     parameters:
+      cibw-config:  # environment variables
+        type: string
+        default: ""
       cibw-version:
         type: string
         default: 4.3.4  # latest as of October 2026
@@ -16,7 +19,7 @@ commands:
           shell: bash -eo pipefail
           command: |
             python -m pip install --user cibuildwheel==<< parameters.cibw-version >>
-            python -m cibuildwheel --output-dir dist
+            << parameters.cibw-config >> python -m cibuildwheel --output-dir dist
 
       - store_artifacts: &store-artifacts
           path: ./dist
@@ -94,7 +97,9 @@ jobs:
 
     steps:
       - checkout
-      - run-cibuildwheel
+      - run: choco install llvm -y
+      - run-cibuildwheel:
+          cibw-config: CIBW_ENVIRONMENT_PASS=CXX CXX=clang-cl
 
   deploy-all:
     docker:
