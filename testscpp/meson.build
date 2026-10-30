@@ -14,8 +14,6 @@ tests_all = executable(
         'test_quadratic_model.cpp',
         'test_roof_duality.cpp',
         'test_utils.cpp',
-        '../dimod/src/exceptions.cpp',
-        '../dimod/src/presolve.cpp',
     ],
     dependencies: [
         catch2,
