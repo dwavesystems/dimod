@@ -27,7 +27,7 @@ namespace dimod::detail_ {
 // Perform breadth first search from a certain vertex, a depth equal to  the
 // number of vertices means that vertex could not be reached from the
 // start_vertex, since the maximum depth can be equal to number of vertices -1.
-int breadthFirstSearch(std::vector<std::vector<int>> &adjacency_list,
+inline int breadthFirstSearch(std::vector<std::vector<int>> &adjacency_list,
                        int start_vertex, std::vector<int> &depth_values,
                        bool print_result = false) {
   int num_vertices = adjacency_list.size();
@@ -272,7 +272,7 @@ isMaximumFlow(std::vector<std::vector<EdgeType>> &adjacency_list, int source,
 // at the parent of the current vertex being processed and when we want to push
 // a vertex into the stack, we can save it as the parent of the child vertex and
 // restart the loop with the child vertex as the current vertex.
-int stronglyConnectedComponents(std::vector<std::vector<int>> &adjacency_list,
+inline int stronglyConnectedComponents(std::vector<std::vector<int>> &adjacency_list,
                                 std::vector<int> &components) {
   int num_vertices = adjacency_list.size();
   using edge_iterator = typename std::vector<int>::iterator;
@@ -388,7 +388,7 @@ int stronglyConnectedComponents(std::vector<std::vector<int>> &adjacency_list,
 }
 
 // Transpose an adjacency list.
-void getTransposedAdjacencyList(std::vector<std::vector<int>> original,
+inline void getTransposedAdjacencyList(std::vector<std::vector<int>> original,
                                 std::vector<std::vector<int>> &transposed) {
   int num_vertices = original.size();
   std::atomic<int> *transposed_sizes =
@@ -432,7 +432,7 @@ void getTransposedAdjacencyList(std::vector<std::vector<int>> original,
 // matrix which may be very large if the number of strongly connected components
 // is nearly equal to the number of vertices and we would risk memory allocation
 // failure.
-void createGraphOfStronglyConnectedComponents(
+inline void createGraphOfStronglyConnectedComponents(
     std::vector<int> &vertex_to_component_map,
     std::vector<std::vector<int>> &components,
     std::vector<std::vector<int>> &adjacency_list_residual,
