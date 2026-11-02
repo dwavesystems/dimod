@@ -42,7 +42,7 @@ dimod_dep = declare_dependency(
     include_directories: 'dimod/include/',
     link_with: static_library(
         'dimod',
-        sources: ['dimod/src/exceptions.cpp', 'dimod/src/presolve.cpp'],
+        sources: ['dimod/src/exceptions.cpp', 'dimod/src/fix_variables.cpp', 'dimod/src/presolve.cpp'],
         include_directories: 'dimod/include/',
         gnu_symbol_visibility: 'hidden',
         build_by_default: false,

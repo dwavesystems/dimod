@@ -16,6 +16,7 @@
 
 #include "catch2/catch.hpp"
 #include "dimod/roof_duality/fix_variables.h"
+#include "dimod/roof_duality/fix_variables_impl.h"
 
 namespace dimod {
 
