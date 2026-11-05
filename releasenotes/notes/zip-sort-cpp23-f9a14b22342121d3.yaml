@@ -1,0 +1,8 @@
+---
+upgrade:
+  - |
+    Code that includes dimod's C++ headers must now be compiled with C++23 or
+    later, because ``dimod::utils::zip_sort()`` uses ``std::views::zip``.
+  - |
+    ``dimod::utils::zip_sort()`` may now order elements with equal ``control``
+    values differently.
