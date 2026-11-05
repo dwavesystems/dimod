@@ -15,9 +15,8 @@
 #pragma once
 
 #include <algorithm>
-#include <cstdint>
-#include <limits>
-#include <utility>
+#include <ranges>
+#include <tuple>
 #include <vector>
 
 namespace dimod {
@@ -51,9 +50,6 @@ ValueIter remove_by_index(ValueIter vfirst, ValueIter vlast, IndexIter ifirst, I
     return std::remove_if(vfirst, vlast, pred);
 }
 
-    // zip_sort is a modification of the code found here :
-    // https://www.geeksforgeeks.org/iterative-quick-sort/
-
     /**
      * Sort two vectors, using `control` to provide the ordering.
      *
@@ -63,80 +59,8 @@ ValueIter remove_by_index(ValueIter vfirst, ValueIter vlast, IndexIter ifirst, I
     template <class T1, class T2>
     void zip_sort(std::vector<T1>& control, std::vector<T2>& response) {
         assert(control.size() == response.size());
-        std::size_t length = control.size();
-
-        if (length < 2) {
-            return;
-        } else if (length > static_cast<std::size_t>(std::numeric_limits<int64_t>::max())) {
-            throw std::logic_error(
-                    "Length of arrays are too big for sorting. Numerical "
-                    "overflow will occur.");
-        }
-
-        std::int64_t* stack = (std::int64_t*)malloc(length * sizeof(std::int64_t));
-        std::int64_t top = -1;
-        std::int64_t low = 0;
-        std::int64_t high = length - 1;
-
-        stack[++top] = low;
-        stack[++top] = high;
-
-        while (top >= 0) {
-            high = stack[top--];
-            low = stack[top--];
-
-            std::int64_t pivot_choice_index = (low + high + 1) / 2;
-            if (pivot_choice_index != high) {
-                T1 control_temp = control[pivot_choice_index];
-                control[pivot_choice_index] = control[high];
-                control[high] = control_temp;
-
-                T2 response_temp = response[pivot_choice_index];
-                response[pivot_choice_index] = response[high];
-                response[high] = response_temp;
-            }
-
-            T1 pivot_element = control[high];
-            std::int64_t i = low - 1;
-
-            for (std::int64_t j = low; j <= high - 1; j++) {
-                if (control[j] <= pivot_element) {
-                    i++;
-                    if (i != j) {
-                        T1 control_temp = control[i];
-                        control[i] = control[j];
-                        control[j] = control_temp;
-
-                        T2 response_temp = response[i];
-                        response[i] = response[j];
-                        response[j] = response_temp;
-                    }
-                }
-            }
-
-            // Pivot position.
-            std::int64_t p = i + 1;
-
-            T1 control_temp = control[p];
-            control[p] = control[high];
-            control[high] = control_temp;
-
-            T2 response_temp = response[p];
-            response[p] = response[high];
-            response[high] = response_temp;
-
-            if (p - 1 > low) {
-                stack[++top] = low;
-                stack[++top] = p - 1;
-            }
-
-            if (p + 1 < high) {
-                stack[++top] = p + 1;
-                stack[++top] = high;
-            }
-        }
-
-        free(stack);
+        std::ranges::sort(std::views::zip(control, response), {},
+                          [](const auto& cr) { return std::get<0>(cr); });
     }
 
 }  // namespace utils

@@ -122,13 +122,13 @@ jobs:
 
   test-doctest:
     docker:
-      - image: cimg/python:3.13  # As of October 2026, the dwave-ocean-sdk uses 3.13
+      - image: python:3.13  # As of October 2026, the dwave-ocean-sdk uses 3.13
 
     steps:
       - checkout
       - run:
           name: install doxygen
-          command: sudo apt update && sudo apt install doxygen
+          command: apt update && apt install -y doxygen
       - run:
           name: install dependencies
           command: |
@@ -191,7 +191,7 @@ jobs:
 
   test-linux-cpp:
     docker:
-      - image: cimg/python:3.13
+      - image: python:3.13
 
     steps: &cpp-tests
       - checkout
@@ -229,7 +229,7 @@ jobs:
 
   test-sdist:
     docker:
-      - image: cimg/python:3.13
+      - image: python:3.13
 
     steps:
       - checkout
