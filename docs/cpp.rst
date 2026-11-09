@@ -77,9 +77,3 @@ dimod Abstract Base Class (`dimod::abc`)
     :project: dimod
 
 .. Todo: dimod lp
-
-dimod Utilities (`dimod::utils`)
-================================
-
-.. doxygenfunction:: zip_sort
-   :project: dimod
