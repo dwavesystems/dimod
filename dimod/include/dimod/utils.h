@@ -15,6 +15,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 
 namespace dimod {
 namespace utils {
