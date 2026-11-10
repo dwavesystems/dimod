@@ -353,7 +353,11 @@ void Expression<bias_type, index_type>::add_linear(index_type v, bias_type bias)
 
 template <class bias_type, class index_type>
 void Expression<bias_type, index_type>::add_quadratic(index_type u, index_type v, bias_type bias) {
-    base_type::add_quadratic(enforce_variable(u), enforce_variable(v), bias);
+    // separate statements because argument evaluation order is unspecified; adding v first
+    // keeps the order that Linux and Windows builds already used
+    index_type vi = enforce_variable(v);
+    index_type ui = enforce_variable(u);
+    base_type::add_quadratic(ui, vi, bias);
 }
 
 template <class bias_type, class index_type>
@@ -372,7 +376,11 @@ void Expression<bias_type, index_type>::add_quadratic(ItRow row_iterator, ItCol 
 
 template <class bias_type, class index_type>
 void Expression<bias_type, index_type>::add_quadratic_back(index_type u, index_type v, bias_type bias) {
-    base_type::add_quadratic_back(enforce_variable(u), enforce_variable(v), bias);
+    // separate statements because argument evaluation order is unspecified; adding v first
+    // keeps the order that Linux and Windows builds already used
+    index_type vi = enforce_variable(v);
+    index_type ui = enforce_variable(u);
+    base_type::add_quadratic_back(ui, vi, bias);
 }
 
 template <class bias_type, class index_type>
@@ -670,7 +678,11 @@ void Expression<bias_type, index_type>::set_linear(index_type v, bias_type bias)
 
 template <class bias_type, class index_type>
 void Expression<bias_type, index_type>::set_quadratic(index_type u, index_type v, bias_type bias) {
-    base_type::set_quadratic(enforce_variable(u), enforce_variable(v), bias);
+    // separate statements because argument evaluation order is unspecified; adding v first
+    // keeps the order that Linux and Windows builds already used
+    index_type vi = enforce_variable(v);
+    index_type ui = enforce_variable(u);
+    base_type::set_quadratic(ui, vi, bias);
 }
 
 template <class bias_type, class index_type>

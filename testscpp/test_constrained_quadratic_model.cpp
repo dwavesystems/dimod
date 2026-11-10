@@ -962,6 +962,40 @@ TEST_CASE("Test Expression::add_quadratic_back()") {
     }
 }
 
+TEST_CASE("Test Expression adds the second new variable of a quadratic term first") {
+    // https://github.com/dwavesystems/dimod/issues/1440
+    GIVEN("A CQM with two variables and a new constraint") {
+        auto cqm = dimod::ConstrainedQuadraticModel<double>();
+        auto x = cqm.add_variable(Vartype::BINARY);
+        auto y = cqm.add_variable(Vartype::BINARY);
+        auto constraint = cqm.new_constraint();
+
+        WHEN("add_quadratic() adds both variables") {
+            constraint.add_quadratic(x, y, 1);
+
+            THEN("the second variable is added first") {
+                CHECK(constraint.variables() == std::vector<int>{y, x});
+            }
+        }
+
+        WHEN("add_quadratic_back() adds both variables") {
+            constraint.add_quadratic_back(x, y, 1);
+
+            THEN("the second variable is added first") {
+                CHECK(constraint.variables() == std::vector<int>{y, x});
+            }
+        }
+
+        WHEN("set_quadratic() adds both variables") {
+            constraint.set_quadratic(x, y, 1);
+
+            THEN("the second variable is added first") {
+                CHECK(constraint.variables() == std::vector<int>{y, x});
+            }
+        }
+    }
+}
+
 TEST_CASE("Test Expression::remove_variables()") {
     GIVEN("A CQM with five variables, an objective, and one constraint") {
         auto cqm = ConstrainedQuadraticModel<double>();
