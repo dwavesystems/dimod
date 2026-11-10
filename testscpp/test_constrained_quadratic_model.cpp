@@ -962,7 +962,7 @@ TEST_CASE("Test Expression::add_quadratic_back()") {
     }
 }
 
-TEST_CASE("Test Expression adds the second new variable of a quadratic term first") {
+TEST_CASE("Test Expression adds new variables in argument order") {
     // https://github.com/dwavesystems/dimod/issues/1440
     GIVEN("A CQM with two variables and a new constraint") {
         auto cqm = dimod::ConstrainedQuadraticModel<double>();
@@ -973,23 +973,51 @@ TEST_CASE("Test Expression adds the second new variable of a quadratic term firs
         WHEN("add_quadratic() adds both variables") {
             constraint.add_quadratic(x, y, 1);
 
-            THEN("the second variable is added first") {
-                CHECK(constraint.variables() == std::vector<int>{y, x});
+            THEN("they are added in argument order") {
+                CHECK(constraint.variables() == std::vector<int>{x, y});
             }
         }
 
         WHEN("add_quadratic_back() adds both variables") {
             constraint.add_quadratic_back(x, y, 1);
 
-            THEN("the second variable is added first") {
-                CHECK(constraint.variables() == std::vector<int>{y, x});
+            THEN("they are added in argument order") {
+                CHECK(constraint.variables() == std::vector<int>{x, y});
             }
         }
 
         WHEN("set_quadratic() adds both variables") {
             constraint.set_quadratic(x, y, 1);
 
-            THEN("the second variable is added first") {
+            THEN("they are added in argument order") {
+                CHECK(constraint.variables() == std::vector<int>{x, y});
+            }
+        }
+    }
+}
+
+TEST_CASE("Test Expression keeps the order of existing variables") {
+    GIVEN("A CQM with two variables and a new constraint") {
+        auto cqm = dimod::ConstrainedQuadraticModel<double>();
+        auto x = cqm.add_variable(Vartype::BINARY);
+        auto y = cqm.add_variable(Vartype::BINARY);
+        auto constraint = cqm.new_constraint();
+
+        WHEN("add_quadratic() is given one variable that is already in the constraint") {
+            constraint.add_linear(y, 1);
+            constraint.add_quadratic(x, y, 1);
+
+            THEN("the existing variable keeps its place and the new one is added after it") {
+                CHECK(constraint.variables() == std::vector<int>{y, x});
+            }
+        }
+
+        WHEN("add_quadratic() is given two variables that are already in the constraint") {
+            constraint.add_linear(y, 1);
+            constraint.add_linear(x, 1);
+            constraint.add_quadratic(x, y, 1);
+
+            THEN("their order is preserved") {
                 CHECK(constraint.variables() == std::vector<int>{y, x});
             }
         }
