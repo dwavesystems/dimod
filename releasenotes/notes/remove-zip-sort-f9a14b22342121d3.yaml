@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    Remove ``dimod::utils::zip_sort()``. With C++23, use ``std::ranges::sort()``
+    on a ``std::views::zip()`` of the two vectors instead.
