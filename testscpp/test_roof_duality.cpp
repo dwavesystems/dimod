@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <limits>
 #include <map>
+#include <random>
 #include <utility>
 #include <vector>
 
@@ -236,6 +237,27 @@ TEST_CASE("Tests for fixQuboVariables", "[roofduality]") {
         auto bqm = dimod::BinaryQuadraticModel<double, int>(Q, 8, dimod::Vartype::BINARY);
 
         REQUIRE(fixings_agree_with_an_optimum(bqm, fixQuboVariables(bqm, false).second));
+    }
+
+    SECTION("Test the fixings agree with an optimum on random problems when strict=false") {
+        // Only rng() % n is used, so every platform generates the same problems.
+        std::mt19937 rng(0);
+        for (int i = 0; i < 1000; ++i) {
+            int num_vars = 3 + rng() % 6;
+            std::vector<double> Q(num_vars * num_vars, 0);
+            for (int u = 0; u < num_vars; ++u) {
+                for (int v = u; v < num_vars; ++v) {
+                    // integer biases in [-3, 3], with half of the interactions left out
+                    if (u == v || rng() % 2 == 0) {
+                        Q[u * num_vars + v] = static_cast<int>(rng() % 7) - 3;
+                    }
+                }
+            }
+            auto bqm = dimod::BinaryQuadraticModel<double, int>(Q.data(), num_vars,
+                                                                dimod::Vartype::BINARY);
+
+            REQUIRE(fixings_agree_with_an_optimum(bqm, fixQuboVariables(bqm, false).second));
+        }
     }
 }
 
