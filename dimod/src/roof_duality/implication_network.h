@@ -507,7 +507,7 @@ void ImplicationNetwork<capacity_t>::fixStronglyConnectedComponentVariables(
     int from_component = *eit;
     if (out_degrees[from_component] > 0) {
       out_degrees[from_component]--;
-      if (enqueue) {
+      if (enqueue && out_degrees[from_component] == 0) {
         component_queue.push(from_component);
       }
     }
@@ -519,7 +519,7 @@ void ImplicationNetwork<capacity_t>::fixStronglyConnectedComponentVariables(
     int from_component = *eit;
     if (out_degrees[from_component] > 0) {
       out_degrees[from_component]--;
-      if (enqueue) {
+      if (enqueue && out_degrees[from_component] == 0) {
         component_queue.push(from_component);
       }
     }
