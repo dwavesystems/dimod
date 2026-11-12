@@ -200,6 +200,28 @@ TEST_CASE("Tests for fixQuboVariables", "[roofduality]") {
         }
     }
 
+    SECTION("Test the fixings agree with an optimum when strict=false") {
+        // E = -x0 - x1 + 5 x0 x1, optimal at x = (1, 0) and x = (0, 1)
+        double Q[4] = {-1, 5, 0, -1};
+        auto bqm = dimod::BinaryQuadraticModel<double, int>(Q, 2, dimod::Vartype::BINARY);
+
+        REQUIRE(fixings_agree_with_an_optimum(bqm, fixQuboVariables(bqm, false).second));
+    }
+
+    SECTION("Test components are fixed in dependency order when strict=false") {
+        // E = -x3 - 2 x0 x1 + 2 x0 x2 + 2 x0 x3 - x1 x2 - 2 x1 x3 + x2 x3, optimal at
+        // x = (0, 1, 0, 1), (1, 1, 0, 1) and (0, 1, 1, 1)
+        double Q[16] = {
+             0, -2,  2,  2,
+             0,  0, -1, -2,
+             0,  0,  0,  1,
+             0,  0,  0, -1,
+        };
+        auto bqm = dimod::BinaryQuadraticModel<double, int>(Q, 4, dimod::Vartype::BINARY);
+
+        REQUIRE(fixings_agree_with_an_optimum(bqm, fixQuboVariables(bqm, false).second));
+    }
+
     SECTION("Test a problem that used to overflow the component queue") {
         double Q[64] = {
             -4,  0,  2, -2,  0,  5,  3, -1,
