@@ -431,7 +431,7 @@ class ConstrainedQuadraticModel(cyConstrainedQuadraticModel):
             >>> label1 = cqm.add_constraint_from_iterable([('x', 'y', 1), ('i', 2), ('j', 3),
             ...                                           ('i', 'j', 1)], '<=', rhs=1)
             >>> print(cqm.constraints[label1].to_polystring())
-            2*i + 3*j + y*x + i*j <= 1.0
+            2*i + 3*j + x*y + i*j <= 1.0
 
         """
         if label is None:

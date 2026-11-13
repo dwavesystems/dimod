@@ -1,0 +1,10 @@
+---
+fixes:
+  - |
+    Fix the order in which the ``Expression`` methods ``add_quadratic()``,
+    ``add_quadratic_back()`` and ``set_quadratic()`` add new variables to a
+    constrained quadratic model's objective or constraint. The order depended
+    on the compiler, so it differed between platforms; the variables are now
+    added in argument order. On Linux and Windows, the order of the new
+    variables in a quadratic term is reversed compared to previous versions.
+    See `#1440 <https://github.com/dwavesystems/dimod/issues/1440>`_.
