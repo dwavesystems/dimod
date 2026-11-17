@@ -58,6 +58,17 @@ bool fixings_agree_with_an_optimum(const BinaryQuadraticModel<double, int>& bqm,
     return agrees;
 }
 
+// Whether every fixing holds in every optimal solution. Finds the optimal
+// solutions by brute force.
+bool fixings_hold_in_every_optimum(const BinaryQuadraticModel<double, int>& bqm,
+                                   const std::vector<std::pair<int, int>>& fixed_vars) {
+    // A fixing holds in every optimal solution if no optimal solution gives
+    // the variable the other value.
+    return std::none_of(fixed_vars.begin(), fixed_vars.end(), [&](const auto& fixing) {
+        return fixings_agree_with_an_optimum(bqm, {{fixing.first, 1 - fixing.second}});
+    });
+}
+
 }  // namespace
 
 TEST_CASE("Tests for fixQuboVariables", "[roofduality]") {
@@ -239,7 +250,15 @@ TEST_CASE("Tests for fixQuboVariables", "[roofduality]") {
         REQUIRE(fixings_agree_with_an_optimum(bqm, fixQuboVariables(bqm, false).second));
     }
 
-    SECTION("Test the fixings agree with an optimum on random problems when strict=false") {
+    SECTION("Test the fixings hold in every optimum when strict=true") {
+        // E = 2 x0 + x1 - 3 x0 x1, optimal at x = (0, 0) and x = (1, 1)
+        double Q[4] = {2, -3, 0, 1};
+        auto bqm = dimod::BinaryQuadraticModel<double, int>(Q, 2, dimod::Vartype::BINARY);
+
+        REQUIRE(fixings_hold_in_every_optimum(bqm, fixQuboVariables(bqm, true).second));
+    }
+
+    SECTION("Test the fixings against brute force on random problems") {
         // Only rng() % n is used, so every platform generates the same problems.
         std::mt19937 rng(0);
         for (int i = 0; i < 1000; ++i) {
@@ -257,6 +276,7 @@ TEST_CASE("Tests for fixQuboVariables", "[roofduality]") {
                                                                 dimod::Vartype::BINARY);
 
             REQUIRE(fixings_agree_with_an_optimum(bqm, fixQuboVariables(bqm, false).second));
+            REQUIRE(fixings_hold_in_every_optimum(bqm, fixQuboVariables(bqm, true).second));
         }
     }
 }

@@ -263,6 +263,12 @@ PosiformInfo<BQM, coefficient_t>::PosiformInfo(const BQM &bqm) {
     // by 4 to be safe.
     _bias_conversion_ratio /= 4;
 
+    // Round the ratio down to a power of two, so that multiplying a bias by it
+    // is exact. Biases that cancel each other must give coefficients that
+    // cancel too: a remainder would leave spare capacity on an edge of the
+    // residual network.
+    _bias_conversion_ratio = std::ldexp(1.0, std::ilogb(_bias_conversion_ratio));
+
     for (int bqm_variable = 0; bqm_variable < _num_bqm_variables;
         bqm_variable++) {
       _linear_integral_biases[bqm_variable] =
