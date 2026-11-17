@@ -507,7 +507,7 @@ void ImplicationNetwork<capacity_t>::fixStronglyConnectedComponentVariables(
     int from_component = *eit;
     if (out_degrees[from_component] > 0) {
       out_degrees[from_component]--;
-      if (enqueue) {
+      if (enqueue && out_degrees[from_component] == 0) {
         component_queue.push(from_component);
       }
     }
@@ -519,7 +519,7 @@ void ImplicationNetwork<capacity_t>::fixStronglyConnectedComponentVariables(
     int from_component = *eit;
     if (out_degrees[from_component] > 0) {
       out_degrees[from_component]--;
-      if (enqueue) {
+      if (enqueue && out_degrees[from_component] == 0) {
         component_queue.push(from_component);
       }
     }
@@ -615,6 +615,11 @@ capacity_t ImplicationNetwork<capacity_t>::fixStrongAndWeakVariables(
 
   while (!component_queue.empty()) {
     int component = component_queue.pop();
+    // A component and its complement can both be queued. Fixing one marks
+    // both as fixed (out-degree -1), so the second one popped is skipped.
+    if (out_degrees[component] < 0) {
+      continue;
+    }
     fixStronglyConnectedComponentVariables(
         component, scc_info, adjacency_list_components_transposed, out_degrees,
         fixed_variables, component_queue, true);

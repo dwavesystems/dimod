@@ -14,11 +14,51 @@
 
 #include <dimod/quadratic_model.h>
 
+#include <algorithm>
+#include <limits>
+#include <map>
+#include <random>
+#include <utility>
+#include <vector>
+
 #include "catch2/catch.hpp"
 #include "dimod/roof_duality/fix_variables.h"
 #include "roof_duality/fix_variables_impl.h"
 
 namespace dimod {
+
+namespace {
+
+// Whether each variable is fixed at most once, to its value in some optimal
+// solution. Finds the optimal solutions by brute force.
+bool fixings_agree_with_an_optimum(const BinaryQuadraticModel<double, int>& bqm,
+                                   const std::vector<std::pair<int, int>>& fixed_vars) {
+    std::map<int, int> fixings;
+    for (const auto& [v, value] : fixed_vars) {
+        if (!fixings.emplace(v, value).second) return false;
+    }
+
+    int num_vars = bqm.num_variables();
+    std::vector<int> sample(num_vars);
+    double best = std::numeric_limits<double>::infinity();
+    bool agrees = false;
+    for (int x = 0; x < (1 << num_vars); ++x) {
+        for (int v = 0; v < num_vars; ++v) sample[v] = (x >> v) & 1;
+        double energy = bqm.energy(sample.begin());
+        bool matches = std::all_of(fixings.begin(), fixings.end(), [&](const auto& fixing) {
+            return sample[fixing.first] == fixing.second;
+        });
+        if (energy < best) {
+            best = energy;
+            agrees = matches;
+        } else if (energy == best) {
+            agrees = agrees || matches;
+        }
+    }
+    return agrees;
+}
+
+}  // namespace
 
 TEST_CASE("Tests for fixQuboVariables", "[roofduality]") {
     SECTION("Test simple case") {
@@ -158,6 +198,65 @@ TEST_CASE("Tests for fixQuboVariables", "[roofduality]") {
             // checking fixed values
             REQUIRE(fixed_vars[0].second == 0);
             REQUIRE(fixed_vars[1].second == 0);
+        }
+    }
+
+    SECTION("Test the fixings agree with an optimum when strict=false") {
+        // E = -x0 - x1 + 5 x0 x1, optimal at x = (1, 0) and x = (0, 1)
+        double Q[4] = {-1, 5, 0, -1};
+        auto bqm = dimod::BinaryQuadraticModel<double, int>(Q, 2, dimod::Vartype::BINARY);
+
+        REQUIRE(fixings_agree_with_an_optimum(bqm, fixQuboVariables(bqm, false).second));
+    }
+
+    SECTION("Test components are fixed in dependency order when strict=false") {
+        // E = -x3 - 2 x0 x1 + 2 x0 x2 + 2 x0 x3 - x1 x2 - 2 x1 x3 + x2 x3, optimal at
+        // x = (0, 1, 0, 1), (1, 1, 0, 1) and (0, 1, 1, 1)
+        double Q[16] = {
+             0, -2,  2,  2,
+             0,  0, -1, -2,
+             0,  0,  0,  1,
+             0,  0,  0, -1,
+        };
+        auto bqm = dimod::BinaryQuadraticModel<double, int>(Q, 4, dimod::Vartype::BINARY);
+
+        REQUIRE(fixings_agree_with_an_optimum(bqm, fixQuboVariables(bqm, false).second));
+    }
+
+    SECTION("Test a problem that used to overflow the component queue") {
+        double Q[64] = {
+            -4,  0,  2, -2,  0,  5,  3, -1,
+             0, -4, -2,  0,  5, -2,  0,  0,
+             0,  0, -4,  0,  1,  3, -4,  0,
+             0,  0,  0,  5,  5, -3,  0,  2,
+             0,  0,  0,  0, -2,  1,  4, -5,
+             0,  0,  0,  0,  0, -3,  0, -3,
+             0,  0,  0,  0,  0,  0,  4,  1,
+             0,  0,  0,  0,  0,  0,  0,  0,
+        };
+        auto bqm = dimod::BinaryQuadraticModel<double, int>(Q, 8, dimod::Vartype::BINARY);
+
+        REQUIRE(fixings_agree_with_an_optimum(bqm, fixQuboVariables(bqm, false).second));
+    }
+
+    SECTION("Test the fixings agree with an optimum on random problems when strict=false") {
+        // Only rng() % n is used, so every platform generates the same problems.
+        std::mt19937 rng(0);
+        for (int i = 0; i < 1000; ++i) {
+            int num_vars = 3 + rng() % 6;
+            std::vector<double> Q(num_vars * num_vars, 0);
+            for (int u = 0; u < num_vars; ++u) {
+                for (int v = u; v < num_vars; ++v) {
+                    // integer biases in [-3, 3], with half of the interactions left out
+                    if (u == v || rng() % 2 == 0) {
+                        Q[u * num_vars + v] = static_cast<int>(rng() % 7) - 3;
+                    }
+                }
+            }
+            auto bqm = dimod::BinaryQuadraticModel<double, int>(Q.data(), num_vars,
+                                                                dimod::Vartype::BINARY);
+
+            REQUIRE(fixings_agree_with_an_optimum(bqm, fixQuboVariables(bqm, false).second));
         }
     }
 }
