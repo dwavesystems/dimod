@@ -149,7 +149,7 @@ cdef class _cyExpression:
                 energies[si] = (<cppQuadraticModelBase[bias_type, index_type]*>expression).energy(&subsamples[si, 0])
         else:
             for si in range(num_samples):
-                energies[si] = 0
+                energies[si] = expression.offset()
 
         return energies
 

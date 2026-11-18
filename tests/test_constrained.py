@@ -429,6 +429,17 @@ class TestCheckFeasible(unittest.TestCase):
 
         self.assertTrue(cqm.check_feasible(sample))
 
+    def test_constraint_without_variables(self):
+        x, y = dimod.Binaries('xy')
+
+        cqm = dimod.CQM()
+        cqm.set_objective(y)
+        cqm.add_constraint(2*x <= 1, label='c')
+        cqm.fix_variable('x', 1)  # the constraint is now 2 <= 1
+
+        self.assertFalse(cqm.check_feasible({'y': 0}))
+        self.assertEqual(dict(cqm.violations({'y': 0})), {'c': 1})
+
 
 class TestClear(unittest.TestCase):
     def test_simple(self):
@@ -2031,6 +2042,16 @@ class TestViews(unittest.TestCase):
         self.assertEqual(cqm.objective.offset, 5)
         cqm.constraints[lbl].lhs.offset = 3
         self.assertEqual(cqm.constraints[lbl].lhs.offset, 3)
+
+    def test_energies_without_variables(self):
+        x, y = dimod.Binaries('xy')
+        cqm = dimod.CQM()
+        cqm.set_objective(2*x + 3)
+        cqm.add_constraint(y <= 1)
+        cqm.fix_variable('x', 1)  # the objective is now the constant 5
+
+        self.assertEqual(cqm.objective.energy({'y': 0}), 5)
+        np.testing.assert_array_equal(cqm.objective.energies(([[0], [1]], 'y')), [5, 5])
 
     def test_remove_variable(self):
         x, y = dimod.Binaries('xy')
