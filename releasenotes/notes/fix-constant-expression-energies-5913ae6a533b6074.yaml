@@ -2,10 +2,4 @@
 fixes:
   - |
     Fix the energy of a constrained quadratic model's objective or constraint
-    that has no variables, for example after all of its variables are fixed
-    with ``ConstrainedQuadraticModel.fix_variable()``. Its energy was 0 instead
-    of its offset, so ``check_feasible()`` and ``violations()``, as well as the
-    energies and feasibility of sample sets built with
-    ``SampleSet.from_samples_cqm()`` (for example by ``ExactCQMSolver``), could
-    report such a constraint as satisfied when it is not, such as ``2 <= 1``,
-    or as violated when it is satisfied, such as ``2 >= 1``.
+    that has no variables.
