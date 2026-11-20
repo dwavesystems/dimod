@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fix the energy of a constrained quadratic model's objective or constraint
+    that has no variables.
