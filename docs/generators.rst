@@ -76,6 +76,7 @@ Random
    gnm_random_bqm
    gnp_random_bqm
    markov_network
+   power_r
    randint
    random_2in4sat
    random_bin_packing
@@ -84,7 +85,6 @@ Random
    random_nae3sat
    ran_r
    uniform
-   power_r
 
 .. _generators_symbolic_math:
 
