@@ -84,6 +84,7 @@ Random
    random_nae3sat
    ran_r
    uniform
+   power_r
 
 .. _generators_symbolic_math:
 
