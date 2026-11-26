@@ -552,6 +552,13 @@ class PresolverImpl {
         // Remove any constraints without any variables, their contribution to
         // infeasibility or whatever is baked in so no point carrying them around
         {
+            // A hard constraint without variables that doesn't hold makes the model infeasible
+            for (auto& constraint : model_.constraints()) {
+                if (!constraint.num_variables()) {
+                    technique_clear_redundant_constraint(constraint);
+                }
+            }
+
             const size_type num_constraints = model_.num_constraints();
             model_.remove_constraints_if(
                     [](const constraint_type& c) { return !c.num_variables(); });

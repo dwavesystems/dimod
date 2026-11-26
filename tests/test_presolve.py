@@ -544,6 +544,34 @@ class TestPresolver(unittest.TestCase):
             presolver.apply()
             self.assertIs(presolver.feasibility(), Feasibility.Infeasible)
 
+        with self.subTest("infeas quadratic, variable fixed by its bounds"):
+            cqm = dimod.ConstrainedQuadraticModel()
+            i = dimod.Integer('i', lower_bound=1, upper_bound=1)
+            cqm.add_constraint(i * i == 5)
+
+            presolver = Presolver(cqm)
+            presolver.apply()
+            self.assertIs(presolver.feasibility(), Feasibility.Infeasible)
+
+        with self.subTest("infeas linear, variable fixed by its bounds, no presolve rounds"):
+            cqm = dimod.ConstrainedQuadraticModel()
+            i = dimod.Integer('i', lower_bound=1, upper_bound=1)
+            cqm.add_constraint(i == 5)
+
+            presolver = Presolver(cqm)
+            presolver.normalize()
+            presolver.presolve(time_limit_s=0)
+            self.assertIs(presolver.feasibility(), Feasibility.Infeasible)
+
+        with self.subTest("soft, variable fixed by its bounds"):
+            cqm = dimod.ConstrainedQuadraticModel()
+            i = dimod.Integer('i', lower_bound=1, upper_bound=1)
+            cqm.add_constraint(i == 5, weight=2)
+
+            presolver = Presolver(cqm)
+            presolver.apply()
+            self.assertIsNot(presolver.feasibility(), Feasibility.Infeasible)
+
     def test_self_loop(self):
         i = dimod.Integer("i")
         cqm = dimod.ConstrainedQuadraticModel()
